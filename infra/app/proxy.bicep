@@ -15,6 +15,9 @@ param proxyPostgresMaxPoolSize int
 param postgresEncryptionKey string
 @secure()
 param appInsightsConnectionString string
+@secure()
+param adminPassword string
+param playgroundUrl string
 param imageName string = ''
 param keyVaultName string = ''
 
@@ -50,6 +53,14 @@ module app '../core/host/container-app-upsert.bicep' = {
         name: 'app-insights-connection-string'
         value: appInsightsConnectionString
       }
+      {
+        name: 'admin-username'
+        value: 'admin'
+      }
+      {
+        name: 'admin-password'
+        value: adminPassword
+      }
     ]
     env: [
       {
@@ -63,6 +74,22 @@ module app '../core/host/container-app-upsert.bicep' = {
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
         secretRef: 'app-insights-connection-string'
+      }
+      {
+        name: 'Admin__Username'
+        secretRef: 'admin-username'
+      }
+      {
+        name: 'Admin__Password'
+        secretRef: 'admin-password'
+      }
+      {
+        name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'
+        value: 'true'
+      }
+      {
+        name: 'PlaygroundUrl'
+        value: playgroundUrl
       }
     ]
   }

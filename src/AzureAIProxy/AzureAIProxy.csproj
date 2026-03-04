@@ -10,10 +10,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.0.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.4.0" />
+    <PackageReference Include="MudBlazor" Version="9.1.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AzureAIProxy.Management\AzureAIProxy.Management.csproj" />
     <ProjectReference Include="..\AzureAIProxy.Shared\AzureAIProxy.Shared.csproj" />
   </ItemGroup>
 

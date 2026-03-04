@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using AzureAIProxy.Models;
 using AzureAIProxy.Services;
 using AzureAIProxy.Shared.Database;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AzureAIProxy.Routes;
 
@@ -37,6 +38,7 @@ public static class Event
         return TypedResults.Ok(eventInfo);
     }
 
+    [AllowAnonymous]
     private static async Task<IResult> EventRegistrationInfoAsync(
         [FromServices] IEventService eventService,
         HttpContext context,

@@ -9,10 +9,6 @@ WITH
 
 GRANT aoai_proxy_app TO :"PG_USER";
 
-select * from pgaadauth_create_principal(:'ADMIN_SYSTEM_ASSIGNED_IDENTITY', false, false);
-
 select * from pgaadauth_create_principal(:'PROXY_SYSTEM_ASSIGNED_IDENTITY', false, false);
 
 GRANT aoai_proxy_app TO :"PROXY_SYSTEM_ASSIGNED_IDENTITY";
-
-GRANT aoai_proxy_app TO :"ADMIN_SYSTEM_ASSIGNED_IDENTITY";

@@ -17,34 +17,9 @@ services:
     host: staticwebapp
     dist: dist
 
-  admin:
-    project: ./src/AzureAIProxy.Management
-    language: csharp
-    host: containerapp
-    hooks:
-      predeploy:
-        shell: sh
-        continueOnError: false
-        interactive: false
-        run: ../../infra/scripts/setup-app-redirect-uris.sh
-    docker:
-      path: ../Dockerfile.management
-      context: ../
-      platform: amd64
-
 hooks:
   preup:
     shell: sh
     continueOnError: false
     interactive: false
     run: ./infra/scripts/preup.sh
-  preprovision:
-    shell: sh
-    continueOnError: false
-    interactive: false
-    run: ./infra/scripts/setup-app-registration.sh
-  postdown:
-    shell: sh
-    continueOnError: false
-    interactive: false
-    run: ./infra/scripts/cleanup-app-registration.sh

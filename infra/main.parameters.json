@@ -14,17 +14,8 @@
     "proxyAppExists": {
       "value": "${SERVICE_PROXY_RESOURCE_EXISTS=false}"
     },
-    "adminAppExists": {
-      "value": "${SERVICE_ADMIN_RESOURCE_EXISTS=false}"
-    },
     "postgresEncryptionKey": {
       "value": "$(secretOrRandomPassword ${AZURE_KEY_VAULT_NAME} postgresEncryptionKey)"
-    },
-    "authTenantId": {
-      "value": "${AUTH_TENANT_ID}"
-    },
-    "authClientId": {
-      "value": "${AUTH_CLIENT_ID}"
     },
     "principalId": {
       "value": "${AZURE_PRINCIPAL_ID}"

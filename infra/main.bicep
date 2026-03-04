@@ -10,7 +10,6 @@ param name string
 param location string
 
 param proxyAppExists bool = false
-param adminAppExists bool = false
 
 @description('Location for the Playground app resource group')
 @allowed(['centralus', 'eastus2', 'eastasia', 'westeurope', 'westus2'])
@@ -38,8 +37,10 @@ param postgresEncryptionKey string
 @description('Entra Authorization Token')
 param entraAuthorizationToken string
 
-param authTenantId string = subscription().tenantId
-param authClientId string
+var adminUsername = 'admin'
+// Generate a deterministic but unique admin password per deployment
+// uniqueString produces a 13-char hash; we combine two for a longer password
+var adminPassword = '${uniqueString(subscription().id, name, 'admin-pwd')}${uniqueString(name, location, 'admin-pwd')}'
 
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }
@@ -51,8 +52,7 @@ var postgresEntraAdministratorType = empty(runningOnGh) ? 'User' : 'ServicePrinc
 var postgresEntraAdministratorName = principalName
 // the maximum number of connections for Postgres Standard_B1ms Burstable is 35
 // https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-limits#maximum-connections
-var proxyPostgresMaxPoolSize = 33
-var proxyAdminPostgresMaxPoolSize = 2
+var proxyPostgresMaxPoolSize = 35
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: '${name}-rg'
@@ -74,30 +74,7 @@ module containerApps 'core/host/container-apps.bicep' = {
   }
 }
 
-// Admin app
-module admin 'app/admin.bicep' = {
-  name: 'admin'
-  scope: resourceGroup
-  params: {
-    name: '${prefix}-admin'
-    location: location
-    tags: tags
-    identityName: '${prefix}-id-admin'
-    containerAppsEnvironmentName: containerApps.outputs.environmentName
-    containerRegistryName: containerApps.outputs.registryName
-    exists: adminAppExists
-    postgresServer: postgresServer.outputs.DOMAIN_NAME
-    postgresDatabase: postgresDatabaseName
-    postgresEncryptionKey: postgresEncryptionKey
-    proxyAdminPostgresMaxPoolSize: proxyAdminPostgresMaxPoolSize
-    tenantId: authTenantId
-    clientId: authClientId
-    playgroundUrl: playground.outputs.SERVICE_WEB_URI
-    appInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
-  }
-}
-
-// Proxy app
+// Proxy app (combined proxy + admin)
 module proxy 'app/proxy.bicep' = {
   name: 'proxy'
   scope: resourceGroup
@@ -113,6 +90,8 @@ module proxy 'app/proxy.bicep' = {
     postgresDatabase: postgresDatabaseName
     postgresEncryptionKey: postgresEncryptionKey
     proxyPostgresMaxPoolSize: proxyPostgresMaxPoolSize
+    adminPassword: adminPassword
+    playgroundUrl: playground.outputs.SERVICE_WEB_URI
     appInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
   }
 }
@@ -142,7 +121,6 @@ module postgresDbSeeding 'db-seed.bicep' = {
     entraAdministratorName: postgresEntraAdministratorName
     postgresDatabaseName: postgresDatabaseName
     entraAuthorizationToken: entraAuthorizationToken
-    adminSystemAssignedIdentity: admin.outputs.SERVICE_ADMIN_NAME
     proxySystemAssignedIdentity: proxy.outputs.SERVICE_PROXY_NAME
   }
 }
@@ -193,10 +171,8 @@ output SERVICE_PROXY_IMAGE_NAME string = proxy.outputs.SERVICE_PROXY_IMAGE_NAME
 
 output SERVICE_PLAYGROUND_URI string = playground.outputs.SERVICE_WEB_URI
 
-output SERVICE_ADMIN_IDENTITY_PRINCIPAL_ID string = admin.outputs.SERVICE_ADMIN_IDENTITY_PRINCIPAL_ID
-output SERVICE_ADMIN_NAME string = admin.outputs.SERVICE_ADMIN_NAME
-output SERVICE_ADMIN_URI string = admin.outputs.SERVICE_ADMIN_URI
-output SERVICE_ADMIN_IMAGE_NAME string = admin.outputs.SERVICE_ADMIN_IMAGE_NAME
-
 output SERVICE_DB_SERVER_NAME string = postgresServer.outputs.RESOURCE_NAME
 output SERVICE_DB_SERVER_FQDN string = postgresServer.outputs.DOMAIN_NAME
+
+output SERVICE_ADMIN_USERNAME string = adminUsername
+output SERVICE_ADMIN_PASSWORD string = adminPassword

@@ -63,11 +63,11 @@ public class ModelService(IAuthService authService, IDbContextFactory<AzureAIPro
 
     public async Task<OwnerCatalog> AddOwnerCatalogAsync(ModelEditorModel model)
     {
-        string entraId = await authService.GetCurrentUserEntraIdAsync();
+        string userId = await authService.GetCurrentUserIdAsync();
 
         await using var db = await dbFactory.CreateDbContextAsync();
 
-        Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == entraId) ?? throw new InvalidOperationException("EntraID is not a registered owner.");
+        Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == userId) ?? throw new InvalidOperationException("User is not a registered owner.");
 
         byte[]? endpointKey = await PostgresEncryptValue(db, model.EndpointKey!);
         byte[]? endpointUrl = await PostgresEncryptValue(db, model.EndpointUrl!);
@@ -134,9 +134,9 @@ public class ModelService(IAuthService authService, IDbContextFactory<AzureAIPro
 
     public async Task DuplicateOwnerCatalogAsync(OwnerCatalog ownerCatalog)
     {
-        string entraId = await authService.GetCurrentUserEntraIdAsync();
+        string userId = await authService.GetCurrentUserIdAsync();
         await using var db = await dbFactory.CreateDbContextAsync();
-        Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == entraId) ?? throw new InvalidOperationException("EntraID is not a registered owner.");
+        Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == userId) ?? throw new InvalidOperationException("User is not a registered owner.");
 
         OwnerCatalog catalog = new()
         {
@@ -156,10 +156,10 @@ public class ModelService(IAuthService authService, IDbContextFactory<AzureAIPro
 
     public async Task<IEnumerable<OwnerCatalog>> GetOwnerCatalogsAsync()
     {
-        string entraId = await authService.GetCurrentUserEntraIdAsync();
+        string userId = await authService.GetCurrentUserIdAsync();
         await using var db = await dbFactory.CreateDbContextAsync();
         var catalogItems = await db.OwnerCatalogs
-            .Where(oc => oc.Owner.OwnerId == entraId)
+            .Where(oc => oc.Owner.OwnerId == userId)
             .Include(oc => oc.Events)
             .OrderBy(oc => oc.FriendlyName)
             .ToListAsync();

@@ -38,7 +38,7 @@ public class EventService(IAuthService authService, IDbContextFactory<AzureAIPro
             Active = model.Active
         };
 
-        string entraId = await authService.GetCurrentUserEntraIdAsync();
+        string userId = await authService.GetCurrentUserIdAsync();
 
         await using var db = await dbFactory.CreateDbContextAsync();
         var conn = db.Database.GetDbConnection();
@@ -50,7 +50,7 @@ public class EventService(IAuthService authService, IDbContextFactory<AzureAIPro
 
         cmd.CommandText = $"SELECT * FROM aoai.add_event(@OwnerId, @EventCode, @EventSharedCode, @EventMarkdown, @StartTimestamp, @EndTimestamp, @TimeZoneOffset, @TimeZoneLabel,  @OrganizerName, @OrganizerEmail, @MaxTokenCap, @DailyRequestCap, @Active, @EventImageUrl)";
 
-        cmd.Parameters.Add(new NpgsqlParameter("OwnerId", entraId));
+        cmd.Parameters.Add(new NpgsqlParameter("OwnerId", userId));
         cmd.Parameters.Add(new NpgsqlParameter("EventCode", newEvent.EventCode));
         cmd.Parameters.Add(new NpgsqlParameter("EventMarkdown", newEvent.EventMarkdown));
         cmd.Parameters.Add(new NpgsqlParameter("StartTimestamp", newEvent.StartTimestamp));
@@ -85,10 +85,10 @@ public class EventService(IAuthService authService, IDbContextFactory<AzureAIPro
 
     public async Task<IEnumerable<Event>> GetOwnerEventsAsync()
     {
-        string entraId = await authService.GetCurrentUserEntraIdAsync();
+        string userId = await authService.GetCurrentUserIdAsync();
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Events
-            .Where(e => e.OwnerEventMaps.Any(o => o.Owner.OwnerId == entraId))
+            .Where(e => e.OwnerEventMaps.Any(o => o.Owner.OwnerId == userId))
             .OrderByDescending(e => e.Active)
             .ThenByDescending(e => e.EndTimestamp)
             .Include(e => e.Catalogs) // Include the Catalogs collection

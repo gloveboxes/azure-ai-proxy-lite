@@ -2,7 +2,6 @@ param name string
 param location string
 
 param postgresDatabaseName string
-param adminSystemAssignedIdentity string
 param proxySystemAssignedIdentity string
 
 @description('Entra admin role name')
@@ -55,10 +54,6 @@ resource sqlDeploymentScriptSetup 'Microsoft.Resources/deploymentScripts@2023-08
         value: entraAuthorizationToken
       }
       {
-        name: 'ADMIN_SYSTEM_ASSIGNED_IDENTITY'
-        value: adminSystemAssignedIdentity
-      }
-      {
         name: 'PROXY_SYSTEM_ASSIGNED_IDENTITY'
         value: proxySystemAssignedIdentity
       }
@@ -73,7 +68,7 @@ resource sqlDeploymentScriptSetup 'Microsoft.Resources/deploymentScripts@2023-08
       echo "$SQL_SETUP_SCRIPT" > ./setup.sql
       cat ./setup.sql
 
-      psql -a -U "$PG_USER" -d "postgres" -h "$PG_HOST" -v PG_USER="$PG_USER" -v ADMIN_SYSTEM_ASSIGNED_IDENTITY="$ADMIN_SYSTEM_ASSIGNED_IDENTITY" -v PROXY_SYSTEM_ASSIGNED_IDENTITY="$PROXY_SYSTEM_ASSIGNED_IDENTITY" -w -f ./setup.sql
+      psql -a -U "$PG_USER" -d "postgres" -h "$PG_HOST" -v PG_USER="$PG_USER" -v PROXY_SYSTEM_ASSIGNED_IDENTITY="$PROXY_SYSTEM_ASSIGNED_IDENTITY" -w -f ./setup.sql
       echo "Executing permissions setup script ended"
 
       echo "Executing database setup script starting"

@@ -6,6 +6,7 @@ WORKDIR /src
 
 # copy and publish app and libraries
 COPY ./AzureAIProxy/ ./AzureAIProxy
+COPY ./AzureAIProxy.Management/ ./AzureAIProxy.Management
 COPY ./AzureAIProxy.Shared/ ./AzureAIProxy.Shared
 WORKDIR /src/AzureAIProxy
 

@@ -45,19 +45,9 @@
             <MudAutocomplete T="TimeZoneInfo" @bind-Value="Model.SelectedTimeZone"
                 HelperText="Time Zone for the event. Attendees will see the event in their local time."
                 Label="Time Zone (Start typing the location)" FullWidth="true" For="@(() => Model.SelectedTimeZone)"
-                SearchFunc="FilterTimezones" MinCharacters="0">
-                <ItemTemplate Context="itContext">
-                    <MudText>
-                        <MudIcon Icon="@Icons.Material.Filled.CheckBoxOutlineBlank" Class="mb-n1 mr-3" />
-                        @itContext.DisplayName
-                    </MudText>
-                </ItemTemplate>
-                <ItemSelectedTemplate Context="istContext">
-                    <MudText>
-                        <MudIcon Icon="@Icons.Material.Filled.CheckBox" Class="mb-n1 mr-3" />@istContext.DisplayName
-                    </MudText>
-                </ItemSelectedTemplate>
-            </MudAutocomplete>
+                SearchFunc="FilterTimezones" MinCharacters="0" MaxItems="50"
+                ToStringFunc="@(tz => tz?.DisplayName ?? string.Empty)"
+                CoerceText="false" CoerceValue="false" />
 
             <MudNumericField Label="Max Token Cap"
                 HelperText="512 for 1hr events with > 50 people. Long running hacks 4000. See help."

@@ -58,13 +58,15 @@ public partial class EventEditor : ComponentBase
         isSubmitting = false;
     }
 
-    private Task<IEnumerable<TimeZoneInfo>> FilterTimezones(string? filter, CancellationToken cancellationToken)
+    private async Task<IEnumerable<TimeZoneInfo>> FilterTimezones(string? filter, CancellationToken cancellationToken)
     {
+        await Task.Delay(5, cancellationToken);
+
         if (string.IsNullOrEmpty(filter))
         {
-            return Task.FromResult(TimeZones!);
+            return TimeZones!.Take(50);
         }
 
-        return Task.FromResult(TimeZones!.Where(tz => tz.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase)));
+        return TimeZones!.Where(tz => tz.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase));
     }
 }
