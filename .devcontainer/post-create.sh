@@ -50,10 +50,10 @@ psql -U admin -d aoai-proxy -h localhost -w -f ./database/aoai-proxy.sql
 
 echo Setting up Python environment...
 
-python3 -m pip install -r requirements-dev.txt
+pip3 install --user -r requirements-dev.txt
 
 echo Setting up commit hooks...
-pre-commit install
+pre-commit install --install-hooks
 
 echo Setting up Playground environment...
 cd src/playground
