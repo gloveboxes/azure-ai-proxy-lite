@@ -77,7 +77,7 @@ public class ModelService(IAuthService authService, IDbContextFactory<AzureAIPro
             Owner = owner,
             Active = model.Active,
             FriendlyName = model.FriendlyName!,
-            DeploymentName = model.DeploymentName!,
+            DeploymentName = model.DeploymentName!.Trim(),
             Location = model.Location!,
             ModelType = model.ModelType!.Value,
             EndpointKeyEncrypted = endpointKey!,
@@ -180,7 +180,7 @@ public class ModelService(IAuthService authService, IDbContextFactory<AzureAIPro
         byte[]? endpointUrl = await PostgresEncryptValue(db, ownerCatalog.EndpointUrl);
 
         existingCatalog.FriendlyName = ownerCatalog.FriendlyName;
-        existingCatalog.DeploymentName = ownerCatalog.DeploymentName;
+        existingCatalog.DeploymentName = ownerCatalog.DeploymentName.Trim();
         existingCatalog.ModelType = ownerCatalog.ModelType;
         existingCatalog.Location = ownerCatalog.Location;
         existingCatalog.Active = ownerCatalog.Active;

@@ -18,13 +18,15 @@ param tenantId string
 param playgroundUrl string
 @secure()
 param appInsightsConnectionString string
+param imageName string = ''
+param keyVaultName string = ''
 
 resource adminIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
   location: location
 }
 
-module app 'core/host/container-app-upsert.bicep' = {
+module app '../core/host/container-app-upsert.bicep' = {
   name: '${serviceName}-container-app-module'
   params: {
     name: name

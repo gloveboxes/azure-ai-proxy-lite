@@ -3,7 +3,6 @@ param location string = resourceGroup().location
 param tags object = {}
 
 param adminUserEnabled bool = true
-param anonymousPullEnabled bool = false
 param dataEndpointEnabled bool = false
 param encryption object = {
   status: 'disabled'
@@ -18,15 +17,13 @@ param zoneRedundancy string = 'Disabled'
 @description('The log analytics workspace id used for logging & monitoring')
 param workspaceId string = ''
 
-// 2022-02-01-preview needed for anonymousPullEnabled
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = {
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: name
   location: location
   tags: tags
   sku: sku
   properties: {
     adminUserEnabled: adminUserEnabled
-    anonymousPullEnabled: anonymousPullEnabled
     dataEndpointEnabled: dataEndpointEnabled
     encryption: encryption
     networkRuleBypassOptions: networkRuleBypassOptions

@@ -62,7 +62,7 @@ public partial class ModelEdit : ComponentBase
         }
 
         m.FriendlyName = model.FriendlyName!;
-        m.DeploymentName = model.DeploymentName!;
+        m.DeploymentName = model.DeploymentName!.Trim();
         m.EndpointKey = model.EndpointKey!;
         m.ModelType = model.ModelType!.Value;
         m.EndpointUrl = model.EndpointUrl!;

@@ -43,7 +43,7 @@ module postgresServer 'core/database/postgresql/flexibleserver.bicep' = {
   }
 }
 
-resource postgresConfig 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2022-12-01' = {
+resource postgresConfig 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = {
   dependsOn: [
     postgresServer
   ]

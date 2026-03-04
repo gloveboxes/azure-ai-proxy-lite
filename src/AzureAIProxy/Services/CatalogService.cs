@@ -87,6 +87,7 @@ public class CatalogService(
         string deploymentName
     )
     {
+        deploymentName = deploymentName.Trim();
         var deployments = await GetDecryptedEventCatalogAsync(eventId, deploymentName);
         if (deployments.Count == 0)
         {

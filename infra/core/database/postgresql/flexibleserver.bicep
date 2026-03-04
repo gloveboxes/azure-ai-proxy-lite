@@ -52,7 +52,7 @@ var authProperties = authType == 'Password' ? {
   }
 }
 
-resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2022-12-01' = {
+resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   location: location
   tags: tags
   name: name
@@ -72,7 +72,7 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2022-12-01' =
 }
 
 // This must be done separately due to conflicts with the Entra setup
-resource firewall_all 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-03-01-preview' = if (allowAllIPsFirewall) {
+resource firewall_all 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = if (allowAllIPsFirewall) {
   parent: postgresServer
   name: 'allow-all-IPs'
   properties: {
@@ -82,7 +82,7 @@ resource firewall_all 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2
 }
 
 // This must be done separately due to conflicts with the Entra setup
-resource firewall_azure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-03-01-preview' = if (allowAzureIPsFirewall) {
+resource firewall_azure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = if (allowAzureIPsFirewall) {
   parent: postgresServer
   name: 'allow-all-azure-internal-IPs'
   properties: {
@@ -93,7 +93,7 @@ resource firewall_azure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules
 
 @batchSize(1)
 // This must be done separately due to conflicts with the Entra setup
-resource firewall_single 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-03-01-preview' = [for ip in allowedSingleIPs: {
+resource firewall_single 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = [for ip in allowedSingleIPs: {
   parent: postgresServer
   name: 'allow-single-${replace(ip, '.', '')}'
   properties: {
@@ -103,7 +103,7 @@ resource firewall_single 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRule
 }]
 
 // This must be created *after* the server is created - it cannot be a nested child resource
-resource addAddUser 'Microsoft.DBforPostgreSQL/flexibleServers/administrators@2023-03-01-preview' = {
+resource addAddUser 'Microsoft.DBforPostgreSQL/flexibleServers/administrators@2024-08-01' = {
   parent: postgresServer
   name: entraAdministratorObjectId
   properties: {

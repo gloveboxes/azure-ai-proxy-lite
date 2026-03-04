@@ -15,13 +15,15 @@ param proxyPostgresMaxPoolSize int
 param postgresEncryptionKey string
 @secure()
 param appInsightsConnectionString string
+param imageName string = ''
+param keyVaultName string = ''
 
 resource proxyIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
   location: location
 }
 
-module app 'core/host/container-app-upsert.bicep' = {
+module app '../core/host/container-app-upsert.bicep' = {
   name: '${serviceName}-container-app-module'
   params: {
     name: name

@@ -6,6 +6,13 @@
   "dotnet.defaultSolution": "src/AzureAIProxy.sln",
   "chat.tools.terminal.autoApprove": {
     "dotnet clean": true,
-    "dotnet build": true
+    "dotnet build": true,
+    "azd": true,
+    "az": true,
+    "/^az rest --method get --url \"https://management\\.azure\\.com/subscriptions/8df98239-76ae-47c9-b464-16b680ad654a/resourceGroups/aiprxy1-rg/providers/Microsoft\\.App/containerApps/aiprxy1-iac7s2pyio2mo-proxy\\?api-version=2024-03-01\" 2>&1 \\| python3 -c \"import sys,json; d=json\\.load\\(sys\\.stdin\\); print\\(json\\.dumps\\(\\{k:v for k,v in d\\.get\\('properties',\\{\\}\\)\\.items\\(\\) if 'backend' in str\\(k\\)\\.lower\\(\\) or 'static' in str\\(k\\)\\.lower\\(\\) or 'swa' in str\\(k\\)\\.lower\\(\\) or 'link' in str\\(k\\)\\.lower\\(\\)\\}, indent=2\\)\\)\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "npx @azure/static-web-apps-cli@2.0.8": true
   }
 }

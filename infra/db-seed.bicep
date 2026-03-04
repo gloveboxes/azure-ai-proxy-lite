@@ -13,11 +13,11 @@ param entraAuthorizationToken string
 
 param postgresServerName string
 
-resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2022-12-01' existing = {
+resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' existing = {
   name: postgresServerName
 }
 
-resource sqlDeploymentScriptSetup 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
+resource sqlDeploymentScriptSetup 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: '${name}-deployment-script-setup'
   dependsOn: [
     postgresServer

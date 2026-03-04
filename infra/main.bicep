@@ -54,7 +54,7 @@ var postgresEntraAdministratorName = principalName
 var proxyPostgresMaxPoolSize = 33
 var proxyAdminPostgresMaxPoolSize = 2
 
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: '${name}-rg'
   location: location
   tags: tags
@@ -75,7 +75,7 @@ module containerApps 'core/host/container-apps.bicep' = {
 }
 
 // Admin app
-module admin 'admin.bicep' = {
+module admin 'app/admin.bicep' = {
   name: 'admin'
   scope: resourceGroup
   params: {
@@ -98,7 +98,7 @@ module admin 'admin.bicep' = {
 }
 
 // Proxy app
-module proxy 'proxy.bicep' = {
+module proxy 'app/proxy.bicep' = {
   name: 'proxy'
   scope: resourceGroup
   params: {
