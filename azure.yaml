@@ -23,3 +23,16 @@ hooks:
     continueOnError: false
     interactive: false
     run: ./infra/scripts/preup.sh
+  postup:
+    shell: sh
+    continueOnError: true
+    interactive: false
+    run: |
+      echo ""
+      echo "============================================="
+      echo "  Admin Login Credentials"
+      echo "  Username: admin"
+      echo "  Password: $(azd env get-value SERVICE_ADMIN_PASSWORD)"
+      echo "  URL: $(azd env get-value SERVICE_PROXY_URI)"
+      echo "============================================="
+      echo ""
