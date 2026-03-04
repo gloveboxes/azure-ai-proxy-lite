@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AzureAIProxy.Management.Services;
 
-public class AuthService(AuthenticationStateProvider authenticationStateProvider, AzureAIProxyDbContext db) : IAuthService
+public class AuthService(AuthenticationStateProvider authenticationStateProvider, IDbContextFactory<AzureAIProxyDbContext> dbFactory) : IAuthService
 {
     public async Task<string> GetCurrentUserEntraIdAsync()
     {
@@ -15,6 +15,7 @@ public class AuthService(AuthenticationStateProvider authenticationStateProvider
     public async Task<(string email, string name)> GetCurrentUserEmailNameAsync()
     {
         string entraId = await GetCurrentUserEntraIdAsync();
+        await using var db = await dbFactory.CreateDbContextAsync();
         var owner = await db.Owners
                              .Where(o => o.OwnerId == entraId)
                              .Select(o => new { o.Name, o.Email })

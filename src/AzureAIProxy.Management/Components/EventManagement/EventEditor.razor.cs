@@ -58,7 +58,7 @@ public partial class EventEditor : ComponentBase
         isSubmitting = false;
     }
 
-    private Task<IEnumerable<TimeZoneInfo>> FilterTimezones(string filter)
+    private Task<IEnumerable<TimeZoneInfo>> FilterTimezones(string? filter, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(filter))
         {

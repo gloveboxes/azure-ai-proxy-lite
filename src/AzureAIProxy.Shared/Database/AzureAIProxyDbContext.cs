@@ -42,19 +42,9 @@ public partial class AzureAIProxyDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .HasPostgresEnum(
+            .HasPostgresEnum<ModelType>(
                 "aoai",
-                "model_type",
-                new[]
-                {
-                    "openai-chat",
-                    "openai-embedding",
-                    "openai-dalle3",
-                    "openai-whisper",
-                    "openai-completion",
-                    "openai-instruct",
-                    "azure-ai-search"
-                }
+                "model_type"
             )
             .HasPostgresExtension("aoai", "pgcrypto");
 

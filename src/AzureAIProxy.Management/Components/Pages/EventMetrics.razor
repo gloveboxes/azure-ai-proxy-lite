@@ -32,7 +32,7 @@
         @if (ActiveUsersChartLabels.Length > 1)
         {
             <MudPaper Class="pa-10 ma-2" Elevation="1">
-                <MudChart ChartType="ChartType.Line" ChartSeries="@ActiveUsersChartSeries" XAxisLabels="@ActiveUsersChartLabels"
+                <MudChart ChartType="ChartType.Line" ChartSeries="@ActiveUsersChartSeries" ChartLabels="@ActiveUsersChartLabels"
                     Width="100%" Height="400px">
                     <CustomGraphics>
                         <style>
@@ -48,7 +48,7 @@
         @if (RequestChartLabels.Length > 1)
         {
             <MudPaper Class="pa-10 ma-2" Elevation="1">
-                <MudChart ChartType="ChartType.Line" ChartSeries="@RequestChartSeries" XAxisLabels="@RequestChartLabels"
+                <MudChart ChartType="ChartType.Line" ChartSeries="@RequestChartSeries" ChartLabels="@RequestChartLabels"
                     Width="100%" Height="400px">
                     <CustomGraphics>
                         <style>

@@ -15,7 +15,7 @@ public partial class ModelEdit : ComponentBase
     public IModelService ModelService { get; set; } = null!;
 
     [Inject]
-    public AzureAIProxyDbContext DbContext { get; set; } = null!;
+    public IDbContextFactory<AzureAIProxyDbContext> DbContextFactory { get; set; } = null!;
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = null!;
@@ -52,6 +52,7 @@ public partial class ModelEdit : ComponentBase
 
     private async Task OnValidSubmit(ModelEditorModel model)
     {
+        await using var DbContext = await DbContextFactory.CreateDbContextAsync();
         OwnerCatalog? m = await DbContext.OwnerCatalogs.FindAsync(Guid.Parse(Id));
 
         if (m is null)

@@ -7,10 +7,9 @@ using NpgsqlTypes;
 
 namespace AzureAIProxy.Management.Services;
 
-public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IConfiguration configuration) : IModelService
+public class ModelService(IAuthService authService, IDbContextFactory<AzureAIProxyDbContext> dbFactory, IConfiguration configuration) : IModelService
 {
     private const string PostgresEncryptionKey = "PostgresEncryptionKey";
-    private readonly DbConnection connection = db.Database.GetDbConnection();
 
     public void Dispose()
     {
@@ -20,14 +19,11 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
 
     protected virtual void Dispose(bool disposing)
     {
-        if (disposing)
-        {
-            connection.Dispose();
-        }
     }
 
-    private async Task<byte[]?> PostgresEncryptValue(string value)
+    private async Task<byte[]?> PostgresEncryptValue(AzureAIProxyDbContext db, string value)
     {
+        var connection = db.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)
             await connection.OpenAsync();
 
@@ -41,8 +37,9 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
         return await command.ExecuteScalarAsync() as byte[];
     }
 
-    private async Task<string?> PostgresDecryptValue(byte[] value)
+    private async Task<string?> PostgresDecryptValue(AzureAIProxyDbContext db, byte[] value)
     {
+        var connection = db.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)
             await connection.OpenAsync();
 
@@ -68,10 +65,12 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
     {
         string entraId = await authService.GetCurrentUserEntraIdAsync();
 
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == entraId) ?? throw new InvalidOperationException("EntraID is not a registered owner.");
 
-        byte[]? endpointKey = await PostgresEncryptValue(model.EndpointKey!);
-        byte[]? endpointUrl = await PostgresEncryptValue(model.EndpointUrl!);
+        byte[]? endpointKey = await PostgresEncryptValue(db, model.EndpointKey!);
+        byte[]? endpointUrl = await PostgresEncryptValue(db, model.EndpointUrl!);
 
         OwnerCatalog catalog = new()
         {
@@ -93,6 +92,7 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
 
     public async Task DeleteOwnerCatalogAsync(Guid catalogId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         OwnerCatalog? ownerCatalog = await db.OwnerCatalogs.FindAsync(catalogId);
 
         if (ownerCatalog is null)
@@ -120,10 +120,11 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
 
     public async Task<OwnerCatalog> GetOwnerCatalogAsync(Guid catalogId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var result = await db.OwnerCatalogs.FindAsync(catalogId);
 
-        string? endpointKey = await PostgresDecryptValue(result!.EndpointKeyEncrypted!);
-        string? endpointUrl = await PostgresDecryptValue(result!.EndpointUrlEncrypted!);
+        string? endpointKey = await PostgresDecryptValue(db, result!.EndpointKeyEncrypted!);
+        string? endpointUrl = await PostgresDecryptValue(db, result!.EndpointUrlEncrypted!);
 
         result.EndpointKey = endpointKey!;
         result.EndpointUrl = endpointUrl!;
@@ -134,6 +135,7 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
     public async Task DuplicateOwnerCatalogAsync(OwnerCatalog ownerCatalog)
     {
         string entraId = await authService.GetCurrentUserEntraIdAsync();
+        await using var db = await dbFactory.CreateDbContextAsync();
         Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == entraId) ?? throw new InvalidOperationException("EntraID is not a registered owner.");
 
         OwnerCatalog catalog = new()
@@ -155,6 +157,7 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
     public async Task<IEnumerable<OwnerCatalog>> GetOwnerCatalogsAsync()
     {
         string entraId = await authService.GetCurrentUserEntraIdAsync();
+        await using var db = await dbFactory.CreateDbContextAsync();
         var catalogItems = await db.OwnerCatalogs
             .Where(oc => oc.Owner.OwnerId == entraId)
             .Include(oc => oc.Events)
@@ -165,6 +168,7 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
 
     public async Task UpdateOwnerCatalogAsync(OwnerCatalog ownerCatalog)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         OwnerCatalog? existingCatalog = await db.OwnerCatalogs.FindAsync(ownerCatalog.CatalogId);
 
         if (existingCatalog is null)
@@ -172,8 +176,8 @@ public class ModelService(IAuthService authService, AzureAIProxyDbContext db, IC
             return;
         }
 
-        byte[]? endpointKey = await PostgresEncryptValue(ownerCatalog.EndpointKey);
-        byte[]? endpointUrl = await PostgresEncryptValue(ownerCatalog.EndpointUrl);
+        byte[]? endpointKey = await PostgresEncryptValue(db, ownerCatalog.EndpointKey);
+        byte[]? endpointUrl = await PostgresEncryptValue(db, ownerCatalog.EndpointUrl);
 
         existingCatalog.FriendlyName = ownerCatalog.FriendlyName;
         existingCatalog.DeploymentName = ownerCatalog.DeploymentName;

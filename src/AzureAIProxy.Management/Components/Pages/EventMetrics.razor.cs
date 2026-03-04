@@ -29,11 +29,11 @@ public partial class EventMetrics
     [Parameter]
     public string EventId { get; set; } = null!;
 
-    private List<ChartSeries> RequestChartSeries { get; set; } = [];
+    private List<ChartSeries<double>> RequestChartSeries { get; set; } = [];
     private string[] RequestChartLabels { get; set; } = [];
     private Event? Event { get; set; }
     private List<EventChartData>? ActiveUsers { get; set; }
-    private List<ChartSeries> ActiveUsersChartSeries { get; set; } = [];
+    private List<ChartSeries<double>> ActiveUsersChartSeries { get; set; } = [];
     private string[] ActiveUsersChartLabels { get; set; } = [];
     private long ActiveRegistrations { get; set; }
     private List<ModelCounts> ModelCounts { get; set; } = [];
@@ -119,7 +119,7 @@ public partial class EventMetrics
 
     private Task RefreshData() => GetData();
 
-    private (List<ChartSeries> ActiveUsersChartSeries, string[] ActiveUsersChartLabels) BuildActiveUsersChart(List<EventChartData>? activeUsers)
+    private (List<ChartSeries<double>> ActiveUsersChartSeries, string[] ActiveUsersChartLabels) BuildActiveUsersChart(List<EventChartData>? activeUsers)
     {
         if (activeUsers is null)
         {
@@ -129,7 +129,7 @@ public partial class EventMetrics
 
         ActiveUsersChartSeries =
         [
-            new ChartSeries
+            new ChartSeries<double>
                 {
                     Name = "New Active Registrations",
                     Data = activeUsers.Select(au => (double)au.Count).ToArray()
@@ -142,7 +142,7 @@ public partial class EventMetrics
         return (ActiveUsersChartSeries, ActiveUsersChartLabels);
     }
 
-    private (List<ChartSeries> ChartSeries, string[] ChartLabels) BuildRequestsChart(List<EventChartData>? chartData)
+    private (List<ChartSeries<double>> ChartSeries, string[] ChartLabels) BuildRequestsChart(List<EventChartData>? chartData)
     {
         if (chartData is null)
         {
@@ -152,7 +152,7 @@ public partial class EventMetrics
 
         RequestChartSeries =
         [
-            new ChartSeries
+            new ChartSeries<double>
                 {
                     Name = "Requests",
                     Data = cd.Select(cd => (double)cd.Count).ToArray()

@@ -1,15 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>2cf8d7e9-a550-4d5c-9dd8-951d4fb89265</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.*" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="2.*" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.*" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.4.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
   </ItemGroup>
 
   <ItemGroup>

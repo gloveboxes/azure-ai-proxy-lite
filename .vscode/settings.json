@@ -3,5 +3,9 @@
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
   "python.formatting.provider": "none",
-  "dotnet.defaultSolution": "src/AzureAIProxy.sln"
+  "dotnet.defaultSolution": "src/AzureAIProxy.sln",
+  "chat.tools.terminal.autoApprove": {
+    "dotnet clean": true,
+    "dotnet build": true
+  }
 }

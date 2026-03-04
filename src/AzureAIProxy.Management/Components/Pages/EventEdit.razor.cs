@@ -48,7 +48,7 @@ public partial class EventEdit : ComponentBase
         Model.MaxTokenCap = evt.MaxTokenCap;
         Model.DailyRequestCap = evt.DailyRequestCap;
         Model.SelectedTimeZone = TimeZoneInfo.FindSystemTimeZoneById(evt.TimeZoneLabel);
-        Model.SelectedModels = evt.Catalogs.Select(oc => oc.CatalogId.ToString());
+        Model.SelectedModels = evt.Catalogs.Select(oc => oc.CatalogId.ToString()).ToList();
         Model.AvailableModels = await ModelService.GetOwnerCatalogsAsync();
     }
 

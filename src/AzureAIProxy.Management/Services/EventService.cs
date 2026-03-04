@@ -7,10 +7,8 @@ using NpgsqlTypes;
 
 namespace AzureAIProxy.Management.Services;
 
-public class EventService(IAuthService authService, AzureAIProxyDbContext db) : IEventService, IDisposable
+public class EventService(IAuthService authService, IDbContextFactory<AzureAIProxyDbContext> dbFactory) : IEventService
 {
-    private readonly DbConnection conn = db.Database.GetDbConnection();
-
     public async Task<Event?> CreateEventAsync(EventEditorModel model)
     {
         if (string.IsNullOrEmpty(model.EventSharedCode))
@@ -41,6 +39,9 @@ public class EventService(IAuthService authService, AzureAIProxyDbContext db) : 
         };
 
         string entraId = await authService.GetCurrentUserEntraIdAsync();
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var conn = db.Database.GetDbConnection();
 
         if (conn.State != ConnectionState.Open)
             await conn.OpenAsync();
@@ -76,11 +77,16 @@ public class EventService(IAuthService authService, AzureAIProxyDbContext db) : 
         return newEvent;
     }
 
-    public Task<Event?> GetEventAsync(string id) => db.Events.Include(e => e.Catalogs).FirstOrDefaultAsync(e => e.EventId == id);
+    public async Task<Event?> GetEventAsync(string id)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Events.Include(e => e.Catalogs).FirstOrDefaultAsync(e => e.EventId == id);
+    }
 
     public async Task<IEnumerable<Event>> GetOwnerEventsAsync()
     {
         string entraId = await authService.GetCurrentUserEntraIdAsync();
+        await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Events
             .Where(e => e.OwnerEventMaps.Any(o => o.Owner.OwnerId == entraId))
             .OrderByDescending(e => e.Active)
@@ -92,6 +98,7 @@ public class EventService(IAuthService authService, AzureAIProxyDbContext db) : 
 
     public async Task<Event?> UpdateEventAsync(string id, EventEditorModel model)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         Event? evt = await db.Events.FindAsync(id);
 
         if (evt is null)
@@ -130,6 +137,7 @@ public class EventService(IAuthService authService, AzureAIProxyDbContext db) : 
 
     public async Task UpdateModelsForEventAsync(string id, IEnumerable<Guid> modelIds)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         Event? evt = await db.Events.Include(e => e.Catalogs).FirstOrDefaultAsync(e => e.EventId == id);
 
         if (evt is null)
@@ -149,22 +157,9 @@ public class EventService(IAuthService authService, AzureAIProxyDbContext db) : 
         await db.SaveChangesAsync();
     }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            conn.Dispose();
-        }
-    }
-
     public async Task DeleteEventAsync(string id)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         Event? evt = await db.Events.FindAsync(id);
 
         if (evt is null)

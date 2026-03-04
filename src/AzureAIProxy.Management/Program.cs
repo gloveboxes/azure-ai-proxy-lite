@@ -22,7 +22,10 @@ builder.Services.AddScoped<IMetricService, MetricService>();
 
 builder.Services.AddMudServices();
 
-builder.Services.AddApplicationInsightsTelemetry();
+if (!string.IsNullOrEmpty(builder.Configuration["ApplicationInsights:ConnectionString"] ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 WebApplication app = builder.Build();
 

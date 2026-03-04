@@ -21,11 +21,12 @@ public class EventChartData
 }
 
 
-public class MetricService(AzureAIProxyDbContext db) : IMetricService
+public class MetricService(IDbContextFactory<AzureAIProxyDbContext> dbFactory) : IMetricService
 {
-    public Task<List<EventMetricsData>> GetEventMetricsAsync(string eventId)
+    public async Task<List<EventMetricsData>> GetEventMetricsAsync(string eventId)
     {
-        return db.MetricViews
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.MetricViews
             .Where(mv => mv.EventId == eventId)
             .GroupBy(mv => new { mv.EventId, mv.DateStamp, mv.Resource })
             .OrderByDescending(g => g.Count())
@@ -43,6 +44,7 @@ public class MetricService(AzureAIProxyDbContext db) : IMetricService
 
     public (int attendeeCount, int requestCount) GetAttendeeMetricsAsync(string eventId)
     {
+        using var db = dbFactory.CreateDbContext();
         var userCount = db.EventAttendees
             .Where(ea => ea.EventId == eventId)
             .Count();
@@ -54,9 +56,10 @@ public class MetricService(AzureAIProxyDbContext db) : IMetricService
         return (userCount, requestCount);
     }
 
-    public Task<List<EventRegistrations>> GetAllEventsAsync()
+    public async Task<List<EventRegistrations>> GetAllEventsAsync()
     {
-        return db.Events
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Events
             .GroupJoin(db.EventAttendees,
                 e => e.EventId,
                 a => a.EventId,
@@ -92,9 +95,10 @@ public class MetricService(AzureAIProxyDbContext db) : IMetricService
             }).ToListAsync();
     }
 
-    public Task<List<EventChartData>> GetActiveRegistrationsAsync(string eventId)
+    public async Task<List<EventChartData>> GetActiveRegistrationsAsync(string eventId)
     {
-        return db.ActiveAttendeeGrowthViews
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.ActiveAttendeeGrowthViews
             .Where(a => a.EventId == eventId)
             .Select(a => new { a.DateStamp, a.Attendees })
             .Select(x => new EventChartData

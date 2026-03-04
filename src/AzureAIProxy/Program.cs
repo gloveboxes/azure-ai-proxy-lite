@@ -27,7 +27,11 @@ builder
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<IProxyService, ProxyService>();
 builder.Services.AddProxyServices(useMockProxy);
-builder.Services.AddApplicationInsightsTelemetry();
+
+if (!string.IsNullOrEmpty(builder.Configuration["ApplicationInsights:ConnectionString"] ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 var app = builder.Build();
 

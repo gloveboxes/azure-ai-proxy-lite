@@ -21,12 +21,16 @@ public static class NpgsqlDataSourceBuilderExtensions
 
         NpgsqlDataSource dataSource = dataSourceBuilder.Build();
 
-        builder.Services.AddDbContext<AzureAIProxyDbContext>(
+        builder.Services.AddDbContextFactory<AzureAIProxyDbContext>(
             (option) =>
                 option.UseNpgsql(
                     dataSource,
                     // https://stackoverflow.com/questions/70423137/how-to-gracefully-handle-a-postgres-restart-in-npgsql
-                    (options) => options.EnableRetryOnFailure(4, TimeSpan.FromSeconds(30), ["57P01"])
+                    (options) =>
+                    {
+                        options.EnableRetryOnFailure(4, TimeSpan.FromSeconds(30), ["57P01"]);
+                        options.MapEnum<ModelType>("aoai.model_type");
+                    }
                 )
         );
 
