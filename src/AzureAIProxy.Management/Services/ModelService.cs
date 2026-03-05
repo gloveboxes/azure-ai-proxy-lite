@@ -1,193 +1,194 @@
-using System.Data;
-using System.Data.Common;
+using Azure;
 using AzureAIProxy.Management.Components.ModelManagement;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NpgsqlTypes;
+using AzureAIProxy.Shared.Database;
+using AzureAIProxy.Shared.Services;
+using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class ModelService(IAuthService authService, IDbContextFactory<AzureAIProxyDbContext> dbFactory, IConfiguration configuration) : IModelService
+public class ModelService(IAuthService authService, ITableStorageService tableStorage, IEncryptionService encryption) : IModelService
 {
-    private const string PostgresEncryptionKey = "PostgresEncryptionKey";
-
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-    }
-
-    private async Task<byte[]?> PostgresEncryptValue(AzureAIProxyDbContext db, string value)
-    {
-        var connection = db.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open)
-            await connection.OpenAsync();
-
-        string? postgresEncryptionKey = configuration[PostgresEncryptionKey];
-
-        using DbCommand command = connection.CreateCommand();
-        command.CommandText = $"SELECT aoai.pgp_sym_encrypt(@value, @postgresEncryptionKey);";
-        command.Parameters.Add(new NpgsqlParameter("value", NpgsqlDbType.Text) { Value = value });
-        command.Parameters.Add(new NpgsqlParameter("postgresEncryptionKey", NpgsqlDbType.Text) { Value = postgresEncryptionKey });
-
-        return await command.ExecuteScalarAsync() as byte[];
-    }
-
-    private async Task<string?> PostgresDecryptValue(AzureAIProxyDbContext db, byte[] value)
-    {
-        var connection = db.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open)
-            await connection.OpenAsync();
-
-        string? postgresEncryptionKey = configuration[PostgresEncryptionKey];
-
-        using DbCommand command = connection.CreateCommand();
-        command.CommandText = $"SELECT aoai.pgp_sym_decrypt(@value, @postgresEncryptionKey)";
-        command.Parameters.Add(new NpgsqlParameter("value", NpgsqlDbType.Bytea) { Value = value });
-        command.Parameters.Add(new NpgsqlParameter("postgresEncryptionKey", NpgsqlDbType.Text) { Value = postgresEncryptionKey });
-
-        // wrap in exception to catch invalid encryption key
-        try
-        {
-            return await command.ExecuteScalarAsync() as string;
-        }
-        catch (Exception)
-        {
-            return string.Empty;
-        }
-    }
+    protected virtual void Dispose(bool disposing) { }
 
     public async Task<OwnerCatalog> AddOwnerCatalogAsync(ModelEditorModel model)
     {
         string userId = await authService.GetCurrentUserIdAsync();
 
-        await using var db = await dbFactory.CreateDbContextAsync();
-
-        Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == userId) ?? throw new InvalidOperationException("User is not a registered owner.");
-
-        byte[]? endpointKey = await PostgresEncryptValue(db, model.EndpointKey!);
-        byte[]? endpointUrl = await PostgresEncryptValue(db, model.EndpointUrl!);
-
-        OwnerCatalog catalog = new()
+        var ownerTable = tableStorage.GetTableClient(TableNames.Owners);
+        try { await ownerTable.GetEntityAsync<OwnerEntity>("owner", userId); }
+        catch (RequestFailedException ex) when (ex.Status == 404)
         {
-            Owner = owner,
-            Active = model.Active,
-            FriendlyName = model.FriendlyName!,
+            throw new InvalidOperationException("User is not a registered owner.");
+        }
+
+        var catalogId = Guid.NewGuid().ToString();
+        var entity = new CatalogEntity
+        {
+            PartitionKey = catalogId,
+            RowKey = catalogId,
+            OwnerId = userId,
             DeploymentName = model.DeploymentName!.Trim(),
+            Active = model.Active,
+            ModelType = model.ModelType!.Value.ToStorageString(),
             Location = model.Location!,
-            ModelType = model.ModelType!.Value,
-            EndpointKeyEncrypted = endpointKey!,
-            EndpointUrlEncrypted = endpointUrl!
+            FriendlyName = model.FriendlyName!,
+            EncryptedEndpointUrl = encryption.Encrypt(model.EndpointUrl!),
+            EncryptedEndpointKey = encryption.Encrypt(model.EndpointKey!)
         };
 
-        await db.OwnerCatalogs.AddAsync(catalog);
-        await db.SaveChangesAsync();
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        await catalogTable.AddEntityAsync(entity);
 
-        return catalog;
+        return new OwnerCatalog
+        {
+            OwnerId = userId,
+            CatalogId = Guid.Parse(catalogId),
+            DeploymentName = entity.DeploymentName,
+            Active = entity.Active,
+            ModelType = model.ModelType!.Value,
+            Location = entity.Location,
+            FriendlyName = entity.FriendlyName
+        };
     }
 
     public async Task DeleteOwnerCatalogAsync(Guid catalogId)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        OwnerCatalog? ownerCatalog = await db.OwnerCatalogs.FindAsync(catalogId);
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var id = catalogId.ToString();
 
-        if (ownerCatalog is null)
+        try
+        {
+            await catalogTable.GetEntityAsync<CatalogEntity>(id, id);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
         {
             return;
         }
 
-        // find if the resource is used in an event or has metrics
-        var usageInfo = await db.OwnerCatalogs.Where(oc => oc.CatalogId == catalogId)
-            .Select(oc => new
-            {
-                UsedInEvent = oc.Events.Count != 0
-            })
-            .FirstAsync();
-
-        // block deletion when it's in use to avoid cascading deletes
-        if (usageInfo.UsedInEvent)
+        // Check if used in any events by scanning events for this catalog ID
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+        await foreach (var evt in eventsTable.QueryAsync<EventEntity>())
         {
-            return;
+            if (!string.IsNullOrEmpty(evt.CatalogIds) && evt.CatalogIds.Split(',').Contains(id))
+                return; // Block deletion when in use
         }
 
-        db.OwnerCatalogs.Remove(ownerCatalog);
-        await db.SaveChangesAsync();
+        await catalogTable.DeleteEntityAsync(id, id);
     }
 
     public async Task<OwnerCatalog> GetOwnerCatalogAsync(Guid catalogId)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var result = await db.OwnerCatalogs.FindAsync(catalogId);
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var id = catalogId.ToString();
+        var response = await catalogTable.GetEntityAsync<CatalogEntity>(id, id);
+        var entity = response.Value;
 
-        string? endpointKey = await PostgresDecryptValue(db, result!.EndpointKeyEncrypted!);
-        string? endpointUrl = await PostgresDecryptValue(db, result!.EndpointUrlEncrypted!);
-
-        result.EndpointKey = endpointKey!;
-        result.EndpointUrl = endpointUrl!;
-
-        return result;
+        return new OwnerCatalog
+        {
+            OwnerId = entity.OwnerId,
+            CatalogId = Guid.Parse(id),
+            DeploymentName = entity.DeploymentName,
+            Active = entity.Active,
+            ModelType = ModelTypeExtensions.FromStorageString(entity.ModelType),
+            Location = entity.Location,
+            FriendlyName = entity.FriendlyName,
+            EndpointUrl = encryption.Decrypt(entity.EncryptedEndpointUrl),
+            EndpointKey = encryption.Decrypt(entity.EncryptedEndpointKey)
+        };
     }
 
     public async Task DuplicateOwnerCatalogAsync(OwnerCatalog ownerCatalog)
     {
         string userId = await authService.GetCurrentUserIdAsync();
-        await using var db = await dbFactory.CreateDbContextAsync();
-        Owner owner = await db.Owners.FirstOrDefaultAsync(o => o.OwnerId == userId) ?? throw new InvalidOperationException("User is not a registered owner.");
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
 
-        OwnerCatalog catalog = new()
+        var sourceId = ownerCatalog.CatalogId.ToString();
+        var source = await catalogTable.GetEntityAsync<CatalogEntity>(sourceId, sourceId);
+
+        var newCatalogId = Guid.NewGuid().ToString();
+        var entity = new CatalogEntity
         {
-            Owner = owner,
-            Active = ownerCatalog.Active,
-            FriendlyName = $"{ownerCatalog.FriendlyName} (Copy)",
-            DeploymentName = ownerCatalog.DeploymentName,
-            Location = ownerCatalog.Location,
-            ModelType = ownerCatalog.ModelType,
-            EndpointKeyEncrypted = ownerCatalog.EndpointKeyEncrypted,
-            EndpointUrlEncrypted = ownerCatalog.EndpointUrlEncrypted
+            PartitionKey = newCatalogId,
+            RowKey = newCatalogId,
+            OwnerId = userId,
+            DeploymentName = source.Value.DeploymentName,
+            Active = source.Value.Active,
+            ModelType = source.Value.ModelType,
+            Location = source.Value.Location,
+            FriendlyName = $"{source.Value.FriendlyName} (Copy)",
+            EncryptedEndpointUrl = source.Value.EncryptedEndpointUrl,
+            EncryptedEndpointKey = source.Value.EncryptedEndpointKey
         };
 
-        await db.OwnerCatalogs.AddAsync(catalog);
-        await db.SaveChangesAsync();
+        await catalogTable.AddEntityAsync(entity);
     }
 
     public async Task<IEnumerable<OwnerCatalog>> GetOwnerCatalogsAsync()
     {
         string userId = await authService.GetCurrentUserIdAsync();
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var catalogItems = await db.OwnerCatalogs
-            .Where(oc => oc.Owner.OwnerId == userId)
-            .Include(oc => oc.Events)
-            .OrderBy(oc => oc.FriendlyName)
-            .ToListAsync();
-        return catalogItems;
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+
+        // Get all catalogs owned by this user
+        var results = new List<OwnerCatalog>();
+        await foreach (var entity in catalogTable.QueryAsync<CatalogEntity>(c => c.OwnerId == userId))
+        {
+            var catalog = new OwnerCatalog
+            {
+                OwnerId = entity.OwnerId,
+                CatalogId = Guid.Parse(entity.PartitionKey),
+                DeploymentName = entity.DeploymentName,
+                Active = entity.Active,
+                ModelType = ModelTypeExtensions.FromStorageString(entity.ModelType),
+                Location = entity.Location,
+                FriendlyName = entity.FriendlyName
+            };
+
+            // Check which events reference this catalog
+            await foreach (var evt in eventsTable.QueryAsync<EventEntity>())
+            {
+                if (!string.IsNullOrEmpty(evt.CatalogIds) && evt.CatalogIds.Split(',').Contains(entity.PartitionKey))
+                {
+                    catalog.Events.Add(new Event { EventId = evt.PartitionKey });
+                }
+            }
+
+            results.Add(catalog);
+        }
+
+        return results.OrderBy(c => c.FriendlyName);
     }
 
     public async Task UpdateOwnerCatalogAsync(OwnerCatalog ownerCatalog)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        OwnerCatalog? existingCatalog = await db.OwnerCatalogs.FindAsync(ownerCatalog.CatalogId);
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var id = ownerCatalog.CatalogId.ToString();
 
-        if (existingCatalog is null)
+        CatalogEntity existing;
+        try
+        {
+            var response = await catalogTable.GetEntityAsync<CatalogEntity>(id, id);
+            existing = response.Value;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
         {
             return;
         }
 
-        byte[]? endpointKey = await PostgresEncryptValue(db, ownerCatalog.EndpointKey);
-        byte[]? endpointUrl = await PostgresEncryptValue(db, ownerCatalog.EndpointUrl);
+        existing.FriendlyName = ownerCatalog.FriendlyName;
+        existing.DeploymentName = ownerCatalog.DeploymentName.Trim();
+        existing.ModelType = ownerCatalog.ModelType!.Value.ToStorageString();
+        existing.Location = ownerCatalog.Location;
+        existing.Active = ownerCatalog.Active;
+        existing.EncryptedEndpointUrl = encryption.Encrypt(ownerCatalog.EndpointUrl);
+        existing.EncryptedEndpointKey = encryption.Encrypt(ownerCatalog.EndpointKey);
 
-        existingCatalog.FriendlyName = ownerCatalog.FriendlyName;
-        existingCatalog.DeploymentName = ownerCatalog.DeploymentName.Trim();
-        existingCatalog.ModelType = ownerCatalog.ModelType;
-        existingCatalog.Location = ownerCatalog.Location;
-        existingCatalog.Active = ownerCatalog.Active;
-        existingCatalog.EndpointKeyEncrypted = endpointKey!;
-        existingCatalog.EndpointUrlEncrypted = endpointUrl!;
-
-        db.OwnerCatalogs.Update(existingCatalog);
-        await db.SaveChangesAsync();
+        await catalogTable.UpdateEntityAsync(existing, existing.ETag, Azure.Data.Tables.TableUpdateMode.Replace);
     }
 }

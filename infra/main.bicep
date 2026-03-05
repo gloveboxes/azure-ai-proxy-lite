@@ -20,39 +20,15 @@ param proxyAppExists bool = false
 })
 param swaLocation string
 
-@description('Id of the user or app to assign application roles')
-param principalId string
-
-@description('Principal name of the user or app to assign application roles')
-param principalName string
-
-@description('Whether the deployment is running on GitHub Actions')
-param runningOnGh string = ''
-
-@secure()
-@description('PostgreSQL Encryption Key')
-param postgresEncryptionKey string
-
-@secure()
-@description('Entra Authorization Token')
-param entraAuthorizationToken string
-
 var adminUsername = 'admin'
 // Generate a deterministic but unique admin password per deployment
-// uniqueString produces a 13-char hash; we combine two for a longer password
 var adminPassword = '${uniqueString(subscription().id, name, 'admin-pwd')}${uniqueString(name, location, 'admin-pwd')}'
+// Generate a deterministic encryption key unique to this deployment
+var encryptionKey = '${uniqueString(subscription().id, name, 'enc-key')}${uniqueString(name, location, 'enc-key')}${uniqueString(subscription().id, location, 'enc-key')}'
 
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }
 var prefix = '${name}-${resourceToken}'
-
-var postgresDatabaseName = 'aoai-proxy'
-var postgresEntraAdministratorObjectId = principalId
-var postgresEntraAdministratorType = empty(runningOnGh) ? 'User' : 'ServicePrincipal'
-var postgresEntraAdministratorName = principalName
-// the maximum number of connections for Postgres Standard_B1ms Burstable is 35
-// https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-limits#maximum-connections
-var proxyPostgresMaxPoolSize = 35
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: '${name}-rg'
@@ -86,42 +62,22 @@ module proxy 'app/proxy.bicep' = {
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
     exists: proxyAppExists
-    postgresServer: postgresServer.outputs.DOMAIN_NAME
-    postgresDatabase: postgresDatabaseName
-    postgresEncryptionKey: postgresEncryptionKey
-    proxyPostgresMaxPoolSize: proxyPostgresMaxPoolSize
+    storageConnectionString: storageAccount.outputs.connectionString
+    encryptionKey: encryptionKey
     adminPassword: adminPassword
     playgroundUrl: playground.outputs.SERVICE_WEB_URI
     appInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
   }
 }
 
-// PostgreSQL Server
-module postgresServer 'db.bicep' = {
-  name: 'postgres-server'
+// Azure Storage Account (Table Storage for all data)
+module storageAccount 'storage.bicep' = {
+  name: 'storage-account'
   scope: resourceGroup
   params: {
-    name: '${prefix}-postgresql'
+    name: take('${replace(prefix, '-', '')}st', 24)
     location: location
     tags: tags
-    authType: 'EntraOnly'
-    entraAdministratorName: postgresEntraAdministratorName
-    entraAdministratorObjectId: postgresEntraAdministratorObjectId
-    entraAdministratorType: postgresEntraAdministratorType
-  }
-}
-
-module postgresDbSeeding 'db-seed.bicep' = {
-  name: 'postgres-db-seeding'
-  scope: resourceGroup
-  params: {
-    name: '${prefix}-db-seed'
-    location: location
-    postgresServerName: postgresServer.outputs.RESOURCE_NAME
-    entraAdministratorName: postgresEntraAdministratorName
-    postgresDatabaseName: postgresDatabaseName
-    entraAuthorizationToken: entraAuthorizationToken
-    proxySystemAssignedIdentity: proxy.outputs.SERVICE_PROXY_NAME
   }
 }
 
@@ -171,8 +127,9 @@ output SERVICE_PROXY_IMAGE_NAME string = proxy.outputs.SERVICE_PROXY_IMAGE_NAME
 
 output SERVICE_PLAYGROUND_URI string = playground.outputs.SERVICE_WEB_URI
 
-output SERVICE_DB_SERVER_NAME string = postgresServer.outputs.RESOURCE_NAME
-output SERVICE_DB_SERVER_FQDN string = postgresServer.outputs.DOMAIN_NAME
+output SERVICE_STORAGE_ACCOUNT_NAME string = storageAccount.outputs.name
 
 output SERVICE_ADMIN_USERNAME string = adminUsername
 output SERVICE_ADMIN_PASSWORD string = adminPassword
+#disable-next-line outputs-should-not-contain-secrets
+output SERVICE_ENCRYPTION_KEY string = encryptionKey

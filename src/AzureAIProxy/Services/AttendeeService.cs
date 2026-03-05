@@ -1,56 +1,78 @@
-using System.Data;
+using Azure;
 using AzureAIProxy.Models;
-using AzureAIProxy.Shared.Database;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
+using AzureAIProxy.Shared.Services;
+using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Services;
 
-/// <summary>
-/// Represents a service for managing attendees of events.
-/// </summary>
-public class AttendeeService(AzureAIProxyDbContext db) : IAttendeeService
+public class AttendeeService(ITableStorageService tableStorage) : IAttendeeService
 {
-    /// <summary>
-    /// Adds an attendee to an event asynchronously.
-    /// </summary>
-    /// <param name="userId">The ID of the user.</param>
-    /// <param name="eventId">The ID of the event.</param>
-    /// <returns>The API key of the attendee.</returns>
-    /// <exception cref="NpgsqlException">Thrown when failed to add the attendee.</exception>
     public async Task<string> AddAttendeeAsync(string userId, string eventId)
     {
-        var result = await db.Set<AttendeeApiKey>()
-            .FromSqlRaw(
-                "SELECT * FROM aoai.add_event_attendee(@userId, @eventId)",
-                new NpgsqlParameter("@userId", userId),
-                new NpgsqlParameter("@eventId", eventId)
-            )
-            .ToListAsync();
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+        var lookupTable = tableStorage.GetTableClient(TableNames.AttendeeLookup);
 
-        if (result.Count == 0)
-            throw new NpgsqlException("Failed to add attendee");
+        // Check if attendee already exists
+        try
+        {
+            var existing = await attendeeTable.GetEntityAsync<AttendeeEntity>(eventId, userId);
+            return existing.Value.ApiKey;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            var apiKey = Guid.NewGuid().ToString();
 
-        return result[0].ApiKey.ToString();
+            var attendee = new AttendeeEntity
+            {
+                PartitionKey = eventId,
+                RowKey = userId,
+                ApiKey = apiKey,
+                Active = true
+            };
+
+            await attendeeTable.AddEntityAsync(attendee);
+
+            // Get event data for denormalized lookup
+            var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+            var evtResponse = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
+            var evt = evtResponse.Value;
+
+            var lookup = new AttendeeLookupEntity
+            {
+                PartitionKey = AttendeeLookupEntity.GetPartitionKey(apiKey),
+                RowKey = apiKey,
+                EventId = eventId,
+                UserId = userId,
+                Active = true,
+                EventCode = evt.EventCode,
+                OrganizerName = evt.OrganizerName,
+                OrganizerEmail = evt.OrganizerEmail,
+                EventImageUrl = evt.EventImageUrl,
+                MaxTokenCap = evt.MaxTokenCap,
+                DailyRequestCap = evt.DailyRequestCap,
+                EventActive = evt.Active,
+                StartTimestamp = evt.StartTimestamp,
+                EndTimestamp = evt.EndTimestamp,
+                TimeZoneOffset = evt.TimeZoneOffset
+            };
+
+            await lookupTable.AddEntityAsync(lookup);
+
+            return apiKey;
+        }
     }
 
-    /// <summary>
-    /// Retrieves the attendee key and active status for a given user and event.
-    /// </summary>
-    /// <param name="userId">The ID of the user.</param>
-    /// <param name="eventId">The ID of the event.</param>
-    /// <returns>A tuple containing the attendee key and active status.</returns>
     public async Task<AttendeeKey?> GetAttendeeKeyAsync(string userId, string eventId)
     {
-        var attendee =
-            await db
-                .EventAttendees.Where(ea => ea.EventId == eventId && ea.UserId == userId)
-                .Select(ea => new AttendeeKey(ea.ApiKey, ea.Active))
-                .FirstOrDefaultAsync();
-
-        if (attendee is null)
+        var table = tableStorage.GetTableClient(TableNames.Attendees);
+        try
+        {
+            var response = await table.GetEntityAsync<AttendeeEntity>(eventId, userId);
+            return new AttendeeKey(response.Value.ApiKey, response.Value.Active);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
             return null;
-
-        return attendee;
+        }
     }
 }

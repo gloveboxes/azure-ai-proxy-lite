@@ -7,12 +7,10 @@ param tags object = {}
   'Hot'
   'Premium' ])
 param accessTier string = 'Hot'
-param allowBlobPublicAccess bool = true
-param allowCrossTenantReplication bool = true
+param allowBlobPublicAccess bool = false
+param allowCrossTenantReplication bool = false
 param allowSharedKeyAccess bool = true
-param containers array = []
 param defaultToOAuthAuthentication bool = false
-param deleteRetentionPolicy object = {}
 @allowed([ 'AzureDnsZone', 'Standard' ])
 param dnsEndpointType string = 'Standard'
 param kind string = 'StorageV2'
@@ -43,75 +41,11 @@ resource storage 'Microsoft.Storage/storageAccounts@2022-05-01' = {
     publicNetworkAccess: publicNetworkAccess
   }
 
-  resource blobServices 'blobServices' = if (!empty(containers)) {
+  resource tableServices 'tableServices' = {
     name: 'default'
-    properties: {
-      deleteRetentionPolicy: deleteRetentionPolicy
-    }
-    resource container 'containers' = [for container in containers: {
-      name: container.name
-      properties: {
-        publicAccess: contains(container, 'publicAccess') ? container.publicAccess : 'None'
-      }
-    }]
   }
 }
-
-resource table_service 'Microsoft.Storage/storageAccounts/tableServices@2023-01-01' = {
-  parent: storage
-  name: 'default'
-  properties: {
-    cors: {
-      corsRules: []
-    }
-  }
-}
-
-resource configuration_table 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-01-01' = {
-  parent: table_service
-  name: 'configuration'
-  properties: {}
-}
-
-resource authorization_table 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-01-01' = {
-  parent: table_service
-  name: 'authorization'
-  properties: {}
-}
-
-resource management_table 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-01-01' = {
-  parent: table_service
-  name: 'management'
-  properties: {}
-}
-
-// add storage queue service
-resource queue_service 'Microsoft.Storage/storageAccounts/queueServices@2023-01-01' = {
-  parent: storage
-  name: 'default'
-  properties: {
-    cors: {
-      corsRules: []
-    }
-  }
-}
-
-resource monitor_queue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-01-01' = {
-  parent: queue_service
-  name: 'monitor'
-  properties: {}
-}
-
-resource notifications_queue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-01-01' = {
-  parent: queue_service
-  name: 'notifications'
-  properties: {}
-}
-
-
-var storageAccountKeys = listKeys(storage.id, '2021-04-01')
-var connectionString = 'DefaultEndpointsProtocol=https;AccountName=${name};AccountKey=${storageAccountKeys.keys[0].value};EndpointSuffix=core.windows.net'
 
 output name string = storage.name
-output primaryEndpoints object = storage.properties.primaryEndpoints
-output connectionString string = connectionString
+#disable-next-line outputs-should-not-contain-secrets
+output connectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'

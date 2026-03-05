@@ -15,6 +15,16 @@ public static class ServicesExtensions
             .AddScoped<IEventService, EventService>()
             .AddScoped<IAssistantService, AssistantService>();
 
+        // Background metric writer (singleton since it owns the Channel)
+        services.AddSingleton<MetricBackgroundService>();
+        services.AddSingleton<IMetricChannel>(sp => sp.GetRequiredService<MetricBackgroundService>());
+        services.AddHostedService(sp => sp.GetRequiredService<MetricBackgroundService>());
+
+        // In-memory rate limiting with background flush (singleton)
+        services.AddSingleton<RateLimitService>();
+        services.AddSingleton<IRateLimitService>(sp => sp.GetRequiredService<RateLimitService>());
+        services.AddHostedService(sp => sp.GetRequiredService<RateLimitService>());
+
         if (useMockProxy)
             services.AddScoped<IProxyService, MockProxyService>();
         else

@@ -29,7 +29,6 @@
         "ms-azuretools.vscode-bicep",
         "esbenp.prettier-vscode",
         "ms-dotnettools.csdevkit",
-        "cweijan.vscode-postgresql-client2",
         "EditorConfig.EditorConfig"
       ]
     }
@@ -45,6 +44,8 @@
     "ENVIRONMENT": "development"
   },
 
+  "forwardPorts": [10000, 10001, 10002],
+
   "portsAttributes": {
     "8000": {
       "label": "AzureAIProxy"
@@ -57,6 +58,15 @@
     },
     "4280": {
       "label": "Playgroud (SWA proxy)"
+    },
+    "10000": {
+      "label": "Azurite Blob"
+    },
+    "10001": {
+      "label": "Azurite Queue"
+    },
+    "10002": {
+      "label": "Azurite Table"
     }
   }
 }

@@ -6,7 +6,7 @@ public interface IMetricService
 
     Task<List<EventChartData>> GetActiveRegistrationsAsync(string eventId);
 
-    (int attendeeCount, int requestCount) GetAttendeeMetricsAsync(string eventId);
+    Task<(int attendeeCount, int requestCount)> GetAttendeeMetricsAsync(string eventId);
 
     Task<List<EventMetricsData>> GetEventMetricsAsync(string eventId);
 }

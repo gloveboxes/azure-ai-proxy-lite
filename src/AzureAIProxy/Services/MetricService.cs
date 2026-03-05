@@ -1,58 +1,42 @@
 using System.Text.Json;
 using AzureAIProxy.Shared.Database;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NpgsqlTypes;
 
 namespace AzureAIProxy.Services;
 
-public class MetricService(AzureAIProxyDbContext db) : IMetricService
+public class MetricService(IMetricChannel metricChannel, IRateLimitService rateLimitService) : IMetricService
 {
-    /// <summary>
-    /// Logs the API usage by executing a database command.
-    /// </summary>
-    /// <param name="requestContext">The authorization response containing the necessary data for logging.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task LogApiUsageAsync(
-        RequestContext requestContext,
-        Deployment deployment,
-        string? responseContent
-    )
+    public Task LogApiUsageAsync(RequestContext requestContext, Deployment deployment, string? responseContent)
     {
-        var usage = GetUsage(responseContent);
+        var (promptTokens, completionTokens, totalTokens) = GetUsage(responseContent);
 
-        await db.Database.ExecuteSqlRawAsync(
-            "CALL aoai.add_attendee_metric(@apiKey, @eventId, @catalogId, @usage)",
-            new NpgsqlParameter("@apiKey", NpgsqlDbType.Varchar) { Value = requestContext.ApiKey },
-            new NpgsqlParameter("@eventId", NpgsqlDbType.Varchar)
-            {
-                Value = requestContext.EventId
-            },
-            new NpgsqlParameter("@catalogId", NpgsqlDbType.Uuid) { Value = deployment.CatalogId },
-            new NpgsqlParameter("@usage", NpgsqlDbType.Jsonb) { Value = usage }
-        );
+        // Update in-memory rate limit counters
+        rateLimitService.IncrementUsage(requestContext.ApiKey, totalTokens);
+
+        // Enqueue metric for background flush
+        var resource = $"{deployment.ModelType} | {deployment.DeploymentName}";
+        metricChannel.Enqueue(new MetricUpdate(requestContext.EventId, resource, promptTokens, completionTokens, totalTokens));
+
+        return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Retrieves the usage information from the response content.
-    /// </summary>
-    /// <param name="responseContent">The response content to parse.</param>
-    /// <returns>A string representation of the usage information.</returns>
-    private string GetUsage(string? responseContent)
+    private static (int promptTokens, int completionTokens, int totalTokens) GetUsage(string? responseContent)
     {
         if (string.IsNullOrEmpty(responseContent))
-            return "{}";
+            return (0, 0, 0);
 
         try
         {
             using var jsonDoc = JsonDocument.Parse(responseContent);
-            return jsonDoc.RootElement.TryGetProperty("usage", out var usage) && !string.IsNullOrEmpty(usage.ToString())
-                ? usage.ToString()
-                : "{}";
+            if (jsonDoc.RootElement.TryGetProperty("usage", out var usage))
+            {
+                var prompt = usage.TryGetProperty("prompt_tokens", out var p) ? p.GetInt32() : 0;
+                var completion = usage.TryGetProperty("completion_tokens", out var c) ? c.GetInt32() : 0;
+                var total = usage.TryGetProperty("total_tokens", out var t) ? t.GetInt32() : 0;
+                return (prompt, completion, total);
+            }
         }
-        catch (JsonException)
-        {
-            return "{}";
-        }
+        catch (JsonException) { }
+
+        return (0, 0, 0);
     }
 }

@@ -1,22 +1,21 @@
-version: "3.8"
 services:
   devcontainer:
     image: mcr.microsoft.com/devcontainers/base:bookworm
     volumes:
       - ../..:/workspaces:cached
-    network_mode: service:db
+    network_mode: service:azurite
     command: sleep infinity
-    environment:
-      # Connection string for Postgres in the management app
-      ConnectionStrings__AoaiProxyContext: Host=db:5432;Username=admin;Password=mypassword123;Database=aoai-proxy
-      PostgresEncryptionKey: myencryptionkey123
 
-  db:
-    image: postgres:16.1-alpine
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
     restart: always
     ports:
-      - 5436:5432
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: mypassword123
-      POSTGRES_DB: aoai-proxy
+      - "10000:10000"  # Blob
+      - "10001:10001"  # Queue
+      - "10002:10002"  # Table
+    volumes:
+      - azurite-data:/data
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data
+
+volumes:
+  azurite-data:

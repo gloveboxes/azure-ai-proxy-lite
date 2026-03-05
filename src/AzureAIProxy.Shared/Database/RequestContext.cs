@@ -1,12 +1,8 @@
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace AzureAIProxy.Shared.Database;
 
-public partial class RequestContext
+public class RequestContext
 {
-    [NotMapped]
-    public bool IsAuthorized { get; set; } = false;
-
+    public bool IsAuthorized { get; set; }
     public string ApiKey { get; set; } = null!;
     public string UserId { get; set; } = null!;
     public string EventId { get; set; } = null!;
@@ -14,7 +10,7 @@ public partial class RequestContext
     public string OrganizerName { get; set; } = null!;
     public string OrganizerEmail { get; set; } = null!;
     public string? EventImageUrl { get; set; }
-    public int MaxTokenCap { get; set; } = 0;
-    public int DailyRequestCap { get; set; } = 0;
-    public bool RateLimitExceed { get; set; } = false;
+    public int MaxTokenCap { get; set; }
+    public int DailyRequestCap { get; set; }
+    public bool RateLimitExceed { get; set; }
 }

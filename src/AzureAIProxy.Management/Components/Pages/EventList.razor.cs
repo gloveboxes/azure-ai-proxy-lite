@@ -29,7 +29,7 @@ public partial class EventList : ComponentBase
         var dialog = await DialogService.ShowAsync<DeleteConfirmation>("Delete Record", parameters, options);
         var result = await dialog.Result;
 
-        if (!result.Canceled)
+        if (result is not null && !result.Canceled)
         {
             await EventService.DeleteEventAsync(@event.EventId);
             Events = await EventService.GetOwnerEventsAsync();

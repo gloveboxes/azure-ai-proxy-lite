@@ -1,16 +1,18 @@
 using System.Security.Claims;
+using Azure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using AzureAIProxy.Shared.Database;
+using AzureAIProxy.Shared.Services;
+using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Pages.Account;
 
 [AllowAnonymous]
-public class LoginModel(IConfiguration configuration, IDbContextFactory<AzureAIProxyDbContext> dbFactory) : PageModel
+public class LoginModel(IConfiguration configuration, ITableStorageService tableStorage) : PageModel
 {
     public string? ErrorMessage { get; set; }
 
@@ -36,17 +38,21 @@ public class LoginModel(IConfiguration configuration, IDbContextFactory<AzureAIP
             return Page();
         }
 
-        // Ensure the owner record exists in the database
-        await using var db = await dbFactory.CreateDbContextAsync();
-        if (!await db.Owners.AnyAsync(o => o.OwnerId == username))
+        // Ensure the owner record exists in Table Storage
+        var ownerTable = tableStorage.GetTableClient(TableNames.Owners);
+        try
         {
-            db.Owners.Add(new Owner
+            await ownerTable.GetEntityAsync<OwnerEntity>("owner", username);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            await ownerTable.AddEntityAsync(new OwnerEntity
             {
-                OwnerId = username,
+                PartitionKey = "owner",
+                RowKey = username,
                 Name = username,
                 Email = $"{username}@admin"
             });
-            await db.SaveChangesAsync();
         }
 
         var claims = new List<Claim>

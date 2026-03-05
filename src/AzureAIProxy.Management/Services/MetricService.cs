@@ -1,4 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+using AzureAIProxy.Shared.Services;
+using AzureAIProxy.Shared.TableStorage;
+using AzureAIProxy.Shared.Database;
 
 namespace AzureAIProxy.Management.Services;
 
@@ -20,90 +22,117 @@ public class EventChartData
 }
 
 
-public class MetricService(IDbContextFactory<AzureAIProxyDbContext> dbFactory) : IMetricService
+public class MetricService(ITableStorageService tableStorage) : IMetricService
 {
     public async Task<List<EventMetricsData>> GetEventMetricsAsync(string eventId)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.Metrics
-            .Where(m => m.EventId == eventId)
-            .OrderByDescending(m => m.RequestCount)
-            .Select(m => new EventMetricsData
+        var table = tableStorage.GetTableClient(TableNames.Metrics);
+        var results = new List<EventMetricsData>();
+
+        await foreach (var entity in table.QueryAsync<MetricEntity>(e => e.PartitionKey == eventId))
+        {
+            results.Add(new EventMetricsData
             {
-                EventId = m.EventId,
-                DateStamp = m.DateStamp.ToDateTime(TimeOnly.MinValue),
-                Resource = m.Resource,
-                PromptTokens = m.PromptTokens,
-                CompletionTokens = m.CompletionTokens,
-                TotalTokens = m.TotalTokens,
-                Requests = m.RequestCount
-            }).ToListAsync();
+                EventId = entity.PartitionKey,
+                DateStamp = DateTime.Parse(entity.DateStamp),
+                Resource = entity.Resource,
+                PromptTokens = entity.PromptTokens,
+                CompletionTokens = entity.CompletionTokens,
+                TotalTokens = entity.TotalTokens,
+                Requests = entity.RequestCount
+            });
+        }
+
+        return results.OrderByDescending(m => m.Requests).ToList();
     }
 
-    public (int attendeeCount, int requestCount) GetAttendeeMetricsAsync(string eventId)
+    public async Task<(int attendeeCount, int requestCount)> GetAttendeeMetricsAsync(string eventId)
     {
-        using var db = dbFactory.CreateDbContext();
-        var userCount = db.EventAttendees
-            .Where(ea => ea.EventId == eventId)
-            .Count();
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+        var metricTable = tableStorage.GetTableClient(TableNames.Metrics);
 
-        var requestCount = (int)db.Metrics
-            .Where(m => m.EventId == eventId)
-            .Sum(m => m.RequestCount);
+        int userCount = 0;
+        await foreach (var _ in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == eventId))
+        {
+            userCount++;
+        }
 
-        return (userCount, requestCount);
+        long totalRequests = 0;
+        await foreach (var entity in metricTable.QueryAsync<MetricEntity>(e => e.PartitionKey == eventId))
+        {
+            totalRequests += entity.RequestCount;
+        }
+
+        return (userCount, (int)totalRequests);
     }
 
     public async Task<List<EventRegistrations>> GetAllEventsAsync()
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.Events
-            .GroupJoin(db.EventAttendees,
-                e => e.EventId,
-                a => a.EventId,
-                (e, ea) => new { Event = e, Attendees = ea })
-            .SelectMany(
-                x => x.Attendees.DefaultIfEmpty(),
-                (x, a) => new { x.Event, Attendee = a })
-            .GroupBy(
-                x => new
-                {
-                    x.Event.EventId,
-                    x.Event.EventCode,
-                    x.Event.OrganizerName,
-                    x.Event.StartTimestamp,
-                    x.Event.EndTimestamp
-                })
-            .Select(g => new
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+
+        var results = new List<EventRegistrations>();
+
+        await foreach (var evt in eventsTable.QueryAsync<EventEntity>())
+        {
+            int attendeeCount = 0;
+            await foreach (var _ in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == evt.PartitionKey))
             {
-                g.Key.EventId,
-                g.Key.EventCode,
-                g.Key.OrganizerName,
-                g.Key.StartTimestamp,
-                g.Key.EndTimestamp,
-                RegistrationCount = g.Count(a => a.Attendee != null && a.Attendee.ApiKey != null)
-            }).Select(x => new EventRegistrations
+                attendeeCount++;
+            }
+
+            results.Add(new EventRegistrations
             {
-                EventId = x.EventId,
-                EventName = x.EventCode,
-                OrganizerName = x.OrganizerName,
-                StartDate = x.StartTimestamp,
-                EndDate = x.EndTimestamp,
-                Registered = x.RegistrationCount
-            }).ToListAsync();
+                EventId = evt.PartitionKey,
+                EventName = evt.EventCode,
+                OrganizerName = evt.OrganizerName,
+                StartDate = evt.StartTimestamp,
+                EndDate = evt.EndTimestamp,
+                Registered = attendeeCount
+            });
+        }
+
+        return results;
     }
 
     public async Task<List<EventChartData>> GetActiveRegistrationsAsync(string eventId)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.ActiveAttendeeGrowthViews
-            .Where(a => a.EventId == eventId)
-            .Select(a => new { a.DateStamp, a.Attendees })
-            .Select(x => new EventChartData
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+        var requestTable = tableStorage.GetTableClient(TableNames.AttendeeRequests);
+
+        // Get all attendees for this event
+        var attendeeKeys = new List<string>();
+        await foreach (var attendee in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == eventId))
+        {
+            attendeeKeys.Add(attendee.ApiKey);
+        }
+
+        // For each attendee, find their earliest request date
+        var firstSeenDates = new Dictionary<string, DateTime>();
+        foreach (var apiKey in attendeeKeys)
+        {
+            DateTime? earliest = null;
+            await foreach (var req in requestTable.QueryAsync<AttendeeRequestEntity>(e => e.PartitionKey == apiKey))
             {
-                DateStamp = x.DateStamp,
-                Count = (int)x.Attendees
-            })
-            .ToListAsync();
+                var date = DateTime.Parse(req.RowKey);
+                if (earliest is null || date < earliest) earliest = date;
+            }
+            if (earliest.HasValue)
+                firstSeenDates[apiKey] = earliest.Value;
+        }
+
+        // Build cumulative growth
+        var growth = firstSeenDates.Values
+            .GroupBy(d => d.Date)
+            .OrderBy(g => g.Key)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToList();
+
+        long cumulative = 0;
+        return growth.Select(g =>
+        {
+            cumulative += g.Count;
+            return new EventChartData { DateStamp = g.Date, Count = cumulative };
+        }).ToList();
     }
 }

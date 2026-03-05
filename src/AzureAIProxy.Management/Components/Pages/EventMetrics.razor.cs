@@ -50,7 +50,7 @@ public partial class EventMetrics
     {
         IsLoading = true;
 
-        (AttendeeCount, RequestCount) = MetricService.GetAttendeeMetricsAsync(EventId);
+        (AttendeeCount, RequestCount) = await MetricService.GetAttendeeMetricsAsync(EventId);
         List<EventMetricsData> MetricsData = await MetricService.GetEventMetricsAsync(EventId);
         Event = await EventService.GetEventAsync(EventId);
 
@@ -103,14 +103,15 @@ public partial class EventMetrics
         (ActiveUsersChartSeries, ActiveUsersChartLabels) = BuildActiveUsersChart(ActiveUsers);
 
         // Get Resources by Type list
-        ResourcesByType = [.. Event?.Catalogs
+        ResourcesByType = Event?.Catalogs?
             .GroupBy(c => c.ModelType)
             .Select(g => new ResourceByType()
             {
                 ModelType = g.Key.ToString()!.ToLower().Replace('_', ' '),
                 Names = string.Join(", ", g.OrderBy(c => c.DeploymentName).Select(c => c.DeploymentName))
             })
-            .OrderBy(x => x.ModelType)];
+            .OrderBy(x => x.ModelType)
+            .ToList() ?? [];
 
         IsLoading = false;
     }

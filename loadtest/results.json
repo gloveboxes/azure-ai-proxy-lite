@@ -1,0 +1,15 @@
+{
+  "duration_seconds": 61.58154723601183,
+  "total_requests": 4214,
+  "requests_per_second": 68.42958953028263,
+  "success_count": 2112,
+  "error_429": 0,
+  "error_500": 0,
+  "latency_p50_ms": 569.8610009858385,
+  "latency_p95_ms": 1651.3609169924166,
+  "latency_p99_ms": 1880.9007089876104,
+  "status_codes": {
+    "404": 2102,
+    "200": 2112
+  }
+}

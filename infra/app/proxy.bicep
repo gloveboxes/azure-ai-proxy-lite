@@ -8,11 +8,10 @@ param containerAppsEnvironmentName string
 param containerRegistryName string
 param serviceName string = 'proxy'
 param exists bool
-param postgresDatabase string
-param postgresServer string
-param proxyPostgresMaxPoolSize int
 @secure()
-param postgresEncryptionKey string
+param storageConnectionString string
+@secure()
+param encryptionKey string
 @secure()
 param appInsightsConnectionString string
 @secure()
@@ -42,12 +41,12 @@ module app '../core/host/container-app-upsert.bicep' = {
     containerMaxReplicas: 1
     secrets: [
       {
-        name: 'postgres-encryption-key'
-        value: postgresEncryptionKey
+        name: 'encryption-key'
+        value: encryptionKey
       }
       {
-        name: 'postgres-connection-string'
-        value: 'Server=${postgresServer};Port=5432;User Id=${name};Database=${postgresDatabase};Ssl Mode=Require;Maximum Pool Size=${proxyPostgresMaxPoolSize};Application Name=aiproxy;'
+        name: 'storage-connection-string'
+        value: storageConnectionString
       }
       {
         name: 'app-insights-connection-string'
@@ -64,12 +63,12 @@ module app '../core/host/container-app-upsert.bicep' = {
     ]
     env: [
       {
-        name: 'PostgresEncryptionKey'
-        secretRef: 'postgres-encryption-key'
+        name: 'EncryptionKey'
+        secretRef: 'encryption-key'
       }
       {
-        name: 'ConnectionStrings__AoaiProxyContext'
-        secretRef: 'postgres-connection-string'
+        name: 'ConnectionStrings__StorageAccount'
+        secretRef: 'storage-connection-string'
       }
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

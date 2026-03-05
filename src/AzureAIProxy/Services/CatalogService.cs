@@ -1,111 +1,120 @@
-using System.Data;
+using Azure;
 using AzureAIProxy.Shared.Database;
-using Microsoft.EntityFrameworkCore;
+using AzureAIProxy.Shared.Services;
+using AzureAIProxy.Shared.TableStorage;
 using Microsoft.Extensions.Caching.Memory;
-using Npgsql;
 
 namespace AzureAIProxy.Services;
 
 public class CatalogService(
-    AzureAIProxyDbContext db,
-    IConfiguration configuration,
+    ITableStorageService tableStorage,
+    IEncryptionService encryption,
     IMemoryCache memoryCache
 ) : ICatalogService
 {
     const string CatalogAssistantEventKey = "catalog+assistant+event+key";
     const string CatalogEventDeploymentKey = "catalog+event+deployment+key";
 
-    private readonly string EncryptionKey =
-        configuration["PostgresEncryptionKey"]
-        ?? throw new ArgumentNullException("PostgresEncryptionKey");
+    /// <summary>Gets catalog IDs from the event entity's inlined CatalogIds field.</summary>
+    private async Task<List<string>> GetCatalogIdsForEventAsync(string eventId)
+    {
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+        try
+        {
+            var response = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
+            var ids = response.Value.CatalogIds;
+            return string.IsNullOrEmpty(ids) ? [] : [.. ids.Split(',', StringSplitOptions.RemoveEmptyEntries)];
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return [];
+        }
+    }
 
-    /// <summary>
-    /// Retrieves the event catalog for a given event ID and deployment name.
-    /// Calls function aoai.get_models_by_deployment_name that decrypts the endpoint URL and Key.
-    /// </summary>
-    /// <param name="eventId">The ID of the event.</param>
-    /// <param name="deploymentName">The name of the deployment.</param>
-    /// <returns>A list of Deployment objects representing the event catalog.</returns>
-    private async Task<List<Deployment>> GetDecryptedEventCatalogAsync(
-        string eventId,
-        string deploymentName
-    )
+    private async Task<List<Deployment>> GetDecryptedEventCatalogAsync(string eventId, string deploymentName)
     {
         var cacheKey = $"{CatalogEventDeploymentKey}+{eventId}+{deploymentName}";
-
         if (memoryCache.TryGetValue(cacheKey, out List<Deployment>? cachedValue))
             return cachedValue!;
 
-        var result = await db.Set<Deployment>()
-            .FromSqlRaw(
-                "SELECT * FROM aoai.get_models_by_deployment_name(@eventId, @deploymentName, @encryptionKey)",
-                new NpgsqlParameter("@eventId", eventId),
-                new NpgsqlParameter("@deploymentName", deploymentName),
-                new NpgsqlParameter("@encryptionKey", EncryptionKey)
-            )
-            .ToListAsync();
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var catalogIds = await GetCatalogIdsForEventAsync(eventId);
+
+        var result = new List<Deployment>();
+        foreach (var catalogId in catalogIds)
+        {
+            try
+            {
+                // Point read — PK and RK are both catalog_id
+                var response = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
+                var catalog = response.Value;
+                if (catalog.Active && catalog.DeploymentName == deploymentName)
+                {
+                    result.Add(new Deployment
+                    {
+                        DeploymentName = catalog.DeploymentName,
+                        EndpointUrl = encryption.Decrypt(catalog.EncryptedEndpointUrl),
+                        EndpointKey = encryption.Decrypt(catalog.EncryptedEndpointKey),
+                        ModelType = catalog.ModelType,
+                        CatalogId = Guid.Parse(catalogId),
+                        Location = catalog.Location
+                    });
+                }
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
 
         memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(1));
         return result;
     }
 
-    /// <summary>
-    /// Retrieves the deployment details for a specific event.
-    /// </summary>
-    /// <param name="eventId">The unique identifier for the event.</param>
-    /// <returns>A <see cref="Task"/> representing an asynchronous operation resulting in
-    /// a nullable <see cref="Deployment"/> object, if found; otherwise, null.</returns>
     public async Task<Deployment?> GetEventAssistantAsync(string eventId)
     {
         var cacheKey = $"{CatalogAssistantEventKey}+{eventId}";
-
         if (memoryCache.TryGetValue(cacheKey, out Deployment? cachedValue))
             return cachedValue!;
 
-        var result = await db.Set<Deployment>()
-            .FromSqlRaw(
-                "SELECT * FROM aoai.get_event_openai_assistant(@eventId, @encryptionKey)",
-                new NpgsqlParameter("@eventId", eventId),
-                new NpgsqlParameter("@encryptionKey", EncryptionKey)
-            )
-            .FirstOrDefaultAsync();
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var catalogIds = await GetCatalogIdsForEventAsync(eventId);
 
-        if (result is not null)
-            memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(4));
+        foreach (var catalogId in catalogIds)
+        {
+            try
+            {
+                var response = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
+                var catalog = response.Value;
+                if (catalog.Active && catalog.ModelType == ModelType.OpenAI_Assistant.ToStorageString())
+                {
+                    var result = new Deployment
+                    {
+                        DeploymentName = catalog.DeploymentName,
+                        EndpointUrl = encryption.Decrypt(catalog.EncryptedEndpointUrl),
+                        EndpointKey = encryption.Decrypt(catalog.EncryptedEndpointKey),
+                        ModelType = catalog.ModelType,
+                        CatalogId = Guid.Parse(catalogId),
+                        Location = catalog.Location
+                    };
+                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(4));
+                    return result;
+                }
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
 
-        return result;
+        return null;
     }
 
-    /// <summary>
-    /// Retrieves a catalog item asynchronously.
-    /// </summary>
-    /// <param name="eventId">The ID of the event.</param>
-    /// <param name="deploymentName">The name of the deployment.</param>
-    /// <returns>A tuple containing the deployment and event catalog.</returns>
     public async Task<(Deployment? deployment, List<Deployment> eventCatalog)> GetCatalogItemAsync(
-        string eventId,
-        string deploymentName
-    )
+        string eventId, string deploymentName)
     {
         deploymentName = deploymentName.Trim();
         var deployments = await GetDecryptedEventCatalogAsync(eventId, deploymentName);
         if (deployments.Count == 0)
-        {
-            // If no deployments, fetch the event catalog.
             return (null, await GetEventCatalogAsync(eventId));
-        }
         else
-        {
-            // If there are deployments, select one at random.
             return (deployments[new Random().Next(deployments.Count)], []);
-        }
     }
 
-    /// <summary>
-    /// Retrieves the capabilities for a given event.
-    /// </summary>
-    /// <param name="eventId">The ID of the event.</param>
-    /// <returns>A dictionary containing the capabilities for each deployment model type.</returns>
     public async Task<Dictionary<string, List<string>>> GetCapabilitiesAsync(string eventId)
     {
         var deployments = await GetEventCatalogAsync(eventId);
@@ -124,24 +133,31 @@ public class CatalogService(
         return capabilities;
     }
 
-    /// <summary>
-    /// Retrieves a list of deployments from the catalog for a specific event.
-    /// </summary>
-    /// <param name="eventId">The ID of the event.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a list of deployments.</returns>
     private async Task<List<Deployment>> GetEventCatalogAsync(string eventId)
     {
-        var result = await db
-            .OwnerCatalogs.Where(oc => oc.Active && oc.Events.Any(e => e.EventId == eventId))
-            .OrderBy(oc => oc.DeploymentName)
-            .Select(oc => new Deployment
-            {
-                DeploymentName = oc.DeploymentName,
-                ModelType = oc.ModelType.ToString() ?? "Type unknown",
-                Location = oc.Location
-            })
-            .ToListAsync(); // Fetch the data first
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var catalogIds = await GetCatalogIdsForEventAsync(eventId);
 
-        return result.DistinctBy(d => d.DeploymentName).ToList(); // Apply DistinctBy in memory
+        var result = new List<Deployment>();
+        foreach (var catalogId in catalogIds)
+        {
+            try
+            {
+                var response = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
+                var catalog = response.Value;
+                if (catalog.Active)
+                {
+                    result.Add(new Deployment
+                    {
+                        DeploymentName = catalog.DeploymentName,
+                        ModelType = catalog.ModelType,
+                        Location = catalog.Location
+                    });
+                }
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+
+        return result.DistinctBy(d => d.DeploymentName).OrderBy(d => d.DeploymentName).ToList();
     }
 }

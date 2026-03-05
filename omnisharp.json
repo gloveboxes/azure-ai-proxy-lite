@@ -1,0 +1,10 @@
+{
+  "msbuild": {
+    "enabled": true,
+    "useBundledOnly": false,
+    "loadProjectsOnDemand": false
+  },
+  "sdk": {
+    "includePrerelease": false
+  }
+}

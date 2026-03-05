@@ -1,8 +1,6 @@
-using System.Data;
 using AzureAIProxy.Management.Components.ModelManagement;
 using AzureAIProxy.Management.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.EntityFrameworkCore;
 
 namespace AzureAIProxy.Management.Components.Pages;
 
@@ -13,9 +11,6 @@ public partial class ModelEdit : ComponentBase
 
     [Inject]
     public IModelService ModelService { get; set; } = null!;
-
-    [Inject]
-    public IDbContextFactory<AzureAIProxyDbContext> DbContextFactory { get; set; } = null!;
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = null!;
@@ -52,22 +47,17 @@ public partial class ModelEdit : ComponentBase
 
     private async Task OnValidSubmit(ModelEditorModel model)
     {
-        await using var DbContext = await DbContextFactory.CreateDbContextAsync();
-        OwnerCatalog? m = await DbContext.OwnerCatalogs.FindAsync(Guid.Parse(Id));
-
-        if (m is null)
+        OwnerCatalog m = new()
         {
-            NavigationManager.NavigateTo("/models");
-            return;
-        }
-
-        m.FriendlyName = model.FriendlyName!;
-        m.DeploymentName = model.DeploymentName!.Trim();
-        m.EndpointKey = model.EndpointKey!;
-        m.ModelType = model.ModelType!.Value;
-        m.EndpointUrl = model.EndpointUrl!;
-        m.Location = model.Location!;
-        m.Active = model.Active;
+            CatalogId = Guid.Parse(Id),
+            FriendlyName = model.FriendlyName!,
+            DeploymentName = model.DeploymentName!.Trim(),
+            EndpointKey = model.EndpointKey!,
+            ModelType = model.ModelType!.Value,
+            EndpointUrl = model.EndpointUrl!,
+            Location = model.Location!,
+            Active = model.Active
+        };
 
         await ModelService.UpdateOwnerCatalogAsync(m);
 

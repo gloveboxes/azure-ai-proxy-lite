@@ -1,7 +1,9 @@
+using Azure.Data.Tables;
+using Azure.Identity;
 using AzureAIProxy.Middleware;
 using AzureAIProxy.Routes;
 using AzureAIProxy.Services;
-using AzureAIProxy.Shared;
+using AzureAIProxy.Shared.Services;
 using AzureAIProxy.Management;
 using AzureAIProxy.Components;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -10,7 +12,30 @@ using MudBlazor.Services;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 var useMockProxy = builder.Configuration.GetValue<bool>("UseMockProxy", false);
 
-builder.AddAzureAIProxyDbContext();
+// --- Table Storage ---
+var storageConnectionString = builder.Configuration.GetConnectionString("StorageAccount")
+    ?? builder.Configuration["StorageAccountConnectionString"];
+
+if (!string.IsNullOrEmpty(storageConnectionString))
+{
+    builder.Services.AddSingleton(new TableServiceClient(storageConnectionString));
+}
+else
+{
+    // Use Managed Identity in production
+    var storageAccountName = builder.Configuration["StorageAccountName"]
+        ?? throw new InvalidOperationException("StorageAccountName or StorageAccount connection string must be configured");
+    var serviceUri = new Uri($"https://{storageAccountName}.table.core.windows.net");
+    builder.Services.AddSingleton(new TableServiceClient(serviceUri, new DefaultAzureCredential()));
+}
+
+builder.Services.AddSingleton<ITableStorageService, TableStorageService>();
+
+// --- Encryption ---
+var encryptionKey = builder.Configuration["EncryptionKey"]
+    ?? builder.Configuration["PostgresEncryptionKey"]
+    ?? throw new InvalidOperationException("EncryptionKey must be configured");
+builder.Services.AddSingleton<IEncryptionService>(new EncryptionService(encryptionKey));
 
 // --- Authentication ---
 // Cookie auth for admin UI + proxy API key auth schemes

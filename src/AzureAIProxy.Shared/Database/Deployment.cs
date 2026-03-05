@@ -1,6 +1,6 @@
 namespace AzureAIProxy.Shared.Database;
 
-public partial class Deployment
+public class Deployment
 {
     public string EndpointKey { get; set; } = null!;
     public string DeploymentName { get; set; } = null!;

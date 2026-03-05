@@ -18,11 +18,6 @@ services:
     dist: dist
 
 hooks:
-  preup:
-    shell: sh
-    continueOnError: false
-    interactive: false
-    run: ./infra/scripts/preup.sh
   postup:
     shell: sh
     continueOnError: true

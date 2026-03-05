@@ -1,127 +1,199 @@
-using System.Data;
-using System.Data.Common;
+using System.Security.Cryptography;
+using System.Text;
+using Azure;
+using Azure.Data.Tables;
 using AzureAIProxy.Management.Components.EventManagement;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NpgsqlTypes;
+using AzureAIProxy.Shared.Database;
+using AzureAIProxy.Shared.Services;
+using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class EventService(IAuthService authService, IDbContextFactory<AzureAIProxyDbContext> dbFactory) : IEventService
+public class EventService(IAuthService authService, ITableStorageService tableStorage) : IEventService
 {
     public async Task<Event?> CreateEventAsync(EventEditorModel model)
     {
-        if (string.IsNullOrEmpty(model.EventSharedCode))
-        {
-            model.EventSharedCode = null;
-        }
-
-        if (string.IsNullOrEmpty(model.EventImageUrl))
-        {
-            model.EventImageUrl = null;
-        }
-
-        Event newEvent = new()
-        {
-            EventCode = model.Name!,
-            EventSharedCode = model.EventSharedCode,
-            EventImageUrl = model.EventImageUrl!,
-            EventMarkdown = model.Description!,
-            StartTimestamp = model.Start!.Value,
-            EndTimestamp = model.End!.Value,
-            TimeZoneOffset = model.SelectedTimeZone!.BaseUtcOffset.Minutes,
-            TimeZoneLabel = model.SelectedTimeZone!.Id,
-            OrganizerName = model.OrganizerName!,
-            OrganizerEmail = model.OrganizerEmail!,
-            MaxTokenCap = model.MaxTokenCap,
-            DailyRequestCap = model.DailyRequestCap,
-            Active = model.Active
-        };
+        if (string.IsNullOrEmpty(model.EventSharedCode)) model.EventSharedCode = null;
+        if (string.IsNullOrEmpty(model.EventImageUrl)) model.EventImageUrl = null;
 
         string userId = await authService.GetCurrentUserIdAsync();
 
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var conn = db.Database.GetDbConnection();
+        var guidString = $"{Guid.NewGuid()}{Guid.NewGuid()}";
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(guidString));
+        var hashString = Convert.ToHexStringLower(hashBytes);
+        var eventId = $"{hashString[..4]}-{hashString[4..8]}";
 
-        if (conn.State != ConnectionState.Open)
-            await conn.OpenAsync();
+        var eventEntity = new EventEntity
+        {
+            PartitionKey = eventId,
+            RowKey = eventId,
+            OwnerId = userId,
+            EventCode = model.Name!,
+            EventSharedCode = model.EventSharedCode,
+            EventMarkdown = model.Description!,
+            StartTimestamp = DateTime.SpecifyKind(model.Start!.Value, DateTimeKind.Utc),
+            EndTimestamp = DateTime.SpecifyKind(model.End!.Value, DateTimeKind.Utc),
+            TimeZoneOffset = (int)model.SelectedTimeZone!.BaseUtcOffset.TotalMinutes,
+            TimeZoneLabel = model.SelectedTimeZone!.Id,
+            OrganizerName = model.OrganizerName!,
+            OrganizerEmail = model.OrganizerEmail!,
+            EventImageUrl = model.EventImageUrl,
+            MaxTokenCap = model.MaxTokenCap,
+            DailyRequestCap = model.DailyRequestCap,
+            Active = model.Active,
+            CatalogIds = ""
+        };
 
-        using DbCommand cmd = conn.CreateCommand();
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+        await eventsTable.AddEntityAsync(eventEntity);
 
-        cmd.CommandText = $"SELECT * FROM aoai.add_event(@OwnerId, @EventCode, @EventSharedCode, @EventMarkdown, @StartTimestamp, @EndTimestamp, @TimeZoneOffset, @TimeZoneLabel,  @OrganizerName, @OrganizerEmail, @MaxTokenCap, @DailyRequestCap, @Active, @EventImageUrl)";
+        var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
+        await ownerEventsTable.AddEntityAsync(new OwnerEventEntity
+        {
+            PartitionKey = userId,
+            RowKey = eventId,
+            Creator = true
+        });
 
-        cmd.Parameters.Add(new NpgsqlParameter("OwnerId", userId));
-        cmd.Parameters.Add(new NpgsqlParameter("EventCode", newEvent.EventCode));
-        cmd.Parameters.Add(new NpgsqlParameter("EventMarkdown", newEvent.EventMarkdown));
-        cmd.Parameters.Add(new NpgsqlParameter("StartTimestamp", newEvent.StartTimestamp));
-        cmd.Parameters.Add(new NpgsqlParameter("EndTimestamp", newEvent.EndTimestamp));
-        cmd.Parameters.Add(new NpgsqlParameter("TimeZoneOffset", newEvent.TimeZoneOffset));
-        cmd.Parameters.Add(new NpgsqlParameter("TimeZoneLabel", newEvent.TimeZoneLabel));
-        cmd.Parameters.Add(new NpgsqlParameter("OrganizerName", newEvent.OrganizerName));
-        cmd.Parameters.Add(new NpgsqlParameter("OrganizerEmail", newEvent.OrganizerEmail));
-        cmd.Parameters.Add(new NpgsqlParameter("MaxTokenCap", newEvent.MaxTokenCap));
-        cmd.Parameters.Add(new NpgsqlParameter("DailyRequestCap", newEvent.DailyRequestCap));
-        cmd.Parameters.Add(new NpgsqlParameter("Active", newEvent.Active));
-
-        var parameter_event_shared_code = new NpgsqlParameter("@EventSharedCode", NpgsqlDbType.Text);
-        parameter_event_shared_code.Value = newEvent.EventSharedCode ?? (object)DBNull.Value;
-        cmd.Parameters.Add(parameter_event_shared_code);
-
-        var parameter = new NpgsqlParameter("@EventImageUrl", NpgsqlDbType.Text);
-        parameter.Value = newEvent.EventImageUrl ?? (object)DBNull.Value;
-        cmd.Parameters.Add(parameter);
-
-        var eventId = await cmd.ExecuteScalarAsync();
-        newEvent.EventId = eventId?.ToString() ?? throw new InvalidOperationException("EventId is null");
-
-        return newEvent;
+        return MapToEvent(eventEntity);
     }
 
     public async Task<Event?> GetEventAsync(string id)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.Events.Include(e => e.Catalogs).FirstOrDefaultAsync(e => e.EventId == id);
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+
+        EventEntity? evt;
+        try
+        {
+            var response = await eventsTable.GetEntityAsync<EventEntity>(id, id);
+            evt = response.Value;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
+
+        var result = MapToEvent(evt);
+
+        // Load catalogs from inlined IDs
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var catalogIds = string.IsNullOrEmpty(evt.CatalogIds) ? [] : evt.CatalogIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var catalogId in catalogIds)
+        {
+            try
+            {
+                var catResponse = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
+                var catalog = catResponse.Value;
+                result.Catalogs.Add(new OwnerCatalog
+                {
+                    CatalogId = Guid.Parse(catalogId),
+                    OwnerId = catalog.OwnerId,
+                    DeploymentName = catalog.DeploymentName,
+                    Active = catalog.Active,
+                    ModelType = ModelTypeExtensions.FromStorageString(catalog.ModelType),
+                    Location = catalog.Location,
+                    FriendlyName = catalog.FriendlyName
+                });
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+
+        return result;
     }
 
     public async Task<IEnumerable<Event>> GetOwnerEventsAsync()
     {
         string userId = await authService.GetCurrentUserIdAsync();
-        await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.Events
-            .Where(e => e.OwnerEventMaps.Any(o => o.Owner.OwnerId == userId))
+
+        var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+
+        var eventIds = new List<string>();
+        await foreach (var oe in ownerEventsTable.QueryAsync<OwnerEventEntity>(e => e.PartitionKey == userId))
+        {
+            eventIds.Add(oe.RowKey);
+        }
+
+        var results = new List<Event>();
+        foreach (var eventId in eventIds)
+        {
+            try
+            {
+                var evtResponse = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
+                var evt = evtResponse.Value;
+                var eventObj = MapToEvent(evt);
+
+                // Load catalogs from inlined IDs
+                var catalogIds = string.IsNullOrEmpty(evt.CatalogIds) ? [] : evt.CatalogIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var catalogId in catalogIds)
+                {
+                    try
+                    {
+                        var catResponse = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
+                        var catalog = catResponse.Value;
+                        eventObj.Catalogs.Add(new OwnerCatalog
+                        {
+                            CatalogId = Guid.Parse(catalogId),
+                            OwnerId = catalog.OwnerId,
+                            DeploymentName = catalog.DeploymentName,
+                            Active = catalog.Active,
+                            ModelType = ModelTypeExtensions.FromStorageString(catalog.ModelType),
+                            Location = catalog.Location,
+                            FriendlyName = catalog.FriendlyName
+                        });
+                    }
+                    catch (RequestFailedException ex) when (ex.Status == 404) { }
+                }
+
+                // Load attendees
+                await foreach (var att in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == eventId))
+                {
+                    eventObj.EventAttendees.Add(new EventAttendee
+                    {
+                        EventId = eventId,
+                        UserId = att.RowKey,
+                        ApiKey = att.ApiKey,
+                        Active = att.Active
+                    });
+                }
+
+                results.Add(eventObj);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+
+        return results
             .OrderByDescending(e => e.Active)
-            .ThenByDescending(e => e.EndTimestamp)
-            .Include(e => e.Catalogs) // Include the Catalogs collection
-            .Include(ea => ea.EventAttendees)
-            .ToListAsync();
+            .ThenByDescending(e => e.EndTimestamp);
     }
 
     public async Task<Event?> UpdateEventAsync(string id, EventEditorModel model)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        Event? evt = await db.Events.FindAsync(id);
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
 
-        if (evt is null)
+        EventEntity? evt;
+        try
+        {
+            var response = await eventsTable.GetEntityAsync<EventEntity>(id, id);
+            evt = response.Value;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
         {
             return null;
         }
 
-        if (string.IsNullOrEmpty(model.EventSharedCode))
-        {
-            model.EventSharedCode = null;
-        }
-
-        if (string.IsNullOrEmpty(model.EventImageUrl))
-        {
-            model.EventImageUrl = null;
-        }
+        if (string.IsNullOrEmpty(model.EventSharedCode)) model.EventSharedCode = null;
+        if (string.IsNullOrEmpty(model.EventImageUrl)) model.EventImageUrl = null;
 
         evt.EventCode = model.Name!;
         evt.EventSharedCode = model.EventSharedCode;
         evt.EventMarkdown = model.Description!;
-        evt.StartTimestamp = model.Start!.Value;
-        evt.EndTimestamp = model.End!.Value;
-        evt.EventImageUrl = model.EventImageUrl!;
+        evt.StartTimestamp = DateTime.SpecifyKind(model.Start!.Value, DateTimeKind.Utc);
+        evt.EndTimestamp = DateTime.SpecifyKind(model.End!.Value, DateTimeKind.Utc);
+        evt.EventImageUrl = model.EventImageUrl;
         evt.OrganizerEmail = model.OrganizerEmail!;
         evt.OrganizerName = model.OrganizerName!;
         evt.Active = model.Active;
@@ -130,58 +202,104 @@ public class EventService(IAuthService authService, IDbContextFactory<AzureAIPro
         evt.TimeZoneLabel = model.SelectedTimeZone!.Id;
         evt.TimeZoneOffset = (int)model.SelectedTimeZone.BaseUtcOffset.TotalMinutes;
 
-        await db.SaveChangesAsync();
+        await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
 
-        return evt;
+        // Propagate denormalized event data to all attendee lookup entries
+        await PropagateEventToLookupsAsync(id, evt);
+
+        return MapToEvent(evt);
     }
 
     public async Task UpdateModelsForEventAsync(string id, IEnumerable<Guid> modelIds)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        Event? evt = await db.Events.Include(e => e.Catalogs).FirstOrDefaultAsync(e => e.EventId == id);
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
 
-        if (evt is null)
+        try
         {
-            return;
+            var response = await eventsTable.GetEntityAsync<EventEntity>(id, id);
+            var evt = response.Value;
+            evt.CatalogIds = string.Join(",", modelIds);
+            await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
         }
-
-        evt.Catalogs.Clear();
-
-        IEnumerable<OwnerCatalog> catalogs = await db.OwnerCatalogs.Where(oc => modelIds.Contains(oc.CatalogId)).ToListAsync();
-
-        foreach (OwnerCatalog catalog in catalogs)
-        {
-            evt.Catalogs.Add(catalog);
-        }
-
-        await db.SaveChangesAsync();
+        catch (RequestFailedException ex) when (ex.Status == 404) { }
     }
 
     public async Task DeleteEventAsync(string id)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        Event? evt = await db.Events.FindAsync(id);
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
 
-        if (evt is null)
+        // Check for attendees
+        await foreach (var _ in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == id))
         {
-            return;
+            return; // Block deletion if attendees exist
         }
 
-        // double check there are no event attendees for the event
-        var usageInfo = await db.Events.Where(oc => oc.EventId == id)
-            .Select(oc => new
-            {
-                UsedInEvent = oc.EventAttendees.Count != 0
-            })
-            .FirstAsync();
-
-        // block deletion when it's in use to avoid cascading deletes
-        if (usageInfo.UsedInEvent)
+        try
         {
-            return;
-        }
+            var response = await eventsTable.GetEntityAsync<EventEntity>(id, id);
+            var evt = response.Value;
 
-        db.Events.Remove(evt);
-        await db.SaveChangesAsync();
+            await eventsTable.DeleteEntityAsync(id, id);
+
+            // Clean up owner-event mapping
+            var oeTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
+            try { await oeTable.DeleteEntityAsync(evt.OwnerId, id); }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404) { }
     }
+
+    /// <summary>
+    /// When event config changes, update all denormalized attendee lookup entries.
+    /// This is a low-frequency admin operation.
+    /// </summary>
+    private async Task PropagateEventToLookupsAsync(string eventId, EventEntity evt)
+    {
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+        var lookupTable = tableStorage.GetTableClient(TableNames.AttendeeLookup);
+
+        await foreach (var attendee in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == eventId))
+        {
+            var pk = AttendeeLookupEntity.GetPartitionKey(attendee.ApiKey);
+            try
+            {
+                var response = await lookupTable.GetEntityAsync<AttendeeLookupEntity>(pk, attendee.ApiKey);
+                var lookup = response.Value;
+
+                lookup.EventCode = evt.EventCode;
+                lookup.OrganizerName = evt.OrganizerName;
+                lookup.OrganizerEmail = evt.OrganizerEmail;
+                lookup.EventImageUrl = evt.EventImageUrl;
+                lookup.MaxTokenCap = evt.MaxTokenCap;
+                lookup.DailyRequestCap = evt.DailyRequestCap;
+                lookup.EventActive = evt.Active;
+                lookup.StartTimestamp = evt.StartTimestamp;
+                lookup.EndTimestamp = evt.EndTimestamp;
+                lookup.TimeZoneOffset = evt.TimeZoneOffset;
+
+                await lookupTable.UpdateEntityAsync(lookup, lookup.ETag, TableUpdateMode.Replace);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+    }
+
+    private static Event MapToEvent(EventEntity entity) => new()
+    {
+        EventId = entity.PartitionKey,
+        OwnerId = entity.OwnerId,
+        EventCode = entity.EventCode,
+        EventSharedCode = entity.EventSharedCode,
+        EventMarkdown = entity.EventMarkdown,
+        StartTimestamp = entity.StartTimestamp,
+        EndTimestamp = entity.EndTimestamp,
+        TimeZoneOffset = entity.TimeZoneOffset,
+        TimeZoneLabel = entity.TimeZoneLabel,
+        OrganizerName = entity.OrganizerName,
+        OrganizerEmail = entity.OrganizerEmail,
+        EventImageUrl = entity.EventImageUrl,
+        MaxTokenCap = entity.MaxTokenCap,
+        DailyRequestCap = entity.DailyRequestCap,
+        Active = entity.Active
+    };
 }
