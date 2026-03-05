@@ -4,15 +4,17 @@ public partial class Metric
 {
     public string EventId { get; set; } = null!;
 
-    public string ApiKey { get; set; } = null!;
+    public string Resource { get; set; } = null!;
 
     public DateOnly DateStamp { get; set; }
 
-    public TimeOnly TimeStamp { get; set; }
+    public long PromptTokens { get; set; }
 
-    public string Resource { get; set; } = null!;
+    public long CompletionTokens { get; set; }
 
-    public string Usage { get; set; } = null!;
+    public long TotalTokens { get; set; }
+
+    public long RequestCount { get; set; }
 
     public virtual Event Event { get; set; } = null!;
 }

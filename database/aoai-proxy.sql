@@ -80,29 +80,34 @@ CREATE PROCEDURE aoai.add_attendee_metric(IN p_api_key character varying, IN p_e
 DECLARE
 	v_resource_string VARCHAR(64);
 	v_token_count INTEGER;
+	v_prompt_tokens INTEGER;
+	v_completion_tokens INTEGER;
 BEGIN
---     PERFORM request_count FROM aoai.event_attendee_request
---     WHERE api_key = p_api_key AND date_stamp = CURRENT_DATE;
-
 	v_token_count = COALESCE((p_usage ->> 'total_tokens')::integer, 0);
+	v_prompt_tokens = COALESCE((p_usage ->> 'prompt_tokens')::integer, 0);
+	v_completion_tokens = COALESCE((p_usage ->> 'completion_tokens')::integer, 0);
 
     IF EXISTS
 		(SELECT 1 FROM aoai.event_attendee_request WHERE api_key = p_api_key AND date_stamp = CURRENT_DATE)
 	THEN
-        -- If a record exists, increment the count
         UPDATE aoai.event_attendee_request
         SET request_count = request_count + 1, token_count = token_count + v_token_count
         WHERE api_key = p_api_key AND date_stamp = CURRENT_DATE;
     ELSE
-        -- If no record exists, insert a new one with count set to 1
         INSERT INTO aoai.event_attendee_request(api_key, date_stamp, request_count, token_count)
         VALUES (p_api_key, CURRENT_DATE, 1, v_token_count);
     END IF;
 
     SELECT model_type || ' | ' || deployment_name INTO v_resource_string FROM aoai.owner_catalog as oc WHERE oc.catalog_id = p_catalog_id;
 
-    INSERT INTO aoai.metric(api_key, event_id, resource, usage)
-    VALUES (p_api_key, p_event_id, v_resource_string, p_usage);
+    INSERT INTO aoai.metric(event_id, resource, date_stamp, prompt_tokens, completion_tokens, total_tokens, request_count)
+    VALUES (p_event_id, v_resource_string, CURRENT_DATE, v_prompt_tokens, v_completion_tokens, v_token_count, 1)
+    ON CONFLICT (event_id, resource, date_stamp)
+    DO UPDATE SET
+        prompt_tokens = aoai.metric.prompt_tokens + EXCLUDED.prompt_tokens,
+        completion_tokens = aoai.metric.completion_tokens + EXCLUDED.completion_tokens,
+        total_tokens = aoai.metric.total_tokens + EXCLUDED.total_tokens,
+        request_count = aoai.metric.request_count + 1;
 END;
 $$;
 
@@ -528,32 +533,18 @@ ALTER TABLE aoai.event_catalog_map OWNER TO azure_pg_admin;
 
 CREATE TABLE aoai.metric (
     event_id character varying(50) NOT NULL,
-    api_key character varying NOT NULL,
-    date_stamp date DEFAULT CURRENT_DATE NOT NULL,
-    time_stamp time without time zone DEFAULT CURRENT_TIME NOT NULL,
     resource character varying(64) NOT NULL,
-    usage jsonb NOT NULL
+    date_stamp date DEFAULT CURRENT_DATE NOT NULL,
+    prompt_tokens bigint NOT NULL DEFAULT 0,
+    completion_tokens bigint NOT NULL DEFAULT 0,
+    total_tokens bigint NOT NULL DEFAULT 0,
+    request_count bigint NOT NULL DEFAULT 0
 );
 
 
 ALTER TABLE aoai.metric OWNER TO azure_pg_admin;
 
---
--- Name: metric_view; Type: VIEW; Schema: aoai; Owner: azure_pg_admin
---
 
-CREATE VIEW aoai.metric_view AS
- SELECT event_id,
-    resource,
-    date_stamp,
-    time_stamp,
-    ((usage ->> 'prompt_tokens'::text))::integer AS prompt_tokens,
-    ((usage ->> 'completion_tokens'::text))::integer AS completion_tokens,
-    ((usage ->> 'total_tokens'::text))::integer AS total_tokens
-   FROM aoai.metric;
-
-
-ALTER VIEW aoai.metric_view OWNER TO azure_pg_admin;
 
 --
 -- Name: owner; Type: TABLE; Schema: aoai; Owner: azure_pg_admin
@@ -675,7 +666,8 @@ CREATE UNIQUE INDEX api_key_unique_index ON aoai.event_attendee USING btree (api
 -- Name: event_id_index; Type: INDEX; Schema: aoai; Owner: azure_pg_admin
 --
 
-CREATE INDEX event_id_index ON aoai.metric USING btree (event_id);
+ALTER TABLE ONLY aoai.metric
+    ADD CONSTRAINT metric_pkey PRIMARY KEY (event_id, resource, date_stamp);
 
 
 --
@@ -794,13 +786,6 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE aoai.event_catalog_map TO aoai_proxy_
 --
 
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE aoai.metric TO aoai_proxy_app;
-
-
---
--- Name: TABLE metric_view; Type: ACL; Schema: aoai; Owner: azure_pg_admin
---
-
-GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE aoai.metric_view TO aoai_proxy_app;
 
 
 --

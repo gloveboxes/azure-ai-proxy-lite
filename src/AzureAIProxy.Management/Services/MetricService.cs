@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AzureAIProxy.Management.Services;
@@ -26,19 +25,18 @@ public class MetricService(IDbContextFactory<AzureAIProxyDbContext> dbFactory) :
     public async Task<List<EventMetricsData>> GetEventMetricsAsync(string eventId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.MetricViews
-            .Where(mv => mv.EventId == eventId)
-            .GroupBy(mv => new { mv.EventId, mv.DateStamp, mv.Resource })
-            .OrderByDescending(g => g.Count())
-            .Select(g => new EventMetricsData
+        return await db.Metrics
+            .Where(m => m.EventId == eventId)
+            .OrderByDescending(m => m.RequestCount)
+            .Select(m => new EventMetricsData
             {
-                EventId = g.Key.EventId,
-                DateStamp = g.Key.DateStamp,
-                Resource = g.Key.Resource,
-                PromptTokens = g.Sum(x => x.PromptTokens),
-                CompletionTokens = g.Sum(x => x.CompletionTokens),
-                TotalTokens = g.Sum(x => x.TotalTokens),
-                Requests = g.Count()
+                EventId = m.EventId,
+                DateStamp = m.DateStamp.ToDateTime(TimeOnly.MinValue),
+                Resource = m.Resource,
+                PromptTokens = m.PromptTokens,
+                CompletionTokens = m.CompletionTokens,
+                TotalTokens = m.TotalTokens,
+                Requests = m.RequestCount
             }).ToListAsync();
     }
 
@@ -49,9 +47,9 @@ public class MetricService(IDbContextFactory<AzureAIProxyDbContext> dbFactory) :
             .Where(ea => ea.EventId == eventId)
             .Count();
 
-        var requestCount = db.Metrics
+        var requestCount = (int)db.Metrics
             .Where(m => m.EventId == eventId)
-            .Count();
+            .Sum(m => m.RequestCount);
 
         return (userCount, requestCount);
     }

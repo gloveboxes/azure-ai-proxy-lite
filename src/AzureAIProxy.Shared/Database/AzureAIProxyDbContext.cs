@@ -31,8 +31,6 @@ public partial class AzureAIProxyDbContext : DbContext
 
     public virtual DbSet<Metric> Metrics { get; set; }
 
-    public virtual DbSet<MetricView> MetricViews { get; set; }
-
     public virtual DbSet<Owner> Owners { get; set; }
 
     public virtual DbSet<OwnerCatalog> OwnerCatalogs { get; set; }
@@ -190,31 +188,19 @@ public partial class AzureAIProxyDbContext : DbContext
 
         modelBuilder.Entity<Metric>(entity =>
         {
-            entity.HasNoKey().ToTable("metric", "aoai");
+            entity.HasKey(e => new { e.EventId, e.Resource, e.DateStamp }).HasName("metric_pkey");
 
-            entity.HasIndex(e => e.EventId, "event_id_index");
+            entity.ToTable("metric", "aoai");
 
-            entity.Property(e => e.ApiKey).HasColumnType("character varying").HasColumnName("api_key");
-            entity.Property(e => e.DateStamp).HasDefaultValueSql("CURRENT_DATE").HasColumnName("date_stamp");
             entity.Property(e => e.EventId).HasMaxLength(50).HasColumnName("event_id");
             entity.Property(e => e.Resource).HasMaxLength(64).HasColumnName("resource");
-            entity.Property(e => e.TimeStamp).HasDefaultValueSql("CURRENT_TIME").HasColumnName("time_stamp");
-            entity.Property(e => e.Usage).HasColumnType("jsonb").HasColumnName("usage");
+            entity.Property(e => e.DateStamp).HasDefaultValueSql("CURRENT_DATE").HasColumnName("date_stamp");
+            entity.Property(e => e.PromptTokens).HasDefaultValue(0L).HasColumnName("prompt_tokens");
+            entity.Property(e => e.CompletionTokens).HasDefaultValue(0L).HasColumnName("completion_tokens");
+            entity.Property(e => e.TotalTokens).HasDefaultValue(0L).HasColumnName("total_tokens");
+            entity.Property(e => e.RequestCount).HasDefaultValue(0L).HasColumnName("request_count");
 
             entity.HasOne(d => d.Event).WithMany().HasForeignKey(d => d.EventId).HasConstraintName("fk_metric");
-        });
-
-        modelBuilder.Entity<MetricView>(entity =>
-        {
-            entity.HasNoKey().ToView("metric_view", "aoai");
-
-            entity.Property(e => e.CompletionTokens).HasColumnName("completion_tokens");
-            entity.Property(e => e.DateStamp).HasColumnName("date_stamp");
-            entity.Property(e => e.EventId).HasMaxLength(50).HasColumnName("event_id");
-            entity.Property(e => e.PromptTokens).HasColumnName("prompt_tokens");
-            entity.Property(e => e.Resource).HasMaxLength(64).HasColumnName("resource");
-            entity.Property(e => e.TimeStamp).HasColumnName("time_stamp");
-            entity.Property(e => e.TotalTokens).HasColumnName("total_tokens");
         });
 
         modelBuilder.Entity<Owner>(entity =>
