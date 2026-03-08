@@ -9,6 +9,7 @@ public static class RouteExtensions
         .MapEventRoutes()
         .MapAzureOpenAIRoutes()
         .MapAzureInferenceRoutes()
-        .MapAzureOpenAIAssistantsRoutes()
-        .MapAzureOpenAIFilesRoutes();
+        .MapFoundryAgentRoutes()
+        .MapFoundryAssistantsRoutes()
+        .MapFoundryOpenAIRoutes();
 }

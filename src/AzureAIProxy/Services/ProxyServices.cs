@@ -13,7 +13,7 @@ public static class ServicesExtensions
             .AddScoped<IMetricService, MetricService>()
             .AddScoped<IAttendeeService, AttendeeService>()
             .AddScoped<IEventService, EventService>()
-            .AddScoped<IAssistantService, AssistantService>();
+            .AddScoped<IFoundryAgentService, FoundryAgentService>();
 
         // Background metric writer (singleton since it owns the Channel)
         services.AddSingleton<MetricBackgroundService>();

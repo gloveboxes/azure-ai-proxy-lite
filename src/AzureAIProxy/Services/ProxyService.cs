@@ -30,7 +30,10 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
     {
         if (deployment.UseManagedIdentity)
         {
-            var tokenRequestContext = new TokenRequestContext(new[] { "https://cognitiveservices.azure.com/.default" });
+            var scope = deployment.ModelType == ModelType.Foundry_Agent.ToStorageString()
+                ? "https://ai.azure.com/.default"
+                : "https://cognitiveservices.azure.com/.default";
+            var tokenRequestContext = new TokenRequestContext(new[] { scope });
             var token = await _defaultCredential.GetTokenAsync(tokenRequestContext);
             return new RequestHeader("Authorization", $"Bearer {token.Token}");
         }
@@ -302,8 +305,17 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
     private static Uri AppendQueryParameters(UriBuilder requestUrl, HttpContext context)
     {
         var queryParameters = context.Request.Query
-            .Where(q => !string.IsNullOrEmpty(q.Value)) // Skip parameters with empty values
-            .Select(q => $"{q.Key}={q.Value!}");
+            .Where(q => !string.IsNullOrEmpty(q.Value))
+            .Select(q => $"{q.Key}={q.Value!}")
+            .ToList();
+
+        // Preserve any query parameters already set on the URL (e.g. api-version)
+        if (!string.IsNullOrEmpty(requestUrl.Query))
+        {
+            var existing = requestUrl.Query.TrimStart('?');
+            if (!string.IsNullOrEmpty(existing))
+                queryParameters.Insert(0, existing);
+        }
 
         requestUrl.Query = string.Join("&", queryParameters);
         return requestUrl.Uri;

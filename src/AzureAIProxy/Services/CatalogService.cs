@@ -12,7 +12,7 @@ public class CatalogService(
     IMemoryCache memoryCache
 ) : ICatalogService
 {
-    const string CatalogAssistantEventKey = "catalog+assistant+event+key";
+    const string CatalogFoundryAgentEventKey = "catalog+foundry+agent+event+key";
     const string CatalogEventDeploymentKey = "catalog+event+deployment+key";
 
     /// <summary>Gets catalog IDs from the event entity's inlined CatalogIds field.</summary>
@@ -69,9 +69,9 @@ public class CatalogService(
         return result;
     }
 
-    public async Task<Deployment?> GetEventAssistantAsync(string eventId)
+    public async Task<Deployment?> GetEventFoundryAgentAsync(string eventId)
     {
-        var cacheKey = $"{CatalogAssistantEventKey}+{eventId}";
+        var cacheKey = $"{CatalogFoundryAgentEventKey}+{eventId}";
         if (memoryCache.TryGetValue(cacheKey, out Deployment? cachedValue))
             return cachedValue!;
 
@@ -84,7 +84,7 @@ public class CatalogService(
             {
                 var response = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
                 var catalog = response.Value;
-                if (catalog.Active && catalog.ModelType == ModelType.OpenAI_Assistant.ToStorageString())
+                if (catalog.Active && catalog.ModelType == ModelType.Foundry_Agent.ToStorageString())
                 {
                     var result = new Deployment
                     {

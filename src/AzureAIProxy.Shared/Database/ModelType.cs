@@ -4,11 +4,9 @@ public enum ModelType
 {
     OpenAI_Chat,
     OpenAI_Embedding,
-    OpenAI_Dalle3,
     OpenAI_Whisper,
-    OpenAI_Completion,
     Azure_AI_Search,
-    OpenAI_Assistant
+    Foundry_Agent
 }
 
 public static class ModelTypeExtensions
@@ -17,11 +15,9 @@ public static class ModelTypeExtensions
     {
         ["openai-chat"] = ModelType.OpenAI_Chat,
         ["openai-embedding"] = ModelType.OpenAI_Embedding,
-        ["openai-dalle3"] = ModelType.OpenAI_Dalle3,
         ["openai-whisper"] = ModelType.OpenAI_Whisper,
-        ["openai-completion"] = ModelType.OpenAI_Completion,
-        ["openai-assistant"] = ModelType.OpenAI_Assistant,
         ["azure-ai-search"] = ModelType.Azure_AI_Search,
+        ["foundry-agent"] = ModelType.Foundry_Agent,
     };
 
     private static readonly Dictionary<ModelType, string> _reverseMap =

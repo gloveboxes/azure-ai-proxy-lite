@@ -21,7 +21,7 @@ Watch this 5-minute video to learn how to get started with the Azure AI Proxy.
 
 ## Bring your own models
 
-The Azure AI Proxy provides the infrastructure to support the deployment of your own models. You need to provide the models supporting your event. Initially, the proxy service supports the `chat completion`, `completion`, `embeddings`, and `dall-e-3` APIs.
+The Azure AI Proxy provides the infrastructure to support the deployment of your own models. You need to provide the models supporting your event. Initially, the proxy service supports the `chat completion` and `embeddings` APIs.
 
 ## Central deployment of the Azure AI Proxy service
 

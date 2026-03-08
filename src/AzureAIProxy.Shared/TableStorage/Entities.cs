@@ -134,10 +134,12 @@ public class OwnerEventEntity : ITableEntity
     public bool Creator { get; set; }
 }
 
-public class AssistantEntity : ITableEntity
+public class FoundryAgentObjectEntity : ITableEntity
 {
     public string PartitionKey { get; set; } = null!; // api_key
-    public string RowKey { get; set; } = null!;       // assistant id
+    public string RowKey { get; set; } = null!;       // object id (agent version, conversation, response)
     public DateTimeOffset? Timestamp { get; set; }
     public ETag ETag { get; set; }
+
+    public string ObjectType { get; set; } = null!;   // "agent", "conversation", "response"
 }

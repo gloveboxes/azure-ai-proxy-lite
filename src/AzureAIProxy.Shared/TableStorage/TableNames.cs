@@ -10,5 +10,5 @@ public static class TableNames
     public const string Owners = "owners";
     public const string Catalogs = "catalogs";
     public const string OwnerEvents = "ownerevents";
-    public const string Assistants = "assistants";
+    public const string FoundryAgents = "foundryagents";
 }

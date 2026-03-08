@@ -42,6 +42,7 @@ public partial class ModelEdit : ComponentBase
             ModelType = m.ModelType,
             Location = m.Location,
             Active = m.Active,
+            UseManagedIdentity = m.UseManagedIdentity,
         };
     }
 

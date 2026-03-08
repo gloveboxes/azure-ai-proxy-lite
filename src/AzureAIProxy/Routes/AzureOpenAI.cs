@@ -20,9 +20,7 @@ public static class AzureOpenAI
         var openAIGroup = builder.MapGroup("/openai/deployments/{deploymentName}");
         openAIGroup.MapPost("/chat/completions", ProcessRequestAsync);
         openAIGroup.MapPost("/extensions/chat/completions", ProcessRequestAsync);
-        openAIGroup.MapPost("/completions", ProcessRequestAsync);
         openAIGroup.MapPost("/embeddings", ProcessRequestAsync);
-        openAIGroup.MapPost("/images/generations", ProcessRequestAsync);
 
         return builder;
     }

@@ -14,7 +14,6 @@ public static class AzureInference
     {
         // OpenAI Routes for Mistral chat completions compatibity
         builder.MapPost("/chat/completions", ProcessRequestAsync);
-        builder.MapPost("/completions", ProcessRequestAsync);
         builder.MapPost("/embeddings", ProcessRequestAsync);
         builder.MapPost("/images/embeddings", ProcessRequestAsync);
         builder.MapGet("/info", ProcessRequestAsync);

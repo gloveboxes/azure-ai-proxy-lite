@@ -10,7 +10,6 @@ import {
   action as registrationAction,
 } from "./pages/event";
 import { Chat } from "./pages/playground/Chat";
-import { Image } from "./pages/playground/Image";
 import PlaygroundLayout from "./pages/playground/_Layout";
 import reportWebVitals from "./reportWebVitals";
 
@@ -22,10 +21,6 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Chat />,
-      },
-      {
-        path: "/images",
-        element: <Image />,
       },
     ],
   },

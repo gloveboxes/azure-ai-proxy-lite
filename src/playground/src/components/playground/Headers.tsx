@@ -4,7 +4,7 @@ import {
   makeStyles,
   shorthands,
 } from "@fluentui/react-components";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ApiKeyInput } from "./controls/EventCodeInput";
 import {
   EventData,
@@ -40,7 +40,6 @@ const hasCapability = (
 };
 
 export const Header = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const styles = useStyles();
   const { eventData, isAuthorized } = useEventDataContext();
@@ -76,7 +75,7 @@ export const Header = () => {
         </div>
 
         <TabList
-          selectedValue={location.pathname === "/" ? "chat" : "images"}
+          selectedValue="chat"
           onTabSelect={(_, data) => {
             data.value === "chat" ? navigate("/") : navigate(`/${data.value}`);
           }}
@@ -85,9 +84,6 @@ export const Header = () => {
             <>
               {hasCapability(eventData, "openai-chat") && (
                 <Tab value="chat">Chat</Tab>
-              )}
-              {hasCapability(eventData, "openai-dalle3") && (
-                <Tab value="images">Image</Tab>
               )}
             </>
           )}

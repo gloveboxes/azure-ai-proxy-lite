@@ -16,9 +16,7 @@ The Azure AI Proxy service URL is provided by the event organizer. The time boun
 The Azure AI Proxy provides support for the following Azure OpenAI SDKs:
 
 1. Azure OpenAI Chat Completions
-1. Azure OpenAI Completion
 1. Azure OpenAI Embeddings
-1. Azure OpenAI DALL-E 3
 
 ### Azure OpenAI Python SDK example
 

@@ -33,7 +33,7 @@ public class TableStorageService : ITableStorageService
             TableNames.Owners,
             TableNames.Catalogs,
             TableNames.OwnerEvents,
-            TableNames.Assistants
+            TableNames.FoundryAgents
         ];
 
         foreach (var table in tables)

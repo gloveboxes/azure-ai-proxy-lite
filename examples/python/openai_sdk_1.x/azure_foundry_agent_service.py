@@ -1,42 +1,59 @@
-""" Test Azure AI Foundry Agent Service using Managed Identity """
+"""
+Test Azure AI Foundry Agent Service via the AI Proxy.
 
-# See documentation at https://learn.microsoft.com/azure/foundry/agents/quickstart
+The proxy accepts api-key auth and forwards using managed identity.
+AIProjectClient requires a credential, but we only need it for the agents REST API.
+The OpenAI client from get_openai_client() also needs the api-key header.
+
+Usage:
+  export PROXY_ENDPOINT=https://<your-proxy>.azurecontainerapps.io/api/v1
+  export PROXY_API_KEY=<your-event-api-key>
+  python azure_foundry_agent_service.py
+"""
 
 import os
-
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import PromptAgentDefinition
-from azure.identity import DefaultAzureCredential
+import httpx
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Project endpoint of the form:
-# https://<your-ai-services-account-name>.services.ai.azure.com/api/projects/<your-project-name>
-ENDPOINT_URL = os.environ.get("ENDPOINT_URL")
-MODEL_NAME = "gpt-4o"  # Model deployment name
+PROXY_ENDPOINT = os.environ["PROXY_ENDPOINT"]  # e.g. https://<proxy>/api/v1
+PROXY_API_KEY = os.environ["PROXY_API_KEY"]     # event API key
+MODEL_NAME = "gpt-4o"
 
-# Entra ID is the only authentication method supported by AIProjectClient.
-# DefaultAzureCredential uses managed identity in Azure, or 'az login' locally.
-credential = DefaultAzureCredential()
+AGENTS_BASE = f"{PROXY_ENDPOINT}/agents"
 
-client = AIProjectClient(
-    endpoint=ENDPOINT_URL,
-    credential=credential,
+
+def agents_request(method, path, **kwargs):
+    """Make a request to the proxy's /agents endpoint."""
+    url = f"{AGENTS_BASE}{path}"
+    params = kwargs.pop("params", {})
+    params.setdefault("api-version", "v1")
+    resp = httpx.request(method, url, headers={"api-key": PROXY_API_KEY}, params=params, **kwargs)
+    resp.raise_for_status()
+    return resp.json()
+
+
+# The OpenAI client for conversations/responses, pointed at the proxy
+openai_client = OpenAI(
+    base_url=f"{PROXY_ENDPOINT}/openai/v1",
+    api_key="unused",
+    default_headers={"api-key": PROXY_API_KEY},
 )
 
-with client.get_openai_client() as openai_client:
+if True:
 
     # Step 1: Create an Agent
     print("Creating agent...")
-    agent = client.agents.create_version(
-        agent_name="MathTutor",
-        definition=PromptAgentDefinition(
-            model=MODEL_NAME,
-            instructions="You are a personal math tutor. Write and run code to answer math questions.",
-        ),
-    )
-    print(f"Agent created: name={agent.name}, version={agent.version}")
+    agent = agents_request("POST", "/MathTutor/versions", json={
+        "definition": {
+            "kind": "prompt",
+            "model": MODEL_NAME,
+            "instructions": "You are a personal math tutor. Write and run code to answer math questions.",
+        }
+    })
+    print(f"Agent created: name={agent['name']}, version={agent['version']}")
     print()
 
     # Step 2: Create a Conversation with the initial user message
@@ -55,7 +72,7 @@ with client.get_openai_client() as openai_client:
     print("Running agent...")
     response = openai_client.responses.create(
         conversation=conversation.id,
-        extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}},
+        extra_body={"agent_reference": {"name": agent["name"], "type": "agent_reference"}},
     )
     print()
     print("Response:")
@@ -68,5 +85,5 @@ with client.get_openai_client() as openai_client:
     print("Cleaning up...")
     openai_client.conversations.delete(conversation_id=conversation.id)
     print(f"Conversation {conversation.id} deleted")
-    client.agents.delete_version(agent_name=agent.name, agent_version=agent.version)
-    print(f"Agent {agent.name} (version {agent.version}) deleted")
+    agents_request("DELETE", f"/{agent['name']}/versions/{agent['version']}")
+    print(f"Agent {agent['name']} (version {agent['version']}) deleted")
