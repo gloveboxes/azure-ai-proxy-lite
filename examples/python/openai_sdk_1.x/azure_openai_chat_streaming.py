@@ -1,8 +1,9 @@
-""" Test Azure OpenAI Chat Completions Stream API """
+""" Test Azure OpenAI Chat Completions API with Streaming """
+
+# See documentation at https://gloveboxes.github.io/azure-openai-service-proxy/category/developer-endpoints/
 
 import os
 import sys
-import time
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
@@ -11,12 +12,12 @@ load_dotenv()
 
 ENDPOINT_URL = os.environ.get("ENDPOINT_URL")
 API_KEY = os.environ.get("API_KEY")
-API_VERSION = "2023-09-01-preview"
-MODEL_NAME = "gpt-35-turbo"
+API_VERSION = "2024-10-21"
+MODEL_NAME = "gpt-4.1"
 
 
 client = AzureOpenAI(
-    base_url=ENDPOINT_URL,
+    azure_endpoint=ENDPOINT_URL,
     api_key=API_KEY,
     api_version=API_VERSION,
 )
@@ -34,25 +35,23 @@ MESSAGES = [
 
 try:
     response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "What is the meaning of life!"},
-        ],
+        model=MODEL_NAME,  # e.g. gpt-4.1
+        messages=MESSAGES,
         stream=True,
-        max_tokens=100,
     )
 except Exception as exp:
-    print(exp.response.text)
-    sys.exit()
+    print(f"Error: {exp}")
+    sys.exit(1)
 
+
+print("Streaming response:")
+print("-" * 50)
 
 for chunk in response:
     if chunk.choices and len(chunk.choices) > 0:
         content = chunk.choices[0].delta.content
         if content:
             print(content, end="", flush=True)
-        # delay to simulate real-time chat
-        time.sleep(0.05)
 
 print()
+print("-" * 50)
