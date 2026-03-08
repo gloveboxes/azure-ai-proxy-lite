@@ -8,4 +8,5 @@ public class Deployment
     public string EndpointUrl { get; set; } = null!;
     public Guid CatalogId { get; set; } = Guid.Empty;
     public string Location { get; set; } = null!;
+    public bool UseManagedIdentity { get; set; }
 }

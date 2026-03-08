@@ -25,6 +25,9 @@ public class OpenAIResult(string message, HttpStatusCode statusCode) : IResult
     public static OpenAIResult ServiceUnavailable(string message) =>
         new(message, HttpStatusCode.ServiceUnavailable);
 
+    public static OpenAIResult InternalServerError(string message) =>
+        new(message, HttpStatusCode.InternalServerError);
+
     public static OpenAIResult Unauthorized(string message) =>
         new(message, HttpStatusCode.Unauthorized);
 

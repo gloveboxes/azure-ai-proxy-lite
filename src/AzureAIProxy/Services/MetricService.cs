@@ -27,11 +27,11 @@ public class MetricService(IMetricChannel metricChannel, IRateLimitService rateL
         try
         {
             using var jsonDoc = JsonDocument.Parse(responseContent);
-            if (jsonDoc.RootElement.TryGetProperty("usage", out var usage))
+            if (jsonDoc.RootElement.TryGetProperty("usage", out var usage) && usage.ValueKind != JsonValueKind.Null)
             {
-                var prompt = usage.TryGetProperty("prompt_tokens", out var p) ? p.GetInt32() : 0;
-                var completion = usage.TryGetProperty("completion_tokens", out var c) ? c.GetInt32() : 0;
-                var total = usage.TryGetProperty("total_tokens", out var t) ? t.GetInt32() : 0;
+                var prompt = usage.TryGetProperty("prompt_tokens", out var p) && p.ValueKind != JsonValueKind.Null ? p.GetInt32() : 0;
+                var completion = usage.TryGetProperty("completion_tokens", out var c) && c.ValueKind != JsonValueKind.Null ? c.GetInt32() : 0;
+                var total = usage.TryGetProperty("total_tokens", out var t) && t.ValueKind != JsonValueKind.Null ? t.GetInt32() : 0;
                 return (prompt, completion, total);
             }
         }

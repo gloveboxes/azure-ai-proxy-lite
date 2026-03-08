@@ -1,0 +1,2 @@
+azure-data-tables>=12.4.0
+azure-identity>=1.15.0

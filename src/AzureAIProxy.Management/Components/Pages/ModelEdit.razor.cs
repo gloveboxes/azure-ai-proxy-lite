@@ -56,7 +56,8 @@ public partial class ModelEdit : ComponentBase
             ModelType = model.ModelType!.Value,
             EndpointUrl = model.EndpointUrl!,
             Location = model.Location!,
-            Active = model.Active
+            Active = model.Active,
+            UseManagedIdentity = model.UseManagedIdentity
         };
 
         await ModelService.UpdateOwnerCatalogAsync(m);

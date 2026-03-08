@@ -20,6 +20,30 @@ public class MockProxyService(IHttpClientFactory httpClientFactory, IMetricServi
     }
 
     /// <summary>
+    /// Creates the appropriate authentication header based on deployment configuration.
+    /// For mock service, returns dummy headers.
+    /// </summary>
+    public Task<RequestHeader> GetAuthenticationHeaderAsync(Deployment deployment, bool useBearerToken = false)
+    {
+        // For mock service, just return a dummy header
+        if (deployment.UseManagedIdentity)
+        {
+            return Task.FromResult(new RequestHeader("Authorization", "Bearer mock-managed-identity-token"));
+        }
+        else
+        {
+            if (useBearerToken)
+            {
+                return Task.FromResult(new RequestHeader("Authorization", $"Bearer {deployment.EndpointKey}"));
+            }
+            else
+            {
+                return Task.FromResult(new RequestHeader("api-key", deployment.EndpointKey));
+            }
+        }
+    }
+
+    /// <summary>
     /// Sends an HTTP POST request to the specified URL with the provided JSON payload and headers.
     /// This method is used for testing purposes and does not actually send an HTTP request.
     /// </summary>

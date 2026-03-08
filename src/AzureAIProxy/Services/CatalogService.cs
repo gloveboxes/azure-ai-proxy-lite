@@ -54,10 +54,11 @@ public class CatalogService(
                     {
                         DeploymentName = catalog.DeploymentName,
                         EndpointUrl = encryption.Decrypt(catalog.EncryptedEndpointUrl),
-                        EndpointKey = encryption.Decrypt(catalog.EncryptedEndpointKey),
+                        EndpointKey = string.IsNullOrWhiteSpace(catalog.EncryptedEndpointKey) ? string.Empty : encryption.Decrypt(catalog.EncryptedEndpointKey),
                         ModelType = catalog.ModelType,
                         CatalogId = Guid.Parse(catalogId),
-                        Location = catalog.Location
+                        Location = catalog.Location,
+                        UseManagedIdentity = catalog.UseManagedIdentity
                     });
                 }
             }
@@ -89,10 +90,11 @@ public class CatalogService(
                     {
                         DeploymentName = catalog.DeploymentName,
                         EndpointUrl = encryption.Decrypt(catalog.EncryptedEndpointUrl),
-                        EndpointKey = encryption.Decrypt(catalog.EncryptedEndpointKey),
+                        EndpointKey = string.IsNullOrWhiteSpace(catalog.EncryptedEndpointKey) ? string.Empty : encryption.Decrypt(catalog.EncryptedEndpointKey),
                         ModelType = catalog.ModelType,
                         CatalogId = Guid.Parse(catalogId),
-                        Location = catalog.Location
+                        Location = catalog.Location,
+                        UseManagedIdentity = catalog.UseManagedIdentity
                     };
                     memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(4));
                     return result;

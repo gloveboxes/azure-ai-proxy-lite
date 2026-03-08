@@ -59,10 +59,8 @@ public static class AzureAIOpenFiles
             Path = requestPath
         };
 
-        List<RequestHeader> requestHeaders =
-        [
-            new("api-key", deployment.EndpointKey)
-        ];
+        var authHeader = await proxyService.GetAuthenticationHeaderAsync(deployment);
+        List<RequestHeader> requestHeaders = [authHeader];
 
         var methodHandlers = new Dictionary<string, Func<Task<(string, int)>>>
         {
@@ -79,8 +77,8 @@ public static class AzureAIOpenFiles
             try
             {
                 var (responseContent, statusCode) = await handler();
-                await AssistantIdTracking(assistantService, context.Request.Method, requestContext, responseContent, statusCode);
-                return new ProxyResult(responseContent, statusCode);
+                await AssistantIdTracking(assistantService, context.Request.Method, requestContext, responseContent ?? string.Empty, statusCode);
+                return new ProxyResult(responseContent ?? string.Empty, statusCode);
             }
             catch (TaskCanceledException ex) when (ex.InnerException is System.Net.Sockets.SocketException)
             {
@@ -93,6 +91,10 @@ public static class AzureAIOpenFiles
             catch (HttpRequestException ex)
             {
                 return OpenAIResult.ServiceUnavailable("The request failed: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return OpenAIResult.InternalServerError($"An error occurred processing the request: {ex.Message}");
             }
         }
         return OpenAIResult.MethodNotAllowed("Unsupported HTTP method: " + context.Request.Method);

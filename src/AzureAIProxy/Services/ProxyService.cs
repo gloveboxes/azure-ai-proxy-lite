@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using Azure.Core;
+using Azure.Identity;
 using AzureAIProxy.Models;
 using AzureAIProxy.Shared.Database;
 using Microsoft.Extensions.Primitives;
@@ -16,6 +18,34 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
     : IProxyService
 {
     private const int HttpTimeoutSeconds = 60;
+    private static readonly DefaultAzureCredential _defaultCredential = new();
+
+    /// <summary>
+    /// Creates the appropriate authentication header based on deployment configuration.
+    /// </summary>
+    /// <param name="deployment">The deployment configuration.</param>
+    /// <param name="useBearerToken">If true, formats as Bearer token; otherwise uses api-key header.</param>
+    /// <returns>A RequestHeader configured for authentication.</returns>
+    public async Task<RequestHeader> GetAuthenticationHeaderAsync(Deployment deployment, bool useBearerToken = false)
+    {
+        if (deployment.UseManagedIdentity)
+        {
+            var tokenRequestContext = new TokenRequestContext(new[] { "https://cognitiveservices.azure.com/.default" });
+            var token = await _defaultCredential.GetTokenAsync(tokenRequestContext);
+            return new RequestHeader("Authorization", $"Bearer {token.Token}");
+        }
+        else
+        {
+            if (useBearerToken)
+            {
+                return new RequestHeader("Authorization", $"Bearer {deployment.EndpointKey}");
+            }
+            else
+            {
+                return new RequestHeader("api-key", deployment.EndpointKey);
+            }
+        }
+    }
 
     /// <summary>
     /// Sends an HTTP DELETE request to the specified URL using the provided endpoint key.

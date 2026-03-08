@@ -121,6 +121,7 @@ public class CatalogEntity : ITableEntity
     public string FriendlyName { get; set; } = null!;
     public string EncryptedEndpointUrl { get; set; } = null!;
     public string EncryptedEndpointKey { get; set; } = null!;
+    public bool UseManagedIdentity { get; set; }
 }
 
 public class OwnerEventEntity : ITableEntity

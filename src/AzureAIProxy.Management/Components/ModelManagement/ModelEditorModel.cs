@@ -17,7 +17,7 @@ public class ModelEditorModel
     [Url]
     public string? EndpointUrl { get; set; }
 
-    [Required]
+    [RequiredUnlessManagedIdentity]
     [StringLength(128)]
     public string? EndpointKey { get; set; }
 
@@ -30,4 +30,6 @@ public class ModelEditorModel
 
     [Required]
     public ModelType? ModelType { get; set; } = null;
+
+    public bool UseManagedIdentity { get; set; }
 }

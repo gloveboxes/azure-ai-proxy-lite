@@ -6,6 +6,8 @@ namespace AzureAIProxy.Services;
 
 public interface IProxyService
 {
+    Task<RequestHeader> GetAuthenticationHeaderAsync(Deployment deployment, bool useBearerToken = false);
+
     Task<(string responseContent, int statusCode)> HttpPostAsync(
         UriBuilder requestUrl,
         List<RequestHeader> requestHeaders,

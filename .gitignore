@@ -16,3 +16,8 @@ appsettings.*.json
 
 # AZD
 .azure/
+
+# Generated sample data
+attendees_*.json
+events_*.json
+generate_*.log

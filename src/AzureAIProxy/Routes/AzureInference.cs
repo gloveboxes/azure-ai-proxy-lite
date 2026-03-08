@@ -52,9 +52,10 @@ public static class AzureInference
             Path = requestPath
         };
 
+        var authHeader = await proxyService.GetAuthenticationHeaderAsync(deployment, useBearerToken: true);
         List<RequestHeader> requestHeaders =
         [
-            new("Authorization", $"Bearer {deployment.EndpointKey}"),
+            authHeader,
             new("azureml-model-deployment", deploymentName),
         ];
 

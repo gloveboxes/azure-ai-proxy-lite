@@ -57,10 +57,8 @@ public static class AzureOpenAI
             Path = requestPath
         };
 
-        List<RequestHeader> requestHeaders =
-        [
-            new("api-key", deployment.EndpointKey)
-        ];
+        var authHeader = await proxyService.GetAuthenticationHeaderAsync(deployment);
+        List<RequestHeader> requestHeaders = [authHeader];
 
         try
         {

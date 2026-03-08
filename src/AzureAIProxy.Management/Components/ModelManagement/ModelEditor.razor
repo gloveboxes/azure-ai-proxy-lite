@@ -43,6 +43,9 @@
                 <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
                     Immediate="true" />
 
+                <MudSwitch @bind-Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
+                    HelperText="When enabled, uses Azure Managed Identity authentication instead of API key" />
+
                 <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
             }
         </MudCardContent>

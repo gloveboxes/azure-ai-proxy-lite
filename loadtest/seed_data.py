@@ -100,6 +100,7 @@ def seed(
                 "FriendlyName": f"Test Model {i}",
                 "EncryptedEndpointUrl": encrypt_value("https://fake-endpoint.openai.azure.com", encryption_key),
                 "EncryptedEndpointKey": encrypt_value("fake-api-key-12345", encryption_key),
+                "UseManagedIdentity": False,
             },
             mode=UpdateMode.REPLACE,
         )

@@ -39,7 +39,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             Location = model.Location!,
             FriendlyName = model.FriendlyName!,
             EncryptedEndpointUrl = encryption.Encrypt(model.EndpointUrl!),
-            EncryptedEndpointKey = encryption.Encrypt(model.EndpointKey!)
+            EncryptedEndpointKey = string.IsNullOrWhiteSpace(model.EndpointKey) ? string.Empty : encryption.Encrypt(model.EndpointKey),
+            UseManagedIdentity = model.UseManagedIdentity
         };
 
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
@@ -99,7 +100,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             Location = entity.Location,
             FriendlyName = entity.FriendlyName,
             EndpointUrl = encryption.Decrypt(entity.EncryptedEndpointUrl),
-            EndpointKey = encryption.Decrypt(entity.EncryptedEndpointKey)
+            EndpointKey = string.IsNullOrWhiteSpace(entity.EncryptedEndpointKey) ? string.Empty : encryption.Decrypt(entity.EncryptedEndpointKey),
+            UseManagedIdentity = entity.UseManagedIdentity
         };
     }
 
@@ -123,7 +125,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             Location = source.Value.Location,
             FriendlyName = $"{source.Value.FriendlyName} (Copy)",
             EncryptedEndpointUrl = source.Value.EncryptedEndpointUrl,
-            EncryptedEndpointKey = source.Value.EncryptedEndpointKey
+            EncryptedEndpointKey = source.Value.EncryptedEndpointKey,
+            UseManagedIdentity = source.Value.UseManagedIdentity
         };
 
         await catalogTable.AddEntityAsync(entity);
@@ -147,7 +150,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
                 Active = entity.Active,
                 ModelType = ModelTypeExtensions.FromStorageString(entity.ModelType),
                 Location = entity.Location,
-                FriendlyName = entity.FriendlyName
+                FriendlyName = entity.FriendlyName,
+                UseManagedIdentity = entity.UseManagedIdentity
             };
 
             // Check which events reference this catalog
@@ -187,7 +191,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         existing.Location = ownerCatalog.Location;
         existing.Active = ownerCatalog.Active;
         existing.EncryptedEndpointUrl = encryption.Encrypt(ownerCatalog.EndpointUrl);
-        existing.EncryptedEndpointKey = encryption.Encrypt(ownerCatalog.EndpointKey);
+        existing.EncryptedEndpointKey = string.IsNullOrWhiteSpace(ownerCatalog.EndpointKey) ? string.Empty : encryption.Encrypt(ownerCatalog.EndpointKey);
+        existing.UseManagedIdentity = ownerCatalog.UseManagedIdentity;
 
         await catalogTable.UpdateEntityAsync(existing, existing.ETag, Azure.Data.Tables.TableUpdateMode.Replace);
     }
