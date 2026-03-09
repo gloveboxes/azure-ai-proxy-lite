@@ -9,10 +9,10 @@ from openai import AzureOpenAI
 
 load_dotenv()
 
-ENDPOINT_URL = os.environ.get("ENDPOINT_URL")
-API_KEY = os.environ.get("API_KEY")
+ENDPOINT_URL = os.environ.get("PROXY_ENDPOINT")
+API_KEY = os.environ.get("PROXY_API_KEY")
 API_VERSION = "2024-10-21"
-MODEL_NAME = "gpt-4.1"
+MODEL_NAME = "gpt-4o"
 
 
 client = AzureOpenAI(

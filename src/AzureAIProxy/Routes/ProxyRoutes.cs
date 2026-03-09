@@ -11,5 +11,6 @@ public static class RouteExtensions
         .MapAzureInferenceRoutes()
         .MapFoundryAgentRoutes()
         .MapFoundryAssistantsRoutes()
-        .MapFoundryOpenAIRoutes();
+        .MapFoundryOpenAIRoutes()
+        .MapMcpServerRoutes();
 }

@@ -29,6 +29,7 @@
         "ms-azuretools.vscode-bicep",
         "esbenp.prettier-vscode",
         "ms-dotnettools.csdevkit",
+        "cweijan.vscode-postgresql-client2",
         "EditorConfig.EditorConfig"
       ]
     }

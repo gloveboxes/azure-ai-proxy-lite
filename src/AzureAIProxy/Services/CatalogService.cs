@@ -106,6 +106,45 @@ public class CatalogService(
         return null;
     }
 
+    public async Task<Deployment?> GetEventMcpServerAsync(string eventId, string deploymentName)
+    {
+        var cacheKey = $"catalog+mcp+server+{eventId}+{deploymentName}";
+        if (memoryCache.TryGetValue(cacheKey, out Deployment? cachedValue))
+            return cachedValue!;
+
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var catalogIds = await GetCatalogIdsForEventAsync(eventId);
+
+        foreach (var catalogId in catalogIds)
+        {
+            try
+            {
+                var response = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
+                var catalog = response.Value;
+                if (catalog.Active &&
+                    catalog.ModelType == ModelType.MCP_Server.ToStorageString() &&
+                    catalog.DeploymentName == deploymentName)
+                {
+                    var result = new Deployment
+                    {
+                        DeploymentName = catalog.DeploymentName,
+                        EndpointUrl = encryption.Decrypt(catalog.EncryptedEndpointUrl),
+                        EndpointKey = string.IsNullOrWhiteSpace(catalog.EncryptedEndpointKey) ? string.Empty : encryption.Decrypt(catalog.EncryptedEndpointKey),
+                        ModelType = catalog.ModelType,
+                        CatalogId = Guid.Parse(catalogId),
+                        Location = catalog.Location,
+                        UseManagedIdentity = catalog.UseManagedIdentity
+                    };
+                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(4));
+                    return result;
+                }
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+
+        return null;
+    }
+
     public async Task<(Deployment? deployment, List<Deployment> eventCatalog)> GetCatalogItemAsync(
         string eventId, string deploymentName)
     {

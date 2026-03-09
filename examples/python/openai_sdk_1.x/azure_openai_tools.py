@@ -6,10 +6,10 @@ from termcolor import colored
 
 load_dotenv()
 
-ENDPOINT_URL = os.environ.get("ENDPOINT_URL")
-API_KEY = os.environ.get("API_KEY")
-API_VERSION = "2023-09-01-preview"
-DEPLOYMENT_NAME = "gpt-35-turbo"
+ENDPOINT_URL = os.environ.get("PROXY_ENDPOINT")
+API_KEY = os.environ.get("PROXY_API_KEY")
+API_VERSION = "2024-10-21"
+DEPLOYMENT_NAME = "gpt-4o"
 
 client = AzureOpenAI(
     azure_endpoint=ENDPOINT_URL,
@@ -126,4 +126,7 @@ assistant_message = chat_response.choices[0].message
 
 if assistant_message.tool_calls:
     print("\nTools call detected")
+    for tool_call in assistant_message.tool_calls:
+        print(f"Function: {tool_call.function.name}")
+        print(f"Arguments: {tool_call.function.arguments}")
     pretty_print_conversation(messages)

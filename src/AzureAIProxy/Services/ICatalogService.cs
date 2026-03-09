@@ -9,5 +9,6 @@ public interface ICatalogService
         string deploymentName
     );
     Task<Deployment?> GetEventFoundryAgentAsync(string eventId);
+    Task<Deployment?> GetEventMcpServerAsync(string eventId, string deploymentName);
     Task<Dictionary<string, List<string>>> GetCapabilitiesAsync(string eventId);
 }
