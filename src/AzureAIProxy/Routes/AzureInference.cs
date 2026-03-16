@@ -25,14 +25,20 @@ public static class AzureInference
     private static async Task<IResult> ProcessRequestAsync(
         [FromServices] ICatalogService catalogService,
         [FromServices] IProxyService proxyService,
+        [FromServices] ILoggerFactory loggerFactory,
         HttpContext context
     )
     {
+        var logger = loggerFactory.CreateLogger("AzureInference");
         string requestPath = (string)context.Items["requestPath"]!;
         RequestContext requestContext = (RequestContext)context.Items["RequestContext"]!;
         JsonDocument requestJsonDoc = (JsonDocument)context.Items["jsonDoc"]!;
         bool streaming = (bool)context.Items["IsStreaming"]!;
         string deploymentName = (string)context.Items["ModelName"]!;
+
+        logger.LogInformation(
+            "[DIAG] AzureInference route matched: deploymentName={DeploymentName}, requestPath={RequestPath}, streaming={Streaming}, eventId={EventId}",
+            deploymentName, requestPath, streaming, requestContext.EventId);
 
         var (deployment, eventCatalog) = await catalogService.GetCatalogItemAsync(
             requestContext.EventId,
@@ -41,6 +47,10 @@ public static class AzureInference
 
         if (deployment is null)
         {
+            logger.LogWarning(
+                "[DIAG] Deployment '{DeploymentName}' not found for event '{EventId}'. Available: {Available}",
+                deploymentName, requestContext.EventId,
+                string.Join(", ", eventCatalog.Select(d => d.DeploymentName)));
             return OpenAIResult.NotFound(
                 $"Deployment '{deploymentName}' not found for this event. Available deployments are: {string.Join(", ", eventCatalog.Select(d => d.DeploymentName))}"
             );
@@ -50,6 +60,10 @@ public static class AzureInference
         {
             Path = requestPath
         };
+
+        logger.LogInformation(
+            "[DIAG] Forwarding to upstream: {UpstreamUrl}, modelType={ModelType}, managedIdentity={ManagedIdentity}",
+            url.Uri, deployment.ModelType, deployment.UseManagedIdentity);
 
         var authHeader = await proxyService.GetAuthenticationHeaderAsync(deployment, useBearerToken: true);
         List<RequestHeader> requestHeaders =

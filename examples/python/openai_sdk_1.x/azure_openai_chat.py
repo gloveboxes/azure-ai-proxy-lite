@@ -12,7 +12,7 @@ load_dotenv()
 ENDPOINT_URL = os.environ.get("PROXY_ENDPOINT")
 API_KEY = os.environ.get("PROXY_API_KEY")
 API_VERSION = "2024-10-21"
-MODEL_NAME = "gpt-4o"
+MODEL_NAME = "gpt-4.1-mini"
 
 
 client = AzureOpenAI(
@@ -33,7 +33,7 @@ MESSAGES = [
 
 
 completion = client.chat.completions.create(
-    model=MODEL_NAME,  # e.g. gpt-4.1
+    model=MODEL_NAME,  # e.g. gpt-4.1-mini
     messages=MESSAGES,
 )
 

@@ -8,7 +8,7 @@ using RequestContext = AzureAIProxy.Shared.Database.RequestContext;
 
 namespace AzureAIProxy.Services;
 
-public class AuthorizeService(ITableStorageService tableStorage) : IAuthorizeService
+public class AuthorizeService(ITableStorageService tableStorage, ILogger<AuthorizeService> logger) : IAuthorizeService
 {
     public async Task<RequestContext?> IsUserAuthorizedAsync(string apiKey)
     {
@@ -25,16 +25,30 @@ public class AuthorizeService(ITableStorageService tableStorage) : IAuthorizeSer
         {
             lookup = await HandleSharedCodeRequestAsync(apiKey);
             if (lookup is null)
+            {
+                logger.LogWarning("API key not found in attendee lookup table and does not match shared-code format.");
                 return null;
+            }
         }
 
-        if (!lookup.Active || !lookup.EventActive) return null;
+        if (!lookup.Active || !lookup.EventActive)
+        {
+            logger.LogWarning(
+                "Authentication denied: attendee active={AttendeeActive}, event active={EventActive}, eventId={EventId}",
+                lookup.Active, lookup.EventActive, lookup.EventId);
+            return null;
+        }
 
         // Check time window using denormalized event data
         var currentUtc = DateTime.UtcNow;
         var adjustedTime = currentUtc.AddMinutes(lookup.TimeZoneOffset);
         if (adjustedTime < lookup.StartTimestamp || adjustedTime > lookup.EndTimestamp)
+        {
+            logger.LogWarning(
+                "Authentication denied: event time window expired or not yet started. adjustedTime={AdjustedTime}, start={Start}, end={End}, eventId={EventId}",
+                adjustedTime, lookup.StartTimestamp, lookup.EndTimestamp, lookup.EventId);
             return null;
+        }
 
         return new RequestContext
         {

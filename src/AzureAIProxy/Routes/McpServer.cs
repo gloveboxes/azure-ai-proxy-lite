@@ -47,14 +47,14 @@ public static class McpServer
         logger.LogInformation("MCP proxy: BEGIN {Method} {Path} deploymentName={DeploymentName} catchAll={CatchAll}",
             context.Request.Method, context.Request.Path, deploymentName, catchAll ?? "(none)");
 
-        // Log incoming headers for diagnostics
-        foreach (var header in context.Request.Headers)
-        {
-            if (!header.Key.Equals("api-key", StringComparison.OrdinalIgnoreCase))
-            {
-                logger.LogInformation("MCP proxy: request header {Key}: {Value}", header.Key, header.Value.ToString());
-            }
-        }
+        // // Log incoming headers for diagnostics
+        // foreach (var header in context.Request.Headers)
+        // {
+        //     if (!header.Key.Equals("api-key", StringComparison.OrdinalIgnoreCase))
+        //     {
+        //         logger.LogInformation("MCP proxy: request header {Key}: {Value}", header.Key, header.Value.ToString());
+        //     }
+        // }
 
         RequestContext requestContext = (RequestContext)context.Items["RequestContext"]!;
         logger.LogInformation("MCP proxy: authenticated eventId={EventId}", requestContext.EventId);
@@ -109,7 +109,7 @@ public static class McpServer
             if (context.Request.Headers.TryGetValue(headerName, out var values))
             {
                 requestMessage.Headers.TryAddWithoutValidation(headerName, values.ToArray());
-                logger.LogInformation("MCP proxy: forwarding header {Key}: {Value}", headerName, values.ToString());
+                // logger.LogInformation("MCP proxy: forwarding header {Key}: {Value}", headerName, values.ToString());
             }
         }
 
@@ -117,7 +117,7 @@ public static class McpServer
         if (!string.IsNullOrEmpty(deployment.EndpointKey))
         {
             requestMessage.Headers.TryAddWithoutValidation("api-key", deployment.EndpointKey);
-            logger.LogInformation("MCP proxy: forwarding api-key header to upstream");
+            // logger.LogInformation("MCP proxy: forwarding api-key header to upstream");
         }
 
         // Forward request body for POST (use JSON parsed by LoadProperties middleware)
@@ -127,8 +127,8 @@ public static class McpServer
             if (jsonDoc is not null)
             {
                 var bodyJson = jsonDoc.RootElement.ToString();
-                logger.LogInformation("MCP proxy: forwarding POST body ({Length} chars): {Body}",
-                    bodyJson.Length, bodyJson.Length <= 500 ? bodyJson : bodyJson[..500] + "...");
+                // logger.LogInformation("MCP proxy: forwarding POST body ({Length} chars): {Body}",
+                //     bodyJson.Length, bodyJson.Length <= 500 ? bodyJson : bodyJson[..500] + "...");
                 requestMessage.Content = new StringContent(
                     bodyJson,
                     System.Text.Encoding.UTF8,
@@ -137,11 +137,11 @@ public static class McpServer
             }
             else
             {
-                logger.LogWarning("MCP proxy: POST request but jsonDoc is null (no body parsed by middleware)");
+                // logger.LogWarning("MCP proxy: POST request but jsonDoc is null (no body parsed by middleware)");
             }
         }
 
-        logger.LogInformation("MCP proxy: sending {Method} to upstream...", context.Request.Method);
+        // logger.LogInformation("MCP proxy: sending {Method} to upstream...", context.Request.Method);
 
         HttpResponseMessage response;
         try
@@ -151,8 +151,8 @@ public static class McpServer
                 HttpCompletionOption.ResponseHeadersRead,
                 context.RequestAborted
             );
-            logger.LogInformation("MCP proxy: upstream responded {StatusCode} {ReasonPhrase}",
-                (int)response.StatusCode, response.ReasonPhrase);
+            // logger.LogInformation("MCP proxy: upstream responded {StatusCode} {ReasonPhrase}",
+            //     (int)response.StatusCode, response.ReasonPhrase);
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
@@ -182,14 +182,14 @@ public static class McpServer
             if (response.Content.Headers.ContentType is not null)
             {
                 context.Response.ContentType = response.Content.Headers.ContentType.ToString();
-                logger.LogInformation("MCP proxy: response Content-Type: {ContentType}", response.Content.Headers.ContentType);
+                // logger.LogInformation("MCP proxy: response Content-Type: {ContentType}", response.Content.Headers.ContentType);
             }
 
             // Log all upstream response headers for diag
-            foreach (var h in response.Headers)
-            {
-                logger.LogInformation("MCP proxy: response header {Key}: {Value}", h.Key, string.Join(", ", h.Value));
-            }
+            // foreach (var h in response.Headers)
+            // {
+            //     logger.LogInformation("MCP proxy: response header {Key}: {Value}", h.Key, string.Join(", ", h.Value));
+            // }
 
             foreach (var headerName in ForwardedResponseHeaders)
             {

@@ -13,15 +13,25 @@ public class BearerTokenAuthenticationHandler(
     UrlEncoder encoder
 ) : AuthenticationHandler<ProxyAuthenticationOptions>(options, logger, encoder)
 {
+    private static readonly HashSet<string> SensitiveHeaders = new(StringComparer.OrdinalIgnoreCase)
+        { "api-key", "authorization", "cookie", "x-api-key" };
+
+    private string RedactedHeaders() =>
+        string.Join(", ", Request.Headers.Select(h =>
+            $"{h.Key}: {(SensitiveHeaders.Contains(h.Key) ? "[REDACTED]" : h.Value.ToString())}"));
+
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.TryGetValue("Authorization", out var apiKeyValues))
-            return AuthenticateResult.Fail("Missing API key is empty.");
+            return AuthenticateResult.NoResult();
 
         // Extract the API key from the Authorization header
-        var apiKey = apiKeyValues.ToString().Split(" ").Last(); // Convert StringValues to string
+        var apiKey = apiKeyValues.ToString().Split(" ").Last();
         if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            Logger.LogWarning("Authorization header present but empty. Received headers: {Headers}", RedactedHeaders());
             return AuthenticateResult.Fail("API key is empty.");
+        }
 
         var requestContext = await authorizeService.IsUserAuthorizedAsync(apiKey);
         if (requestContext is null)

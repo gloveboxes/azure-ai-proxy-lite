@@ -31,25 +31,23 @@ async def main():
         sys.exit(1)
 
     server_url = f"{proxy_url}/mcp/{deployment}/mcp"
-    print(f"Connecting to MCP server via proxy at {server_url}")
+    print(f"Connecting 50 workers to MCP server via proxy at {server_url}")
 
-    transport = StreamableHttpTransport(
-        url=server_url,
-        headers={"api-key": api_key},
-    )
+    async def worker(worker_id: int):
+        t = StreamableHttpTransport(
+            url=server_url,
+            headers={"api-key": api_key},
+        )
+        async with Client(t) as client:
+            for i in range(200):
+                tools = await client.list_tools()
+                echo_result = await client.call_tool("echo", {"message": f"Worker {worker_id} iteration {i}"})
+                time_result = await client.call_tool("get_current_utc_time", {})
+                print(f"[Worker {worker_id:2d} | {i+1:3d}/200] echo={echo_result.data}  time={time_result.data}")
+        print(f"[Worker {worker_id:2d}] Done")
 
-    async with Client(transport) as client:
-        # List available tools
-        tools = await client.list_tools()
-        print(f"\nAvailable tools: {[t.name for t in tools]}\n")
-
-        # Call echo tool
-        echo_result = await client.call_tool("echo", {"message": "Hello from MCP client!"})
-        print(f"Echo result: {echo_result}")
-
-        # Call get_current_utc_time tool
-        time_result = await client.call_tool("get_current_utc_time", {})
-        print(f"Current UTC time: {time_result}")
+    tasks = [worker(i) for i in range(50)]
+    await asyncio.gather(*tasks)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,12 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AzureAIProxy.Shared.Database;
 using AzureAIProxy.Routes.CustomResults;
 using AzureAIProxy.Services;
 using AzureAIProxy.Models;
+using AzureAIProxy.Middleware;
 
 namespace AzureAIProxy.Routes;
 
@@ -25,14 +27,16 @@ public static class AzureOpenAI
         return builder;
     }
 
-    [ApiKeyAuthorize]
+    [Authorize(AuthenticationSchemes = $"{ProxyAuthenticationOptions.ApiKeyScheme},{ProxyAuthenticationOptions.BearerTokenScheme}")]
     private static async Task<IResult> ProcessRequestAsync(
         [FromServices] ICatalogService catalogService,
         [FromServices] IProxyService proxyService,
+        [FromServices] ILoggerFactory loggerFactory,
         HttpContext context,
         string deploymentName
     )
     {
+        var logger = loggerFactory.CreateLogger("AzureOpenAI");
         string requestPath = (string)context.Items["requestPath"]!;
         RequestContext requestContext = (RequestContext)context.Items["RequestContext"]!;
         JsonDocument requestJsonDoc = (JsonDocument)context.Items["jsonDoc"]!;
@@ -45,6 +49,10 @@ public static class AzureOpenAI
 
         if (deployment is null)
         {
+            logger.LogWarning(
+                "Deployment '{DeploymentName}' not found for event '{EventId}'. Available: {Available}",
+                deploymentName, requestContext.EventId,
+                string.Join(", ", eventCatalog.Select(d => d.DeploymentName)));
             return OpenAIResult.NotFound(
                 $"Deployment '{deploymentName}' not found for this event. Available deployments are: {string.Join(", ", eventCatalog.Select(d => d.DeploymentName))}"
             );

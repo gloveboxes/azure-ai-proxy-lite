@@ -35,7 +35,8 @@ public class LoadProperties(RequestDelegate next)
                 }
             }
 
-            context.Items["requestPath"] = context.Request.Path.Value!.Split("/api/v1/").Last();
+            var requestPath = context.Request.Path.Value!.Split("/api/v1/").Last();
+            context.Items["requestPath"] = requestPath;
             context.Items["jsonDoc"] = jsonDoc;
 
             await next(context);
