@@ -7,7 +7,8 @@ public enum ModelType
     OpenAI_Whisper,
     Azure_AI_Search,
     Foundry_Agent,
-    MCP_Server
+    MCP_Server,
+    AI_Toolkit
 }
 
 public static class ModelTypeExtensions
@@ -20,6 +21,7 @@ public static class ModelTypeExtensions
         ["azure-ai-search"] = ModelType.Azure_AI_Search,
         ["foundry-agent"] = ModelType.Foundry_Agent,
         ["mcp-server"] = ModelType.MCP_Server,
+        ["ai-toolkit"] = ModelType.AI_Toolkit,
     };
 
     private static readonly Dictionary<ModelType, string> _reverseMap =
