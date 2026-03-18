@@ -174,6 +174,16 @@ public class CatalogService(
         return capabilities;
     }
 
+    public async Task<List<string>> GetAiToolkitDeploymentsAsync(string eventId)
+    {
+        var deployments = await GetEventCatalogAsync(eventId);
+        return deployments
+            .Where(d => d.ModelType == ModelType.AI_Toolkit.ToStorageString())
+            .Select(d => d.DeploymentName)
+            .Distinct()
+            .ToList();
+    }
+
     private async Task<List<Deployment>> GetEventCatalogAsync(string eventId)
     {
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);

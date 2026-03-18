@@ -17,7 +17,7 @@ import { useEffect, useReducer } from "react";
 import ReactMarkdown from "react-markdown";
 import { Form, useLoaderData } from "react-router-dom";
 import { reducer } from "./Registration.reducers";
-import type { AttendeeRegistration, EventDetails } from "./Registration.state";
+import type { AiToolkitEndpoint, AttendeeRegistration, EventDetails } from "./Registration.state";
 
 const useStyles = makeStyles({
   container: {
@@ -29,6 +29,70 @@ const useStyles = makeStyles({
     lineHeight: "1.5",
   },
   apiKeyDisplay: { display: "flex", alignItems: "center", columnGap: "4px" },
+  wideInput: { minWidth: "420px" },
+  toolkitDescription: {
+    ...shorthands.margin("4px", "0px", "12px", "0px"),
+    fontSize: "16px",
+    color: "#555",
+  },
+  toolkitTable: {
+    width: "100%",
+    borderCollapse: "collapse" as const,
+    ...shorthands.margin("0px", "0px", "16px", "0px"),
+    tableLayout: "fixed" as const,
+  },
+  toolkitThModel: {
+    textAlign: "left" as const,
+    ...shorthands.padding("8px", "12px"),
+    ...shorthands.borderBottom("2px", "solid", "#e0e0e0"),
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "#333",
+    width: "160px",
+  },
+  toolkitThEndpoint: {
+    textAlign: "left" as const,
+    ...shorthands.padding("8px", "12px"),
+    ...shorthands.borderBottom("2px", "solid", "#e0e0e0"),
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "#333",
+  },
+  toolkitTd: {
+    ...shorthands.padding("8px", "12px"),
+    ...shorthands.borderBottom("1px", "solid", "#f0f0f0"),
+    fontSize: "16px",
+    verticalAlign: "middle" as const,
+    ...shorthands.overflow("hidden"),
+  },
+  toolkitModelName: {
+    fontWeight: "600",
+    whiteSpace: "nowrap" as const,
+  },
+  toolkitEndpointCell: {
+    display: "flex",
+    alignItems: "center",
+    columnGap: "4px",
+    minWidth: "0px",
+  },
+  toolkitEndpointText: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: "0px",
+    whiteSpace: "nowrap" as const,
+    overflowX: "hidden" as const,
+    textOverflow: "ellipsis" as const,
+    fontSize: "14px",
+    fontFamily: "monospace",
+    color: "#666",
+    backgroundColor: "#f5f5f5",
+    ...shorthands.padding("6px", "10px"),
+    ...shorthands.borderRadius("4px"),
+    ...shorthands.border("1px", "solid", "#e0e0e0"),
+  },
+  toolkitCopyButton: {
+    flexShrink: 0,
+  },
 });
 
 export const Registration = () => {
@@ -213,13 +277,14 @@ export const Registration = () => {
                         id="endpoint"
                         type="text"
                         readOnly={true}
-                        value={`${window.location.origin}/api/v1`}
+                        value={event?.proxyUrl ?? `${window.location.origin}/api/v1`}
                         disabled={true}
+                        className={styles.wideInput}
                       />
                       <Button
                         icon={<CopyRegular />}
                         onClick={() =>
-                          copyToClipboard(`${window.location.origin}/api/v1`)
+                          copyToClipboard(event?.proxyUrl ?? `${window.location.origin}/api/v1`)
                         }
                       />
                     </div>
@@ -228,6 +293,55 @@ export const Registration = () => {
               </tbody>
             </table>
           </div>
+          {event?.aiToolkitEndpoints && event.aiToolkitEndpoints.length > 0 && (
+            <>
+              <h3>AI Toolkit Endpoints</h3>
+              <p className={styles.toolkitDescription}>
+                Use these endpoints to add custom models in the{" "}
+                <Link href="https://github.com/microsoft/vscode-ai-toolkit" target="_blank" rel="noopener noreferrer" inline>
+                  AI Toolkit for VS Code
+                </Link>.
+                Set your API Key as the authentication key when adding the model.
+              </p>
+              <table className={styles.toolkitTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.toolkitThModel}>Model</th>
+                    <th className={styles.toolkitThEndpoint}>Endpoint URL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {event.aiToolkitEndpoints.map((ep: AiToolkitEndpoint) => (
+                    <tr key={ep.deploymentName}>
+                      <td className={`${styles.toolkitTd} ${styles.toolkitModelName}`}>
+                        <div className={styles.toolkitEndpointCell}>
+                          {ep.deploymentName}
+                          <Button
+                            icon={<CopyRegular />}
+                            onClick={() => copyToClipboard(ep.deploymentName)}
+                            className={styles.toolkitCopyButton}
+                            size="small"
+                          />
+                        </div>
+                      </td>
+                      <td className={styles.toolkitTd}>
+                        <div className={styles.toolkitEndpointCell}>
+                          <div className={styles.toolkitEndpointText} title={ep.endpointUrl}>
+                            {ep.endpointUrl}
+                          </div>
+                          <Button
+                            icon={<CopyRegular />}
+                            onClick={() => copyToClipboard(ep.endpointUrl)}
+                            className={styles.toolkitCopyButton}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
           <h3>Playground Access</h3>
           The playground allows you to experiment with generative AI prompts.
           <ol>
@@ -247,7 +361,7 @@ export const Registration = () => {
 
 from openai import AzureOpenAI
 
-ENDPOINT = "${window.location.origin}/api/v1"
+ENDPOINT = "${event?.proxyUrl ?? `${window.location.origin}/api/v1`}"
 API_KEY = "<YOUR_API_KEY>"
 
 API_VERSION = "2024-02-01"

@@ -1,5 +1,10 @@
 import { ClientPrincipal } from "@aaronpowell/react-static-web-apps-auth";
 
+export type AiToolkitEndpoint = {
+  deploymentName: string;
+  endpointUrl: string;
+};
+
 export type EventDetails = {
   id: string;
   eventCode: string;
@@ -10,6 +15,8 @@ export type EventDetails = {
   timeZoneOffset: number;
   organizerName: string;
   organizerEmail: string;
+  proxyUrl?: string;
+  aiToolkitEndpoints?: AiToolkitEndpoint[];
 };
 
 export type AttendeeRegistration = { apiKey: string; active: boolean };

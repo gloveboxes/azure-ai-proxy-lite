@@ -33,4 +33,19 @@ public class EventRegistration
 
     [JsonPropertyName("time_zone_offset")]
     public int TimeZoneOffset { get; set; } = 0;
+
+    [JsonPropertyName("proxy_url")]
+    public string? ProxyUrl { get; set; }
+
+    [JsonPropertyName("ai_toolkit_endpoints")]
+    public List<AiToolkitEndpoint>? AiToolkitEndpoints { get; set; }
+}
+
+public class AiToolkitEndpoint
+{
+    [JsonPropertyName("deployment_name")]
+    public string DeploymentName { get; set; } = null!;
+
+    [JsonPropertyName("endpoint_url")]
+    public string EndpointUrl { get; set; } = null!;
 }
