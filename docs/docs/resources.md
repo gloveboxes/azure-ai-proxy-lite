@@ -20,6 +20,15 @@ To add a resource, click on the `+ New Resource` button.
 
 ![Image shows how to add a resource](./media/proxy_new_resource.png)
 
+#### Adding a model resources for the AI Toolkit
+
+To use a custom model with the AI Toolkit, it must be deployed through Azure OpenAI Service. This requirement is due to limitations in the AI Toolkit's custom model support, and isn't related to how the proxy service works.
+
+1. Deploy an instance of the `Azure OpenAI Service`
+2. From the Azure Foundry, deploy a model to the `Azure OpenAI Service`.
+3. Make a note of the deployment name as you'll need when adding as a resource for the proxy.
+4. When adding the model resource to the proxy, be sure to select type `AI Toolkit`.
+
 ### Duplicate resources
 
 Duplicating a resource is useful when you want to create a new resource with similar settings as an existing resource.
