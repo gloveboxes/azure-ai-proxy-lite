@@ -1,7 +1,6 @@
 import { useClientPrincipal } from "@aaronpowell/react-static-web-apps-auth";
 import {
   Button,
-  Input,
   Link,
   Toast,
   ToastTitle,
@@ -233,58 +232,15 @@ export const Registration = () => {
         <>
           <h2>Registration Details</h2>
           <div className={styles.detailsSection}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>API Key</label>
-            <div className={styles.fieldRow}>
-              <Input
-                name="apiKey"
-                id="apiKey"
-                value={attendee.apiKey}
-                disabled={true}
-                type={state.showApiKey ? "text" : "password"}
-                className={styles.fullWidthInput}
-              />
-              <Button
-                icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
-                onClick={() =>
-                  dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
-                }
-              />
-              <Button
-                icon={<CopyRegular />}
-                onClick={() => copyToClipboard(attendee.apiKey)}
-              />
-            </div>
-          </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>Proxy Endpoint</label>
-            <div className={styles.fieldRow}>
-              <Input
-                name="endpoint"
-                id="endpoint"
-                type="text"
-                readOnly={true}
-                value={event?.proxyUrl ?? `${window.location.origin}/api/v1`}
-                disabled={true}
-                className={styles.fullWidthInput}
-              />
-              <Button
-                icon={<CopyRegular />}
-                onClick={() =>
-                  copyToClipboard(event?.proxyUrl ?? `${window.location.origin}/api/v1`)
-                }
-              />
-            </div>
-          </div>
           {event?.aiToolkitEndpoints && event.aiToolkitEndpoints.length > 0 && (
             <>
-              <h3>AI Toolkit Endpoints</h3>
+              <h3>AI Toolkit Access</h3>
               <p className={styles.toolkitDescription}>
                 Use these endpoints to add custom models in the{" "}
                 <Link href="https://github.com/microsoft/vscode-ai-toolkit" target="_blank" rel="noopener noreferrer" inline>
                   AI Toolkit for VS Code
                 </Link>.
-                Set your API Key as the authentication key when adding the model.
+                Set your Event API Key as the authentication key when adding the model.
               </p>
               {event.aiToolkitEndpoints.map((ep: AiToolkitEndpoint) => (
                 <div key={ep.deploymentName} className={styles.toolkitCard}>
@@ -306,16 +262,40 @@ export const Registration = () => {
               ))}
             </>
           )}
+          <div className={styles.toolkitCard}>
+            <span className={styles.toolkitLabel}>Event API Key:</span>
+            <span className={styles.toolkitValue}>
+              {state.showApiKey ? attendee.apiKey : "••••••••••••••••••••••••••••••••"}
+            </span>
+            <div className={styles.fieldRow}>
+              <Button
+                icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
+                onClick={() =>
+                  dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
+                }
+                size="small"
+              />
+              <Button
+                icon={<CopyRegular />}
+                onClick={() => copyToClipboard(attendee.apiKey)}
+                size="small"
+              />
+            </div>
           </div>
-          <h3>Playground Access</h3>
-          The playground allows you to experiment with generative AI prompts.
-          <ol>
-            <li>Copy your API Key. </li>
-            <li>When you navigate to the AI Proxy Playground, paste the API Key and Authorize.
-            </li>
-            <li>Navigate to the{" "}
-              <Link href={`${window.location.origin}`} target="_blank" rel="noopener noreferrer">AI Proxy Playground</Link>.</li>
-          </ol>
+          <div className={styles.toolkitCard}>
+            <span className={styles.toolkitLabel}>Proxy Endpoint:</span>
+            <span className={styles.toolkitEndpointValue} title={event?.proxyUrl ?? `${window.location.origin}/api/v1`}>
+              {event?.proxyUrl ?? `${window.location.origin}/api/v1`}
+            </span>
+            <Button
+              icon={<CopyRegular />}
+              onClick={() =>
+                copyToClipboard(event?.proxyUrl ?? `${window.location.origin}/api/v1`)
+              }
+              size="small"
+            />
+          </div>
+          </div>
           <h3>SDK Access</h3>
           The real power of the Azure OpenAI Service is in the SDKs that allow you to integrate AI capabilities into your applications. You'll need your API Key and the proxy Endpoint to access AI resources using an SDK such as the OpenAI SDK or making REST calls.
           <h4>Python example using the OpenAI Python SDK</h4>
@@ -356,6 +336,15 @@ completion = client.chat.completions.create(
 print(completion.model_dump_json(indent=2))`}
             </code>
           </pre>
+          <h3>Playground Access</h3>
+          The playground allows you to experiment with generative AI prompts.
+          <ol>
+            <li>Copy your API Key. </li>
+            <li>When you navigate to the AI Proxy Playground, paste the API Key and Authorize.
+            </li>
+            <li>Navigate to the{" "}
+              <Link href={`${window.location.origin}`} target="_blank" rel="noopener noreferrer">AI Proxy Playground</Link>.</li>
+          </ol>
           <h3 style={{ "marginBottom": "10px" }}>More examples</h3>
           <ul>
             <li>
