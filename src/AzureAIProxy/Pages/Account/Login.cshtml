@@ -98,7 +98,8 @@
             <div class="error-message">@Model.ErrorMessage</div>
         }
 
-        <form method="post" autocomplete="on">
+        <form method="post" action="/account/login" name="loginForm">
+            @Html.AntiForgeryToken()
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" autocomplete="username" required autofocus />
@@ -107,8 +108,7 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" autocomplete="current-password" required />
             </div>
-            <button type="submit" class="btn-login">Sign In</button>
-            @Html.AntiForgeryToken()
+            <input type="submit" value="Sign In" class="btn-login" />
         </form>
     </div>
 </body>
