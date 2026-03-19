@@ -28,70 +28,65 @@ const useStyles = makeStyles({
     fontFamily: "Arial, Verdana, sans-serif",
     lineHeight: "1.5",
   },
-  apiKeyDisplay: { display: "flex", alignItems: "center", columnGap: "4px" },
-  wideInput: { minWidth: "420px" },
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    ...shorthands.margin("0px", "0px", "16px", "0px"),
+  },
+  fieldLabel: {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#444",
+    ...shorthands.margin("0px", "0px", "4px", "0px"),
+  },
+  fieldRow: {
+    display: "flex",
+    alignItems: "center",
+    columnGap: "4px",
+  },
+  detailsSection: {
+    maxWidth: "75%",
+  },
+  fullWidthInput: {
+    flexGrow: 1,
+    minWidth: "0px",
+  },
   toolkitDescription: {
     ...shorthands.margin("4px", "0px", "12px", "0px"),
     fontSize: "16px",
     color: "#555",
   },
-  toolkitTable: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    ...shorthands.margin("0px", "0px", "16px", "0px"),
-    tableLayout: "fixed" as const,
+  toolkitCard: {
+    ...shorthands.border("1px", "solid", "#e0e0e0"),
+    ...shorthands.borderRadius("8px"),
+    ...shorthands.padding("12px", "16px"),
+    ...shorthands.margin("0px", "0px", "12px", "0px"),
+    backgroundColor: "#fafafa",
+    display: "grid",
+    gridTemplateColumns: "auto 1fr auto",
+    columnGap: "8px",
+    rowGap: "8px",
+    alignItems: "center",
   },
-  toolkitThModel: {
-    textAlign: "left" as const,
-    ...shorthands.padding("8px", "12px"),
-    ...shorthands.borderBottom("2px", "solid", "#e0e0e0"),
-    fontSize: "16px",
+  toolkitLabel: {
+    fontSize: "14px",
     fontWeight: "600",
-    color: "#333",
-    width: "160px",
-  },
-  toolkitThEndpoint: {
-    textAlign: "left" as const,
-    ...shorthands.padding("8px", "12px"),
-    ...shorthands.borderBottom("2px", "solid", "#e0e0e0"),
-    fontSize: "16px",
-    fontWeight: "600",
-    color: "#333",
-  },
-  toolkitTd: {
-    ...shorthands.padding("8px", "12px"),
-    ...shorthands.borderBottom("1px", "solid", "#f0f0f0"),
-    fontSize: "16px",
-    verticalAlign: "middle" as const,
-    ...shorthands.overflow("hidden"),
-  },
-  toolkitModelName: {
-    fontWeight: "600",
+    color: "#444",
     whiteSpace: "nowrap" as const,
   },
-  toolkitEndpointCell: {
-    display: "flex",
-    alignItems: "center",
-    columnGap: "4px",
-    minWidth: "0px",
+  toolkitValue: {
+    fontSize: "15px",
+    color: "#333",
+    fontWeight: "600",
   },
-  toolkitEndpointText: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: "0px",
+  toolkitEndpointValue: {
+    fontSize: "14px",
+    color: "#333",
+    fontFamily: "monospace",
     whiteSpace: "nowrap" as const,
     overflowX: "hidden" as const,
     textOverflow: "ellipsis" as const,
-    fontSize: "14px",
-    fontFamily: "monospace",
-    color: "#666",
-    backgroundColor: "#f5f5f5",
-    ...shorthands.padding("6px", "10px"),
-    ...shorthands.borderRadius("4px"),
-    ...shorthands.border("1px", "solid", "#e0e0e0"),
-  },
-  toolkitCopyButton: {
-    flexShrink: 0,
+    minWidth: "0px",
   },
 });
 
@@ -237,61 +232,49 @@ export const Registration = () => {
       {state.profileLoaded && state.profile && attendee && (
         <>
           <h2>Registration Details</h2>
-          <div>
-            <table>
-              <tbody>
-                <tr>
-                  <td>
-                    <strong>Your API Key:</strong>
-                  </td>
-                  <td>
-                    <div className={styles.apiKeyDisplay}>
-                      <Input
-                        name="apiKey"
-                        id="apiKey"
-                        value={attendee.apiKey}
-                        disabled={true}
-                        type={state.showApiKey ? "text" : "password"}
-                      />
-                      <Button
-                        icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
-                        onClick={() =>
-                          dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
-                        }
-                      />
-                      <Button
-                        icon={<CopyRegular />}
-                        onClick={() => copyToClipboard(attendee.apiKey)}
-                      />
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <strong>Proxy Endpoint:</strong>
-                  </td>
-                  <td>
-                    <div className={styles.apiKeyDisplay}>
-                      <Input
-                        name="endpoint"
-                        id="endpoint"
-                        type="text"
-                        readOnly={true}
-                        value={event?.proxyUrl ?? `${window.location.origin}/api/v1`}
-                        disabled={true}
-                        className={styles.wideInput}
-                      />
-                      <Button
-                        icon={<CopyRegular />}
-                        onClick={() =>
-                          copyToClipboard(event?.proxyUrl ?? `${window.location.origin}/api/v1`)
-                        }
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div className={styles.detailsSection}>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>API Key</label>
+            <div className={styles.fieldRow}>
+              <Input
+                name="apiKey"
+                id="apiKey"
+                value={attendee.apiKey}
+                disabled={true}
+                type={state.showApiKey ? "text" : "password"}
+                className={styles.fullWidthInput}
+              />
+              <Button
+                icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
+                onClick={() =>
+                  dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
+                }
+              />
+              <Button
+                icon={<CopyRegular />}
+                onClick={() => copyToClipboard(attendee.apiKey)}
+              />
+            </div>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>Proxy Endpoint</label>
+            <div className={styles.fieldRow}>
+              <Input
+                name="endpoint"
+                id="endpoint"
+                type="text"
+                readOnly={true}
+                value={event?.proxyUrl ?? `${window.location.origin}/api/v1`}
+                disabled={true}
+                className={styles.fullWidthInput}
+              />
+              <Button
+                icon={<CopyRegular />}
+                onClick={() =>
+                  copyToClipboard(event?.proxyUrl ?? `${window.location.origin}/api/v1`)
+                }
+              />
+            </div>
           </div>
           {event?.aiToolkitEndpoints && event.aiToolkitEndpoints.length > 0 && (
             <>
@@ -303,45 +286,27 @@ export const Registration = () => {
                 </Link>.
                 Set your API Key as the authentication key when adding the model.
               </p>
-              <table className={styles.toolkitTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.toolkitThModel}>Model</th>
-                    <th className={styles.toolkitThEndpoint}>Endpoint URL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {event.aiToolkitEndpoints.map((ep: AiToolkitEndpoint) => (
-                    <tr key={ep.deploymentName}>
-                      <td className={`${styles.toolkitTd} ${styles.toolkitModelName}`}>
-                        <div className={styles.toolkitEndpointCell}>
-                          {ep.deploymentName}
-                          <Button
-                            icon={<CopyRegular />}
-                            onClick={() => copyToClipboard(ep.deploymentName)}
-                            className={styles.toolkitCopyButton}
-                            size="small"
-                          />
-                        </div>
-                      </td>
-                      <td className={styles.toolkitTd}>
-                        <div className={styles.toolkitEndpointCell}>
-                          <div className={styles.toolkitEndpointText} title={ep.endpointUrl}>
-                            {ep.endpointUrl}
-                          </div>
-                          <Button
-                            icon={<CopyRegular />}
-                            onClick={() => copyToClipboard(ep.endpointUrl)}
-                            className={styles.toolkitCopyButton}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {event.aiToolkitEndpoints.map((ep: AiToolkitEndpoint) => (
+                <div key={ep.deploymentName} className={styles.toolkitCard}>
+                  <span className={styles.toolkitLabel}>Model:</span>
+                  <span className={styles.toolkitValue}>{ep.deploymentName}</span>
+                  <Button
+                    icon={<CopyRegular />}
+                    onClick={() => copyToClipboard(ep.deploymentName)}
+                    size="small"
+                  />
+                  <span className={styles.toolkitLabel}>Endpoint:</span>
+                  <span className={styles.toolkitEndpointValue} title={ep.endpointUrl}>{ep.endpointUrl}</span>
+                  <Button
+                    icon={<CopyRegular />}
+                    onClick={() => copyToClipboard(ep.endpointUrl)}
+                    size="small"
+                  />
+                </div>
+              ))}
             </>
           )}
+          </div>
           <h3>Playground Access</h3>
           The playground allows you to experiment with generative AI prompts.
           <ol>
