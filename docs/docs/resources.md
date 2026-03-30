@@ -29,6 +29,12 @@ To use a custom model with the AI Toolkit, it must be deployed through Azure Ope
 3. Make a note of the deployment name as you'll need when adding as a resource for the proxy.
 4. When adding the model resource to the proxy, be sure to select type `AI Toolkit`.
 
+#### Adding Azure Foundry models with Managed Identity
+
+The proxy supports model deployments secured with either **API Keys** or **Azure Managed Identity authentication**. This is the recommended approach for Azure Foundry model deployments and is **REQUIRED** if using the **Azure AI Foundry Agent Service** via the proxy.
+
+For step-by-step instructions on setting up Managed Identity, see the [Managed Identity guide](managed_identity.md).
+
 ### Duplicate resources
 
 Duplicating a resource is useful when you want to create a new resource with similar settings as an existing resource.
