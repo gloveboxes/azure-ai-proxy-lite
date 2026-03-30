@@ -1,6 +1,6 @@
 # Azure AI Proxy Service
 
-Published at [AI Proxy Docs](https://microsoft.github.io/azure-openai-service-proxy/)
+Published at [AI Proxy Docs](https://gloveboxes.github.io/azure-ai-proxy-lite/)
 
 For full documentation visit [mkdocs.org](https://www.mkdocs.org).
 
