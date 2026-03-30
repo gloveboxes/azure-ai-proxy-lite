@@ -5,6 +5,7 @@ using AzureAIProxy.Routes;
 using AzureAIProxy.Services;
 using AzureAIProxy.Shared.Services;
 using AzureAIProxy.Management;
+using AzureAIProxy.Management.Services;
 using AzureAIProxy.Components;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using MudBlazor.Services;
@@ -144,6 +145,22 @@ app.MapRazorPages();
 
 // Map Proxy API routes
 app.MapProxyRoutes();
+
+// Backup download endpoint
+app.MapGet("/api/admin/backup", async (IBackupService backupService) =>
+{
+    var data = await backupService.CreateBackupAsync();
+    var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+    });
+    var fileName = $"aiproxy-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
+    return Results.File(
+        System.Text.Encoding.UTF8.GetBytes(json),
+        "application/json",
+        fileName);
+}).RequireAuthorization();
 
 // Map Blazor admin UI
 app.MapRazorComponents<App>()

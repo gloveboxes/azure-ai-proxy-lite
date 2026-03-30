@@ -10,6 +10,7 @@ public static class ManagementServiceExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IModelService, ModelService>();
         services.AddScoped<IMetricService, MetricService>();
+        services.AddScoped<IBackupService, BackupService>();
         return services;
     }
 }

@@ -1,7 +1,7 @@
 namespace AzureAIProxy.Management.Components;
 public partial class DeleteConfirmation
 {
-    [CascadingParameter] public MudBlazor.IDialogReference? MudDialog { get; set; }
+    [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
 
     [Parameter] public required string ContentText { get; set; }
 

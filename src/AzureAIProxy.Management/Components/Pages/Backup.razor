@@ -1,0 +1,38 @@
+@page "/backup"
+@namespace AzureAIProxy.Management.Components.Pages
+<PageTitle>Backup &amp; Restore</PageTitle>
+
+<MudStack Spacing="4">
+    <Help Title="Backup & Restore" Link="https://microsoft.github.io/azure-openai-service-proxy/" />
+
+    <MudText Typo="Typo.body1">
+        Backup and restore events and resources data. Resource endpoints and keys are exported in decrypted form and re-encrypted on restore.
+    </MudText>
+    <MudText Typo="Typo.body1"><b>Be sure to store backups securely as they contain sensitive information.</b></MudText>
+
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+            StartIcon="@Icons.Material.Filled.Download" Disabled="@isBusy"
+            Href="/api/admin/backup" Target="_blank">
+            Backup Data
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" HtmlTag="label"
+            StartIcon="@Icons.Material.Filled.Upload" Disabled="@isBusy"
+            for="restore-file-input">
+            @(isBusy && currentOperation == "restore" ? "Restoring..." : "Restore Data")
+        </MudButton>
+        <InputFile id="restore-file-input" OnChange="RestoreBackupAsync" accept=".json" style="display:none" />
+    </MudStack>
+
+    <MudDivider />
+
+    <MudText Typo="Typo.h6" Color="Color.Error">Danger Zone</MudText>
+    <MudText Typo="Typo.body2">
+        Clear all data will permanently delete all events, resources, attendees, metrics, and related data from all Azure Storage tables.
+    </MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="OpenClearDialog"
+        StartIcon="@Icons.Material.Filled.DeleteForever" Disabled="@isBusy" Style="max-width: 250px">
+        @(isBusy && currentOperation == "clear" ? "Clearing..." : "Clear All Data")
+    </MudButton>
+</MudStack>
