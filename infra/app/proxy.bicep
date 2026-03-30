@@ -17,6 +17,7 @@ param appInsightsConnectionString string
 @secure()
 param adminPassword string
 param playgroundUrl string
+param defaultApiVersion string = '2025-01-01-preview'
 param imageName string = ''
 param keyVaultName string = ''
 
@@ -89,6 +90,10 @@ module app '../core/host/container-app-upsert.bicep' = {
       {
         name: 'PlaygroundUrl'
         value: playgroundUrl
+      }
+      {
+        name: 'DefaultApiVersion'
+        value: defaultApiVersion
       }
     ]
   }

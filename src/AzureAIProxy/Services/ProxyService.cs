@@ -14,7 +14,7 @@ namespace AzureAIProxy.Services;
 /// <summary>
 /// Provides methods for sending HTTP requests (GET, POST, DELETE) to specified URLs with support for various content types and query parameters.
 /// </summary>
-public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService metricService)
+public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService metricService, ILogger<ProxyService> logger, IConfiguration configuration)
     : IProxyService
 {
     private const int HttpTimeoutSeconds = 60;
@@ -79,6 +79,9 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
         var response = await httpClient.SendAsync(requestMessage);
         var responseContent = await response.Content.ReadAsStringAsync();
 
+        if ((int)response.StatusCode >= 400)
+            logger.LogWarning("Upstream DELETE error: {StatusCode} {Url} Body: {Body}", (int)response.StatusCode, requestUrlWithQuery, responseContent);
+
         return (responseContent, (int)response.StatusCode);
     }
 
@@ -110,6 +113,13 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
             requestMessage.Headers.Add(header.Key, header.Value);
 
         var response = await httpClient.SendAsync(requestMessage);
+
+        if ((int)response.StatusCode >= 400)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            logger.LogWarning("Upstream GET error: {StatusCode} {Url} Body: {Body}", (int)response.StatusCode, requestUrlWithQuery, errorBody);
+            return (errorBody, (int)response.StatusCode);
+        }
 
         var mediaType = response.Content.Headers.ContentType?.MediaType;
         switch (mediaType)
@@ -191,6 +201,9 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
             var response = await httpClient.SendAsync(requestMessage);
             var responseContent = await response.Content.ReadAsStringAsync();
 
+            if ((int)response.StatusCode >= 400)
+                logger.LogWarning("Upstream POST form error: {StatusCode} {Url} Body: {Body}", (int)response.StatusCode, requestUrlWithQuery, responseContent);
+
             await metricService.LogApiUsageAsync(requestContext, deployment, responseContent);
 
             return (responseContent, (int)response.StatusCode);
@@ -238,6 +251,10 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
 
         var response = await httpClient.SendAsync(requestMessage);
         var responseContent = await response.Content.ReadAsStringAsync();
+
+        if ((int)response.StatusCode >= 400)
+            logger.LogWarning("Upstream POST error: {StatusCode} {Url} Body: {Body}", (int)response.StatusCode, requestUrlWithQuery, responseContent);
+
         await metricService.LogApiUsageAsync(requestContext, deployment, responseContent);
 
         return (responseContent, (int)response.StatusCode);
@@ -287,8 +304,17 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
         context.Response.StatusCode = (int)response.StatusCode;
         context.Response.ContentType = "application/json";
 
-        await using var responseStream = await response.Content.ReadAsStreamAsync();
-        await responseStream.CopyToAsync(context.Response.Body);
+        if ((int)response.StatusCode >= 400)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            logger.LogWarning("Upstream POST stream error: {StatusCode} {Url} Body: {Body}", (int)response.StatusCode, requestUrlWithQuery, errorBody);
+            await context.Response.WriteAsync(errorBody);
+        }
+        else
+        {
+            await using var responseStream = await response.Content.ReadAsStreamAsync();
+            await responseStream.CopyToAsync(context.Response.Body);
+        }
     }
 
     /// <summary>
@@ -302,7 +328,7 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
     /// and appends the remaining parameters to the query string of the provided <see cref="UriBuilder"/>.
     /// The resulting <see cref="Uri"/> object reflects the updated URL with the added query parameters.
     /// </remarks>
-    private static Uri AppendQueryParameters(UriBuilder requestUrl, HttpContext context)
+    private Uri AppendQueryParameters(UriBuilder requestUrl, HttpContext context)
     {
         var queryParameters = context.Request.Query
             .Where(q => !string.IsNullOrEmpty(q.Value))
@@ -315,6 +341,13 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
             var existing = requestUrl.Query.TrimStart('?');
             if (!string.IsNullOrEmpty(existing))
                 queryParameters.Insert(0, existing);
+        }
+
+        // Azure OpenAI requires api-version; inject a default if not provided by the caller
+        if (!queryParameters.Any(q => q.StartsWith("api-version=", StringComparison.OrdinalIgnoreCase)))
+        {
+            var defaultApiVersion = configuration["DefaultApiVersion"] ?? "2025-01-01-preview";
+            queryParameters.Add($"api-version={defaultApiVersion}");
         }
 
         requestUrl.Query = string.Join("&", queryParameters);
