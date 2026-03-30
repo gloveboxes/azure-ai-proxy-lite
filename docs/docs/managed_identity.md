@@ -67,7 +67,7 @@ https://<account>.cognitiveservices.azure.com/...
 
 ## Automated Setup
 
-A script is provided to automate RBAC role assignment. You can download the helper script [setup-managed-identity-rbac.sh](https://raw.githubusercontent.com/gloveboxes/azure-ai-proxy-lite/refs/heads/main/scripts/setup-managed-identity-rbac.sh){:target="_blank"}.
+A script is provided to automate RBAC role assignment. You can download the helper script <a href="https://raw.githubusercontent.com/gloveboxes/azure-ai-proxy-lite/refs/heads/main/scripts/setup-managed-identity-rbac.sh" target="_blank">setup-managed-identity-rbac.sh</a>.
 
 ## Authentication Flow
 
