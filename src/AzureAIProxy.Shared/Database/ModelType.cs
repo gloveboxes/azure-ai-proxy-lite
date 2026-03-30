@@ -4,7 +4,6 @@ public enum ModelType
 {
     OpenAI_Chat,
     OpenAI_Embedding,
-    OpenAI_Whisper,
     Azure_AI_Search,
     Foundry_Agent,
     MCP_Server,
@@ -17,7 +16,6 @@ public static class ModelTypeExtensions
     {
         ["openai-chat"] = ModelType.OpenAI_Chat,
         ["openai-embedding"] = ModelType.OpenAI_Embedding,
-        ["openai-whisper"] = ModelType.OpenAI_Whisper,
         ["azure-ai-search"] = ModelType.Azure_AI_Search,
         ["foundry-agent"] = ModelType.Foundry_Agent,
         ["mcp-server"] = ModelType.MCP_Server,
