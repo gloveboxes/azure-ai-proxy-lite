@@ -79,12 +79,8 @@ public static class Event
         if (!string.IsNullOrWhiteSpace(configuredUrl))
             return configuredUrl.TrimEnd('/');
 
-        // 2. Azure Container Apps provides CONTAINER_APP_HOSTNAME at runtime
-        var containerHostname = Environment.GetEnvironmentVariable("CONTAINER_APP_HOSTNAME");
-        if (!string.IsNullOrWhiteSpace(containerHostname))
-            return $"https://{containerHostname}/api/v1";
-
-        // 3. Fall back to the current request (works for local dev and direct access)
+        // 2. Use the request host, which reflects the stable app FQDN
+        //    (CONTAINER_APP_HOSTNAME is revision-scoped and changes on every deploy)
         return $"{context.Request.Scheme}://{context.Request.Host}/api/v1";
     }
 }
