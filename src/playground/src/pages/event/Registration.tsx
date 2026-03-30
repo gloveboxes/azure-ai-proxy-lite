@@ -87,6 +87,14 @@ const useStyles = makeStyles({
     textOverflow: "ellipsis" as const,
     minWidth: "0px",
   },
+  codeCard: {
+    ...shorthands.border("1px", "solid", "#e0e0e0"),
+    ...shorthands.borderRadius("8px"),
+    ...shorthands.padding("16px"),
+    ...shorthands.margin("12px", "0px", "16px", "0px"),
+    backgroundColor: "#f8f8f8",
+    overflowX: "auto" as const,
+  },
 });
 
 export const Registration = () => {
@@ -232,6 +240,26 @@ export const Registration = () => {
         <>
           <h2>Registration Details</h2>
           <div className={styles.detailsSection}>
+          <div className={styles.toolkitCard}>
+            <span className={styles.toolkitLabel}>Event API Key:</span>
+            <span className={styles.toolkitValue}>
+              {state.showApiKey ? attendee.apiKey : "••••••••••••••••••••••••••••••••"}
+            </span>
+            <div className={styles.fieldRow}>
+              <Button
+                icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
+                onClick={() =>
+                  dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
+                }
+                size="small"
+              />
+              <Button
+                icon={<CopyRegular />}
+                onClick={() => copyToClipboard(attendee.apiKey)}
+                size="small"
+              />
+            </div>
+          </div>
           {event?.aiToolkitEndpoints && event.aiToolkitEndpoints.length > 0 && (
             <>
               <h3>AI Toolkit Access</h3>
@@ -262,26 +290,11 @@ export const Registration = () => {
               ))}
             </>
           )}
-          <div className={styles.toolkitCard}>
-            <span className={styles.toolkitLabel}>Event API Key:</span>
-            <span className={styles.toolkitValue}>
-              {state.showApiKey ? attendee.apiKey : "••••••••••••••••••••••••••••••••"}
-            </span>
-            <div className={styles.fieldRow}>
-              <Button
-                icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
-                onClick={() =>
-                  dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
-                }
-                size="small"
-              />
-              <Button
-                icon={<CopyRegular />}
-                onClick={() => copyToClipboard(attendee.apiKey)}
-                size="small"
-              />
-            </div>
           </div>
+          <h3>SDK Access</h3>
+          The real power of the Azure OpenAI Service is in the SDKs that allow you to integrate AI capabilities into your applications. You'll need your API Key and the proxy Endpoint to access AI resources using an SDK such as the OpenAI SDK or making REST calls.
+          <br />
+          <br />
           <div className={styles.toolkitCard}>
             <span className={styles.toolkitLabel}>Proxy Endpoint:</span>
             <span className={styles.toolkitEndpointValue} title={event?.proxyUrl ?? `${window.location.origin}/api/v1`}>
@@ -295,19 +308,17 @@ export const Registration = () => {
               size="small"
             />
           </div>
-          </div>
-          <h3>SDK Access</h3>
-          The real power of the Azure OpenAI Service is in the SDKs that allow you to integrate AI capabilities into your applications. You'll need your API Key and the proxy Endpoint to access AI resources using an SDK such as the OpenAI SDK or making REST calls.
           <h4>Python example using the OpenAI Python SDK</h4>
           The following Python code demonstrates how to use the OpenAI Python SDK to interact with the Azure OpenAI Service.
-          <pre >
+          <div className={styles.codeCard}>
+          <pre style={{ margin: 0 }}>
             <code style={{ lineHeight: "1", fontSize: "medium" }}>
               {`# pip install openai
 
 from openai import AzureOpenAI
 
 ENDPOINT = "${event?.proxyUrl ?? `${window.location.origin}/api/v1`}"
-API_KEY = "<YOUR_API_KEY>"
+API_KEY = "<YOUR_EVENT_API_KEY>"
 
 API_VERSION = "2024-02-01"
 MODEL_NAME = "gpt-35-turbo"
@@ -336,6 +347,7 @@ completion = client.chat.completions.create(
 print(completion.model_dump_json(indent=2))`}
             </code>
           </pre>
+          </div>
           <h3>Playground Access</h3>
           The playground allows you to experiment with generative AI prompts.
           <ol>
