@@ -34,8 +34,8 @@ pip3 install --user -r requirements-dev.txt
 echo Setting up commit hooks...
 pre-commit install --install-hooks
 
-echo Setting up Playground environment...
-cd src/playground
+echo Setting up Registration environment...
+cd src/registration
 . ${NVM_DIR}/nvm.sh
 nvm install
 npm i

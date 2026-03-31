@@ -54,10 +54,10 @@
       "label": "Admin"
     },
     "5173": {
-      "label": "Playground (internal)"
+      "label": "Registration (internal)"
     },
     "4280": {
-      "label": "Playgroud (SWA proxy)"
+      "label": "Registration (SWA proxy)"
     },
     "10000": {
       "label": "Azurite Blob"

@@ -1,4 +1,4 @@
-name: Playground CI
+name: Registration CI
 
 on:
   push:
@@ -12,14 +12,14 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./src/playground
+        working-directory: ./src/registration
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: 22.x
       - run: npm ci
       - run: npm run lint
       - run: npm run build --if-present
