@@ -110,4 +110,4 @@ azd deploy [admin | playground | proxy]
 
 ## Troubleshooting
 
-If you encounter any issues deploying the solution, please raise an issue on the [GitHub repo](https://github.com/microsoft/azure-openai-service-proxy/issues)
+If you encounter any issues deploying the solution, please raise an issue on the [GitHub repo](https://gloveboxes.github.io/azure-ai-proxy-lite//issues)

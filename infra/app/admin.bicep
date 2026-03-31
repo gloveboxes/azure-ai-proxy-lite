@@ -15,7 +15,7 @@ param proxyAdminPostgresMaxPoolSize int
 param postgresEncryptionKey string
 param clientId string
 param tenantId string
-param playgroundUrl string
+param registrationUrl string
 @secure()
 param appInsightsConnectionString string
 param imageName string = ''
@@ -73,8 +73,8 @@ module app '../core/host/container-app-upsert.bicep' = {
         value: 'true'
       }
       {
-        name: 'PlaygroundUrl'
-        value: playgroundUrl
+        name: 'RegistrationUrl'
+        value: registrationUrl
       }
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

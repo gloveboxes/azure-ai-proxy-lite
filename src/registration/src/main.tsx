@@ -9,21 +9,9 @@ import {
   Layout as EventLayout,
   action as registrationAction,
 } from "./pages/event";
-import { Chat } from "./pages/playground/Chat";
-import PlaygroundLayout from "./pages/playground/_Layout";
 import reportWebVitals from "./reportWebVitals";
 
 const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <PlaygroundLayout />,
-    children: [
-      {
-        path: "/",
-        element: <Chat />,
-      },
-    ],
-  },
   {
     path: "/event",
     element: <EventLayout />,

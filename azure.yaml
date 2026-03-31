@@ -11,8 +11,8 @@ services:
       context: ../
       platform: amd64
 
-  playground:
-    project: ./src/playground
+  registration:
+    project: ./src/registration
     language: ts
     host: staticwebapp
     dist: dist
@@ -34,7 +34,7 @@ hooks:
       echo ""
       echo "Endpoints:"
       echo "  Proxy API: $(azd env get-value SERVICE_PROXY_URI)"
-      echo "  Playground: $(azd env get-value SERVICE_PLAYGROUND_URI)"
+      echo "  Registration: $(azd env get-value SERVICE_REGISTRATION_URI)"
       echo ""
       echo "Proxy Managed Identity:"
       echo "  Principal ID: $(azd env get-value SERVICE_PROXY_IDENTITY_PRINCIPAL_ID)"

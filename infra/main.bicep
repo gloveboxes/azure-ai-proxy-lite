@@ -11,7 +11,7 @@ param location string
 
 param proxyAppExists bool = false
 
-@description('Location for the Playground app resource group')
+@description('Location for the Registration app resource group')
 @allowed(['centralus', 'eastus2', 'eastasia', 'westeurope', 'westus2'])
 @metadata({
   azd: {
@@ -65,7 +65,7 @@ module proxy 'app/proxy.bicep' = {
     storageConnectionString: storageAccount.outputs.connectionString
     encryptionKey: encryptionKey
     adminPassword: adminPassword
-    playgroundUrl: playground.outputs.SERVICE_WEB_URI
+    registrationUrl: registration.outputs.SERVICE_WEB_URI
     appInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
   }
 }
@@ -81,23 +81,23 @@ module storageAccount 'storage.bicep' = {
   }
 }
 
-// The Playground frontend
-module playground 'playground.bicep' = {
-  name: 'playground'
+// The Registration frontend
+module registration 'registration.bicep' = {
+  name: 'registration'
   scope: resourceGroup
   params: {
-    name: '${prefix}-playground'
+    name: '${prefix}-registration'
     location: swaLocation
     tags: tags
   }
 }
 
-// link Playground to Proxy backend
+// link Registration to Proxy backend
 module swaLinkDotnet './linkSwaResource.bicep' = {
   name: 'frontend-link-dotnet'
   scope: resourceGroup
   params: {
-    swaAppName: playground.outputs.SERVICE_WEB_NAME
+    swaAppName: registration.outputs.SERVICE_WEB_NAME
     backendAppName: proxy.outputs.SERVICE_PROXY_NAME
   }
 }
@@ -125,7 +125,7 @@ output SERVICE_PROXY_NAME string = proxy.outputs.SERVICE_PROXY_NAME
 output SERVICE_PROXY_URI string = proxy.outputs.SERVICE_PROXY_URI
 output SERVICE_PROXY_IMAGE_NAME string = proxy.outputs.SERVICE_PROXY_IMAGE_NAME
 
-output SERVICE_PLAYGROUND_URI string = playground.outputs.SERVICE_WEB_URI
+output SERVICE_REGISTRATION_URI string = registration.outputs.SERVICE_WEB_URI
 
 output SERVICE_STORAGE_ACCOUNT_NAME string = storageAccount.outputs.name
 

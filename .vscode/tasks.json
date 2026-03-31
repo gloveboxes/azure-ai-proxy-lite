@@ -4,7 +4,7 @@
     {
       "type": "npm",
       "options": {
-        "cwd": "${workspaceFolder}/src/playground"
+        "cwd": "${workspaceFolder}/src/registration"
       },
       "script": "install",
       "label": "npm: install"
@@ -12,7 +12,7 @@
     {
       "type": "npm",
       "options": {
-        "cwd": "${workspaceFolder}/src/playground"
+        "cwd": "${workspaceFolder}/src/registration"
       },
       "script": "build",
       "label": "npm: build"

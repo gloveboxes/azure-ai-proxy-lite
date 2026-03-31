@@ -64,7 +64,7 @@
             </MudTd>
             <MudTd DataLabel="Registered">@context.Registered</MudTd>
             <MudTd DataLabel="Attendee link">
-                <MudLink Target="_blank" Href="@($"{Configuration["PlaygroundUrl"]}/event/{context.EventId}")">
+                <MudLink Target="_blank" Href="@($"{Configuration["RegistrationUrl"]}/event/{context.EventId}")">
                     <MudIcon Icon="@Icons.Material.Filled.Link" />
                 </MudLink>
             </MudTd>

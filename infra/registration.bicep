@@ -2,9 +2,9 @@ param name string
 param location string = resourceGroup().location
 param tags object = {}
 
-param serviceName string = 'playground'
+param serviceName string = 'registration'
 
-module playground 'core/host/staticwebapp.bicep' = {
+module registration 'core/host/staticwebapp.bicep' = {
   name: '${serviceName}-staticwebapp-module'
   params: {
     name: name
@@ -17,5 +17,5 @@ module playground 'core/host/staticwebapp.bicep' = {
   }
 }
 
-output SERVICE_WEB_NAME string = playground.outputs.name
-output SERVICE_WEB_URI string = playground.outputs.uri
+output SERVICE_WEB_NAME string = registration.outputs.name
+output SERVICE_WEB_URI string = registration.outputs.uri

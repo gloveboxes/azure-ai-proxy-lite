@@ -370,7 +370,7 @@ print(completion.model_dump_json(indent=2))`}
             </li>
             <li>
               <Link
-                href="https://github.com/microsoft/azure-openai-service-proxy/tree/main/examples"
+                href="https://gloveboxes.github.io/azure-ai-proxy-lite//tree/main/examples"
                 target="_blank"
                 rel="noopener noreferrer"
               >
