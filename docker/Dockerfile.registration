@@ -8,18 +8,21 @@ RUN npm ci
 COPY src/registration/ ./
 RUN npm run build
 
-# Stage 2: Node.js runtime with built-in auth + reverse proxy
+# Stage 2: Node.js runtime with built-in auth + reverse proxy + TLS
 FROM node:lts-alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY --from=build /app/dist ./dist
 COPY docker/auth-server.mjs ./server.mjs
+COPY docker/start.sh ./start.sh
+RUN chmod +x ./start.sh
 
-EXPOSE 80
+EXPOSE 80 443
 
 ENV PORT=80
+ENV TLS_PORT=443
 ENV PROXY_UPSTREAM=http://proxy:8080
 ENV STATIC_DIR=/app/dist
 
-USER node
-CMD ["node", "server.mjs"]
+CMD ["./start.sh"]

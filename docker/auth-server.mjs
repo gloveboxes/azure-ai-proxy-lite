@@ -1,9 +1,13 @@
-import { createServer, request as httpRequest } from "node:http";
+import { createServer } from "node:http";
+import { createServer as createTlsServer } from "node:https";
 import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { join, extname } from "node:path";
 
 const PORT = parseInt(process.env.PORT || "80");
+const TLS_PORT = parseInt(process.env.TLS_PORT || "443");
+const TLS_CERT = process.env.TLS_CERT || "/app/certs/cert.pem";
+const TLS_KEY = process.env.TLS_KEY || "/app/certs/key.pem";
 const PROXY_UPSTREAM = process.env.PROXY_UPSTREAM || "http://proxy:8080";
 const STATIC_DIR = process.env.STATIC_DIR || "/app/dist";
 const COOKIE_NAME = "swa_auth";
@@ -26,6 +30,8 @@ const MIME = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+import { request as httpRequest } from "node:http";
 
 function parseCookies(header) {
   const out = {};
@@ -270,13 +276,30 @@ async function serveStatic(res, url) {
 // Main
 // ---------------------------------------------------------------------------
 
-createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
+const handler = async (req, res) => {
+  const proto = req.socket.encrypted ? "https" : "http";
+  const url = new URL(req.url, `${proto}://${req.headers.host}`);
 
   if (url.pathname.startsWith("/.auth")) return handleAuth(req, res, url);
   if (url.pathname.startsWith("/api/")) return proxyRequest(req, res);
   return serveStatic(res, url);
-}).listen(PORT, () => {
-  console.log(`Registration server on :${PORT}`);
+};
+
+// Always start HTTP
+createServer(handler).listen(PORT, () => {
+  console.log(`Registration server (HTTP) on :${PORT}`);
   console.log(`Proxying /api/ → ${PROXY_UPSTREAM}`);
 });
+
+// Start HTTPS if certs exist
+try {
+  const [cert, key] = await Promise.all([
+    readFile(TLS_CERT),
+    readFile(TLS_KEY),
+  ]);
+  createTlsServer({ cert, key }, handler).listen(TLS_PORT, () => {
+    console.log(`Registration server (HTTPS) on :${TLS_PORT}`);
+  });
+} catch {
+  console.log("No TLS certs found — HTTPS disabled");
+}

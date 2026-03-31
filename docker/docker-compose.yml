@@ -30,7 +30,8 @@ services:
       Admin__Username: "${ADMIN_USERNAME:-admin}"
       Admin__Password: "${ADMIN_PASSWORD:-admin}"
       UseMockProxy: "${USE_MOCK_PROXY:-false}"
-      RegistrationUrl: "http://${REGISTRATION_HOST:-localhost}:${REGISTRATION_PORT:-4280}"
+      RegistrationUrl: "https://${REGISTRATION_HOST:-localhost}:${REGISTRATION_TLS_PORT:-4443}"
+      ProxyUrl: "http://${REGISTRATION_HOST:-localhost}:${PROXY_PORT:-8900}/api/v1"
     depends_on:
       azurite:
         condition: service_healthy
@@ -40,8 +41,10 @@ services:
     restart: unless-stopped
     ports:
       - "${REGISTRATION_PORT:-4280}:80"
+      - "${REGISTRATION_TLS_PORT:-4443}:443"
     environment:
       PROXY_UPSTREAM: "http://proxy:8080"
+      TLS_HOST: "${REGISTRATION_HOST:-localhost}"
     depends_on:
       - proxy
 
