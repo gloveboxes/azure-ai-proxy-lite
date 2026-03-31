@@ -9,6 +9,7 @@ import {
   Layout as EventLayout,
   action as registrationAction,
 } from "./pages/event";
+import { NotFound } from "./pages/NotFound";
 import reportWebVitals from "./reportWebVitals";
 
 const router = createBrowserRouter([
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
         action: registrationAction,
       },
     ],
+  },
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
 
