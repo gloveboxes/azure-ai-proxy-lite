@@ -65,7 +65,7 @@ public class CatalogService(
             catch (RequestFailedException ex) when (ex.Status == 404) { }
         }
 
-        memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(1));
+        memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
         return result;
     }
 
@@ -96,7 +96,7 @@ public class CatalogService(
                         Location = catalog.Location,
                         UseManagedIdentity = catalog.UseManagedIdentity
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(4));
+                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
                     return result;
                 }
             }
@@ -135,7 +135,7 @@ public class CatalogService(
                         Location = catalog.Location,
                         UseManagedIdentity = catalog.UseManagedIdentity
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(4));
+                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
                     return result;
                 }
             }
@@ -176,12 +176,19 @@ public class CatalogService(
 
     public async Task<List<string>> GetAiToolkitDeploymentsAsync(string eventId)
     {
+        var cacheKey = $"ai-toolkit-deployments+{eventId}";
+        if (memoryCache.TryGetValue(cacheKey, out List<string>? cached))
+            return cached!;
+
         var deployments = await GetEventCatalogAsync(eventId);
-        return deployments
+        var result = deployments
             .Where(d => d.ModelType == ModelType.AI_Toolkit.ToStorageString())
             .Select(d => d.DeploymentName)
             .Distinct()
             .ToList();
+
+        memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
+        return result;
     }
 
     private async Task<List<Deployment>> GetEventCatalogAsync(string eventId)

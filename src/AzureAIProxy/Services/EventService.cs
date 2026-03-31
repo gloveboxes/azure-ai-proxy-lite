@@ -8,9 +8,12 @@ namespace AzureAIProxy.Services;
 
 public class EventService(ITableStorageService tableStorage, IMemoryCache memoryCache) : IEventService
 {
+    const string EventRegistrationCacheKey = "event+registration+info";
+
     public async Task<EventRegistration?> GetEventRegistrationInfoAsync(string eventId)
     {
-        if (memoryCache.TryGetValue(eventId, out EventRegistration? cachedContext))
+        var cacheKey = $"{EventRegistrationCacheKey}+{eventId}";
+        if (memoryCache.TryGetValue(cacheKey, out EventRegistration? cachedContext))
             return cachedContext;
 
         var table = tableStorage.GetTableClient(TableNames.Events);
@@ -40,7 +43,7 @@ public class EventService(ITableStorageService tableStorage, IMemoryCache memory
             TimeZoneLabel = evt.TimeZoneLabel
         };
 
-        memoryCache.Set(eventId, result, TimeSpan.FromMinutes(1));
+        memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
         return result;
     }
 }
