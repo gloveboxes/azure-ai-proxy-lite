@@ -1,0 +1,49 @@
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    restart: unless-stopped
+    ports:
+      - "${AZURITE_TABLE_PORT:-10102}:10002"
+    volumes:
+      - azurite-data:/data
+    command: azurite-table -l /data --tableHost 0.0.0.0
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "10002"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  proxy:
+    image: ${PROXY_IMAGE:-glovebox/aoai-proxy:latest}
+    restart: unless-stopped
+    ports:
+      - "${PROXY_PORT:-8900}:8080"
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__StorageAccount: >-
+        DefaultEndpointsProtocol=http;
+        AccountName=devstoreaccount1;
+        AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;
+        TableEndpoint=http://azurite:10002/devstoreaccount1;
+      EncryptionKey: "${ENCRYPTION_KEY:-change-this-encryption-key-in-production}"
+      Admin__Username: "${ADMIN_USERNAME:-admin}"
+      Admin__Password: "${ADMIN_PASSWORD:-admin}"
+      UseMockProxy: "${USE_MOCK_PROXY:-false}"
+      RegistrationUrl: "http://${REGISTRATION_HOST:-localhost}:${REGISTRATION_PORT:-4280}"
+    depends_on:
+      azurite:
+        condition: service_healthy
+
+  registration:
+    image: ${REGISTRATION_IMAGE:-glovebox/aoai-proxy-registration:latest}
+    restart: unless-stopped
+    ports:
+      - "${REGISTRATION_PORT:-4280}:80"
+    environment:
+      PROXY_UPSTREAM: "http://proxy:8080"
+    depends_on:
+      - proxy
+
+volumes:
+  azurite-data:

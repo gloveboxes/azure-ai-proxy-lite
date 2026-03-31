@@ -1,0 +1,14 @@
+.git
+.devcontainer
+docs
+examples
+infra
+loadtest
+scripts
+src/AzureAIProxy/bin
+src/AzureAIProxy/obj
+src/AzureAIProxy.Management/bin
+src/AzureAIProxy.Management/obj
+src/AzureAIProxy.Shared/bin
+src/AzureAIProxy.Shared/obj
+src/registration/node_modules

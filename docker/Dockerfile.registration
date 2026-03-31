@@ -1,0 +1,25 @@
+# Stage 1: Build the React SPA
+FROM --platform=$BUILDPLATFORM node:lts-slim AS build
+WORKDIR /app
+
+COPY src/registration/package*.json ./
+RUN npm ci
+
+COPY src/registration/ ./
+RUN npm run build
+
+# Stage 2: Node.js runtime with built-in auth + reverse proxy
+FROM node:lts-alpine
+WORKDIR /app
+
+COPY --from=build /app/dist ./dist
+COPY docker/auth-server.mjs ./server.mjs
+
+EXPOSE 80
+
+ENV PORT=80
+ENV PROXY_UPSTREAM=http://proxy:8080
+ENV STATIC_DIR=/app/dist
+
+USER node
+CMD ["node", "server.mjs"]
