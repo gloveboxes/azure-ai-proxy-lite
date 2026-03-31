@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install azd
-        uses: Azure/setup-azd@v0.1.0
+        uses: Azure/setup-azd@v2
 
       - name: Setup an azd env
         run: azd env new ci
