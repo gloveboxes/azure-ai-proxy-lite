@@ -29,7 +29,7 @@ dotnet --list-sdks
 
 echo Setting up Python environment...
 
-pip3 install --user -r requirements-dev.txt
+pip3 install -r requirements-dev.txt
 
 echo Setting up commit hooks...
 pre-commit install --install-hooks
