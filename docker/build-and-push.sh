@@ -23,11 +23,15 @@ PLATFORMS="linux/amd64,linux/arm64"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
+echo "==> Clearing buildx cache to ensure fresh builds"
+docker buildx prune --force
+
 echo "==> Building proxy image: ${REPO}/aoai-proxy:${TAG}"
 docker buildx build \
     --platform "${PLATFORMS}" \
     --tag "${REPO}/aoai-proxy:${TAG}" \
     --file "${ROOT_DIR}/src/Dockerfile.proxy" \
+    --no-cache \
     --push \
     "${ROOT_DIR}/src"
 
@@ -36,6 +40,7 @@ docker buildx build \
     --platform "${PLATFORMS}" \
     --tag "${REPO}/aoai-proxy-registration:${TAG}" \
     --file "${ROOT_DIR}/docker/Dockerfile.registration" \
+    --no-cache \
     --push \
     "${ROOT_DIR}"
 
