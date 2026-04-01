@@ -108,4 +108,7 @@ docker compose down && docker compose up -d
 
 # Reset all data (removes Azurite volume)
 docker compose down -v
+
+# Force re-pull images, recreate containers, and reset all data
+docker compose down -v && docker compose pull && docker compose up -d --force-recreate
 ```

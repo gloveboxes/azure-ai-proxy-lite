@@ -348,15 +348,6 @@ print(completion.model_dump_json(indent=2))`}
             </code>
           </pre>
           </div>
-          <h3>Playground Access</h3>
-          The playground allows you to experiment with generative AI prompts.
-          <ol>
-            <li>Copy your API Key. </li>
-            <li>When you navigate to the AI Proxy Playground, paste the API Key and Authorize.
-            </li>
-            <li>Navigate to the{" "}
-              <Link href={`${window.location.origin}`} target="_blank" rel="noopener noreferrer">AI Proxy Playground</Link>.</li>
-          </ol>
           <h3 style={{ "marginBottom": "10px" }}>More examples</h3>
           <ul>
             <li>
