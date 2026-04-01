@@ -8,7 +8,7 @@ using RequestContext = AzureAIProxy.Shared.Database.RequestContext;
 
 namespace AzureAIProxy.Services;
 
-public class AuthorizeService(ITableStorageService tableStorage, ILogger<AuthorizeService> logger) : IAuthorizeService
+public class AuthorizeService(ITableStorageService tableStorage, IEventLookupService eventLookupService, ILogger<AuthorizeService> logger) : IAuthorizeService
 {
     public async Task<RequestContext?> IsUserAuthorizedAsync(string apiKey)
     {
@@ -16,7 +16,6 @@ public class AuthorizeService(ITableStorageService tableStorage, ILogger<Authori
         AttendeeLookupEntity? lookup;
         try
         {
-            // Single point read — PK is first 2 chars, RK is full api_key
             var response = await lookupTable.GetEntityAsync<AttendeeLookupEntity>(
                 AttendeeLookupEntity.GetPartitionKey(apiKey), apiKey);
             lookup = response.Value;
@@ -31,22 +30,30 @@ public class AuthorizeService(ITableStorageService tableStorage, ILogger<Authori
             }
         }
 
-        if (!lookup.Active || !lookup.EventActive)
+        // Fetch event data via cached lookup
+        var evt = await eventLookupService.GetEventAsync(lookup.EventId);
+        if (evt is null)
         {
-            logger.LogWarning(
-                "Authentication denied: attendee active={AttendeeActive}, event active={EventActive}, eventId={EventId}",
-                lookup.Active, lookup.EventActive, lookup.EventId);
+            logger.LogWarning("Event {EventId} not found for attendee.", lookup.EventId);
             return null;
         }
 
-        // Check time window using denormalized event data
+        if (!lookup.Active || !evt.Active)
+        {
+            logger.LogWarning(
+                "Authentication denied: attendee active={AttendeeActive}, event active={EventActive}, eventId={EventId}",
+                lookup.Active, evt.Active, lookup.EventId);
+            return null;
+        }
+
+        // Check time window using event data
         var currentUtc = DateTime.UtcNow;
-        var adjustedTime = currentUtc.AddMinutes(lookup.TimeZoneOffset);
-        if (adjustedTime < lookup.StartTimestamp || adjustedTime > lookup.EndTimestamp)
+        var adjustedTime = currentUtc.AddMinutes(evt.TimeZoneOffset);
+        if (adjustedTime < evt.StartTimestamp || adjustedTime > evt.EndTimestamp)
         {
             logger.LogWarning(
                 "Authentication denied: event time window expired or not yet started. adjustedTime={AdjustedTime}, start={Start}, end={End}, eventId={EventId}",
-                adjustedTime, lookup.StartTimestamp, lookup.EndTimestamp, lookup.EventId);
+                adjustedTime, evt.StartTimestamp, evt.EndTimestamp, lookup.EventId);
             return null;
         }
 
@@ -55,12 +62,12 @@ public class AuthorizeService(ITableStorageService tableStorage, ILogger<Authori
             ApiKey = apiKey,
             UserId = lookup.UserId,
             EventId = lookup.EventId,
-            EventCode = lookup.EventCode,
-            OrganizerName = lookup.OrganizerName,
-            OrganizerEmail = lookup.OrganizerEmail,
-            EventImageUrl = lookup.EventImageUrl,
-            MaxTokenCap = lookup.MaxTokenCap,
-            DailyRequestCap = lookup.DailyRequestCap,
+            EventCode = evt.EventCode,
+            OrganizerName = evt.OrganizerName,
+            OrganizerEmail = evt.OrganizerEmail,
+            EventImageUrl = evt.EventImageUrl,
+            MaxTokenCap = evt.MaxTokenCap,
+            DailyRequestCap = evt.DailyRequestCap,
             RateLimitExceed = false,
             IsAuthorized = true
         };
@@ -74,19 +81,10 @@ public class AuthorizeService(ITableStorageService tableStorage, ILogger<Authori
         var eventId = System.Text.RegularExpressions.Regex.Match(apiKey, @"([a-zA-Z0-9-]+)").Groups[1].Value;
         var sharedCode = System.Text.RegularExpressions.Regex.Match(apiKey, @"@([a-zA-Z0-9]+)").Groups[1].Value;
 
-        // Point read event by ID
-        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
-        EventEntity? evt;
-        try
-        {
-            var response = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
-            evt = response.Value;
-            if (evt.EventSharedCode != sharedCode) return null;
-        }
-        catch (RequestFailedException ex) when (ex.Status == 404)
-        {
+        // Fetch event via cached lookup
+        var evt = await eventLookupService.GetEventAsync(eventId);
+        if (evt is null || evt.EventSharedCode != sharedCode)
             return null;
-        }
 
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
         var hashString = Convert.ToHexStringLower(hashBytes);
@@ -115,17 +113,7 @@ public class AuthorizeService(ITableStorageService tableStorage, ILogger<Authori
             RowKey = generatedApiKey,
             EventId = eventId,
             UserId = userId,
-            Active = true,
-            EventCode = evt.EventCode,
-            OrganizerName = evt.OrganizerName,
-            OrganizerEmail = evt.OrganizerEmail,
-            EventImageUrl = evt.EventImageUrl,
-            MaxTokenCap = evt.MaxTokenCap,
-            DailyRequestCap = evt.DailyRequestCap,
-            EventActive = evt.Active,
-            StartTimestamp = evt.StartTimestamp,
-            EndTimestamp = evt.EndTimestamp,
-            TimeZoneOffset = evt.TimeZoneOffset
+            Active = true
         };
 
         try { await lookupTable.AddEntityAsync(lookup); }

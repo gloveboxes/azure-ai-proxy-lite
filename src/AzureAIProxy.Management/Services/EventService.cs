@@ -204,9 +204,6 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
 
         await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
 
-        // Propagate denormalized event data to all attendee lookup entries
-        await PropagateEventToLookupsAsync(id, evt);
-
         return MapToEvent(evt);
     }
 
@@ -248,40 +245,6 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
             catch (RequestFailedException ex) when (ex.Status == 404) { }
         }
         catch (RequestFailedException ex) when (ex.Status == 404) { }
-    }
-
-    /// <summary>
-    /// When event config changes, update all denormalized attendee lookup entries.
-    /// This is a low-frequency admin operation.
-    /// </summary>
-    private async Task PropagateEventToLookupsAsync(string eventId, EventEntity evt)
-    {
-        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
-        var lookupTable = tableStorage.GetTableClient(TableNames.AttendeeLookup);
-
-        await foreach (var attendee in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == eventId))
-        {
-            var pk = AttendeeLookupEntity.GetPartitionKey(attendee.ApiKey);
-            try
-            {
-                var response = await lookupTable.GetEntityAsync<AttendeeLookupEntity>(pk, attendee.ApiKey);
-                var lookup = response.Value;
-
-                lookup.EventCode = evt.EventCode;
-                lookup.OrganizerName = evt.OrganizerName;
-                lookup.OrganizerEmail = evt.OrganizerEmail;
-                lookup.EventImageUrl = evt.EventImageUrl;
-                lookup.MaxTokenCap = evt.MaxTokenCap;
-                lookup.DailyRequestCap = evt.DailyRequestCap;
-                lookup.EventActive = evt.Active;
-                lookup.StartTimestamp = evt.StartTimestamp;
-                lookup.EndTimestamp = evt.EndTimestamp;
-                lookup.TimeZoneOffset = evt.TimeZoneOffset;
-
-                await lookupTable.UpdateEntityAsync(lookup, lookup.ETag, TableUpdateMode.Replace);
-            }
-            catch (RequestFailedException ex) when (ex.Status == 404) { }
-        }
     }
 
     private static Event MapToEvent(EventEntity entity) => new()

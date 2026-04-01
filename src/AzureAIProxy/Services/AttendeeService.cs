@@ -32,28 +32,13 @@ public class AttendeeService(ITableStorageService tableStorage) : IAttendeeServi
 
             await attendeeTable.AddEntityAsync(attendee);
 
-            // Get event data for denormalized lookup
-            var eventsTable = tableStorage.GetTableClient(TableNames.Events);
-            var evtResponse = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
-            var evt = evtResponse.Value;
-
             var lookup = new AttendeeLookupEntity
             {
                 PartitionKey = AttendeeLookupEntity.GetPartitionKey(apiKey),
                 RowKey = apiKey,
                 EventId = eventId,
                 UserId = userId,
-                Active = true,
-                EventCode = evt.EventCode,
-                OrganizerName = evt.OrganizerName,
-                OrganizerEmail = evt.OrganizerEmail,
-                EventImageUrl = evt.EventImageUrl,
-                MaxTokenCap = evt.MaxTokenCap,
-                DailyRequestCap = evt.DailyRequestCap,
-                EventActive = evt.Active,
-                StartTimestamp = evt.StartTimestamp,
-                EndTimestamp = evt.EndTimestamp,
-                TimeZoneOffset = evt.TimeZoneOffset
+                Active = true
             };
 
             await lookupTable.AddEntityAsync(lookup);

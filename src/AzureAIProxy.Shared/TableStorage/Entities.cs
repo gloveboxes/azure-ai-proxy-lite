@@ -39,8 +39,8 @@ public class AttendeeEntity : ITableEntity
 }
 
 /// <summary>
-/// Denormalized lookup: single point read for auth on every proxy request.
-/// PK is first 2 hex chars of api_key for partition spread.
+/// Attendee lookup by API key. PK is first 2 hex chars of api_key for partition spread.
+/// Event data is fetched separately via cached EventEntity lookup.
 /// </summary>
 public class AttendeeLookupEntity : ITableEntity
 {
@@ -49,22 +49,9 @@ public class AttendeeLookupEntity : ITableEntity
     public DateTimeOffset? Timestamp { get; set; }
     public ETag ETag { get; set; }
 
-    // Attendee fields
     public string EventId { get; set; } = null!;
     public string UserId { get; set; } = null!;
     public bool Active { get; set; }
-
-    // Denormalized event fields (avoids second lookup on hot path)
-    public string EventCode { get; set; } = null!;
-    public string OrganizerName { get; set; } = null!;
-    public string OrganizerEmail { get; set; } = null!;
-    public string? EventImageUrl { get; set; }
-    public int MaxTokenCap { get; set; }
-    public int DailyRequestCap { get; set; }
-    public bool EventActive { get; set; }
-    public DateTime StartTimestamp { get; set; }
-    public DateTime EndTimestamp { get; set; }
-    public int TimeZoneOffset { get; set; }
 
     public static string GetPartitionKey(string apiKey) => apiKey[..2].ToLowerInvariant();
 }

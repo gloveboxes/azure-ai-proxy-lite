@@ -8,6 +8,7 @@ public static class ServicesExtensions
     )
     {
         services
+            .AddSingleton<IEventLookupService, EventLookupService>()
             .AddScoped<ICatalogService, CatalogService>()
             .AddScoped<IAuthorizeService, AuthorizeService>()
             .AddScoped<IMetricService, MetricService>()

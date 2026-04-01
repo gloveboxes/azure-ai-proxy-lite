@@ -45,6 +45,23 @@ public partial class Backup : ComponentBase
                 return;
             }
 
+            // Confirm before overwriting
+            DialogParameters<DeleteConfirmation> parameters = new()
+            {
+                { x => x.ContentText, $"Restoring will overwrite any existing events and resources that share the same IDs. This backup contains {data.Events.Count} event(s) and {data.Resources.Count} resource(s). Do you want to proceed?" },
+                { x => x.ButtonText, "Restore" },
+                { x => x.Color, Color.Warning }
+            };
+            var options = new DialogOptions { CloseOnEscapeKey = true };
+            var dialog = await DialogService.ShowAsync<DeleteConfirmation>("Restore Data", parameters, options);
+            var result = await dialog.Result;
+
+            if (result is null || result.Canceled)
+            {
+                Snackbar.Add("Restore cancelled.", Severity.Info);
+                return;
+            }
+
             await Task.Run(() => BackupService.RestoreBackupAsync(data));
             Snackbar.Add($"Restored {data.Events.Count} events and {data.Resources.Count} resources.", Severity.Success);
         }

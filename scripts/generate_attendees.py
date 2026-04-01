@@ -31,14 +31,6 @@ def create_attendee_for_event(attendees_table, lookup_table, event_id, event, in
 
     # Extract event details
     event_code = event.get("EventCode", "")
-    organizer_name = event.get("OrganizerName", "")
-    organizer_email = event.get("OrganizerEmail", "")
-    max_token_cap = event.get("MaxTokenCap", 4096)
-    daily_request_cap = event.get("DailyRequestCap", 100000)
-    event_active = event.get("Active", True)
-    start_timestamp = event.get("StartTimestamp")
-    end_timestamp = event.get("EndTimestamp")
-    time_zone_offset = event.get("TimeZoneOffset", 0)
 
     # Create attendee entry
     attendees_table.upsert_entity(
@@ -60,15 +52,6 @@ def create_attendee_for_event(attendees_table, lookup_table, event_id, event, in
             "EventId": event_id,
             "UserId": user_id,
             "Active": True,
-            "EventCode": event_code,
-            "OrganizerName": organizer_name,
-            "OrganizerEmail": organizer_email,
-            "MaxTokenCap": max_token_cap,
-            "DailyRequestCap": daily_request_cap,
-            "EventActive": event_active,
-            "StartTimestamp": start_timestamp,
-            "EndTimestamp": end_timestamp,
-            "TimeZoneOffset": time_zone_offset,
         },
         mode=UpdateMode.REPLACE,
     )

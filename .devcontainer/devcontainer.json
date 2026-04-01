@@ -48,13 +48,15 @@
 
   "portsAttributes": {
     "8000": {
-      "label": "AzureAIProxy"
+      "label": "AzureAIProxy",
+      "onAutoForward": "notify"
     },
     "5175": {
       "label": "Admin"
     },
     "5173": {
-      "label": "Registration (internal)"
+      "label": "Registration (internal)",
+      "onAutoForward": "silent"
     },
     "4280": {
       "label": "Registration (SWA proxy)"
