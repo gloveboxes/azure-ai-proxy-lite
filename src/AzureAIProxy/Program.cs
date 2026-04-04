@@ -51,7 +51,9 @@ builder
         options.LoginPath = "/account/login";
         options.LogoutPath = "/account/logout";
         options.Cookie.Name = "AzureAIProxy.Auth";
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;

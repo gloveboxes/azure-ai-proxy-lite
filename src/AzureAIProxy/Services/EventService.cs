@@ -35,7 +35,6 @@ public class EventService(ITableStorageService tableStorage, IMemoryCache memory
             EventCode = evt.EventCode,
             EventImageUrl = evt.EventImageUrl,
             OrganizerName = evt.OrganizerName,
-            OrganizerEmail = evt.OrganizerEmail,
             EventMarkdown = evt.EventMarkdown,
             StartTimestamp = evt.StartTimestamp,
             EndTimestamp = evt.EndTimestamp,

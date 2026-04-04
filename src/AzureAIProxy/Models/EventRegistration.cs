@@ -16,9 +16,6 @@ public class EventRegistration
     [JsonPropertyName("organizer_name")]
     public string OrganizerName { get; set; } = null!;
 
-    [JsonPropertyName("organizer_email")]
-    public string OrganizerEmail { get; set; } = null!;
-
     [JsonPropertyName("event_markdown")]
     public string EventMarkdown { get; set; } = null!;
 
