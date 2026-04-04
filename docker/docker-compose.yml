@@ -16,8 +16,12 @@ services:
   proxy:
     image: ${PROXY_IMAGE:-glovebox/aoai-proxy:latest}
     restart: unless-stopped
+    user: root
+    entrypoint: ["/bin/sh", "-c", "chown 1654:1654 /home/app/.aspnet/DataProtection-Keys && exec runuser -u app -- ./AzureAIProxy"]
     ports:
       - "${PROXY_PORT:-8900}:8080"
+    volumes:
+      - dataprotection-keys:/home/app/.aspnet/DataProtection-Keys
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -50,3 +54,4 @@ services:
 
 volumes:
   azurite-data:
+  dataprotection-keys:
