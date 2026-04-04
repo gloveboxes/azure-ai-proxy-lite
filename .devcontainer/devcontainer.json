@@ -44,7 +44,7 @@
     "ENVIRONMENT": "development"
   },
 
-  "forwardPorts": [10000, 10001, 10002],
+  "forwardPorts": [4280, 8000, 10000, 10001, 10002],
 
   "portsAttributes": {
     "8000": {
