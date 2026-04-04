@@ -28,8 +28,6 @@ public class LoadProperties(RequestDelegate next)
                         return;
                     }
 
-                    jsonDoc = JsonDocument.Parse(json);
-
                     context.Items["IsStreaming"] = IsStreaming(jsonDoc);
                     context.Items["ModelName"] = GetModelName(jsonDoc);
                 }
