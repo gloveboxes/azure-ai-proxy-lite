@@ -48,4 +48,5 @@ public class BackupResource
     public string Location { get; set; } = null!;
     public string FriendlyName { get; set; } = null!;
     public bool UseManagedIdentity { get; set; }
+    public bool UseMaxCompletionTokens { get; set; }
 }

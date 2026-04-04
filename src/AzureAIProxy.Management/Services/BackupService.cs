@@ -77,7 +77,8 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 ModelType = entity.ModelType,
                 Location = entity.Location,
                 FriendlyName = entity.FriendlyName,
-                UseManagedIdentity = entity.UseManagedIdentity
+                UseManagedIdentity = entity.UseManagedIdentity,
+                UseMaxCompletionTokens = entity.UseMaxCompletionTokens
             });
         }
 
@@ -119,7 +120,8 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 ModelType = resource.ModelType,
                 Location = resource.Location,
                 FriendlyName = resource.FriendlyName,
-                UseManagedIdentity = resource.UseManagedIdentity
+                UseManagedIdentity = resource.UseManagedIdentity,
+                UseMaxCompletionTokens = resource.UseMaxCompletionTokens
             };
 
             await catalogTable.UpsertEntityAsync(entity, TableUpdateMode.Replace);
