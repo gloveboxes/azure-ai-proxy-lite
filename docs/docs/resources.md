@@ -20,15 +20,6 @@ To add a resource, click on the `+ New Resource` button.
 
 ![Image shows how to add a resource](./media/proxy_new_resource.png)
 
-#### Adding a model resources for the AI Toolkit
-
-To use a custom model with the AI Toolkit, it must be deployed through Azure OpenAI Service. This requirement is due to limitations in the AI Toolkit's custom model support, and isn't related to how the proxy service works.
-
-1. Deploy an instance of the `Azure OpenAI Service`
-2. From the Azure Foundry, deploy a model to the `Azure OpenAI Service`.
-3. Make a note of the deployment name as you'll need when adding as a resource for the proxy.
-4. When adding the model resource to the proxy, be sure to select type `AI Toolkit`.
-
 #### Adding Azure Foundry models with Managed Identity
 
 The proxy supports model deployments secured with either **API Keys** or **Azure Managed Identity authentication**. This is the recommended approach for Azure Foundry model deployments and is **REQUIRED** if using the **Azure AI Foundry Agent Service** via the proxy.
@@ -48,6 +39,21 @@ To duplicate a resource, click on the `Duplicate` icon next to the resource you 
 To delete a resource, click on the `Delete` icon next to the resource you want to delete. Note, you cannot delete a resource that is in use by an event.
 
 ![Image shows how to delete a resource](./media/proxy_delete_resource.png)
+
+### Adding AI Toolkit models
+
+The proxy supports resources of type **AI Toolkit**, which are surfaced to attendees using the VS Code AI Toolkit extension. When you create or edit a resource, select `AI Toolkit` from the **Type** dropdown.
+
+AI Toolkit resources are listed as available model endpoints in the attendee registration page so that users can configure the AI Toolkit extension to connect through the proxy.
+
+#### Enabling AI Toolkit GPT-5.x compatibility
+
+Some newer models (e.g. GPT-5.x) only accept the `max_completion_tokens` parameter and reject the older `max_tokens` parameter. The AI Toolkit extension may still send `max_tokens` in requests, which causes these models to return errors.
+
+To work around this, enable the **AI Toolkit GPT-5.x compatibility** toggle when editing an AI Toolkit resource. When enabled, the proxy automatically rewrites `max_tokens` to `max_completion_tokens` in outgoing requests for that resource.
+
+!!! note
+    The **AI Toolkit GPT-5.x compatibility** toggle only appears when the resource type is set to `AI Toolkit`.
 
 ### Load balancing resources
 
