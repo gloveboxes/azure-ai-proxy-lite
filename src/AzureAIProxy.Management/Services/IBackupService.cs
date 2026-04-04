@@ -3,7 +3,9 @@ namespace AzureAIProxy.Management.Services;
 public interface IBackupService
 {
     Task<BackupData> CreateBackupAsync();
+    Task<byte[]> CreateEncryptedBackupAsync(string passphrase);
     Task RestoreBackupAsync(BackupData data);
+    Task RestoreEncryptedBackupAsync(string passphrase, Stream encryptedStream);
     Task ClearAllDataAsync();
 }
 

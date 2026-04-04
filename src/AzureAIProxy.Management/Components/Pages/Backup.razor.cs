@@ -2,6 +2,7 @@ using System.Text.Json;
 using AzureAIProxy.Management.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using MudBlazor;
 
 namespace AzureAIProxy.Management.Components.Pages;
@@ -17,18 +18,84 @@ public partial class Backup : ComponentBase
     [Inject]
     public required ISnackbar Snackbar { get; set; }
 
+    [Inject]
+    public required IJSRuntime JS { get; set; }
+
     private bool isBusy;
     private string currentOperation = "";
 
-    private static readonly JsonSerializerOptions JsonReadOptions = new()
+    private async Task<string?> PromptPassphraseAsync(string title, string message, string buttonText = "OK")
     {
-        PropertyNameCaseInsensitive = true
-    };
+        DialogParameters<PassphraseDialog> parameters = new()
+        {
+            { x => x.ContentText, message },
+            { x => x.ButtonText, buttonText }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<PassphraseDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+            return null;
+
+        return result.Data as string;
+    }
+
+    private async Task BackupAsync()
+    {
+        var passphrase = await PromptPassphraseAsync(
+            "Encrypt Backup",
+            "Enter a passphrase to encrypt the backup file. You will need this passphrase to restore.",
+            "Backup");
+
+        if (string.IsNullOrWhiteSpace(passphrase))
+        {
+            Snackbar.Add("Backup cancelled.", Severity.Info);
+            return;
+        }
+
+        isBusy = true;
+        currentOperation = "backup";
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var encryptedBytes = await Task.Run(() => BackupService.CreateEncryptedBackupAsync(passphrase));
+            var fileName = $"aiproxy-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.enc";
+
+            // Trigger browser download via JS interop
+            using var streamRef = new DotNetStreamReference(new MemoryStream(encryptedBytes));
+            await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+
+            Snackbar.Add("Encrypted backup downloaded.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Backup failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isBusy = false;
+            currentOperation = "";
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
     private async Task RestoreBackupAsync(InputFileChangeEventArgs e)
     {
         var file = e.File;
         if (file is null) return;
+
+        var passphrase = await PromptPassphraseAsync(
+            "Decrypt Backup",
+            "Enter the passphrase used when this backup was created.",
+            "Restore");
+
+        if (string.IsNullOrWhiteSpace(passphrase))
+        {
+            Snackbar.Add("Restore cancelled.", Severity.Info);
+            return;
+        }
 
         isBusy = true;
         currentOperation = "restore";
@@ -37,33 +104,18 @@ public partial class Backup : ComponentBase
         try
         {
             using var stream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
-            var data = await JsonSerializer.DeserializeAsync<BackupData>(stream, JsonReadOptions);
 
-            if (data is null)
-            {
-                Snackbar.Add("Invalid backup file.", Severity.Error);
-                return;
-            }
+            // Buffer the stream since Blazor streams can't be passed across threads
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Position = 0;
 
-            // Confirm before overwriting
-            DialogParameters<DeleteConfirmation> parameters = new()
-            {
-                { x => x.ContentText, $"Restoring will overwrite any existing events and resources that share the same IDs. This backup contains {data.Events.Count} event(s) and {data.Resources.Count} resource(s). Do you want to proceed?" },
-                { x => x.ButtonText, "Restore" },
-                { x => x.Color, Color.Warning }
-            };
-            var options = new DialogOptions { CloseOnEscapeKey = true };
-            var dialog = await DialogService.ShowAsync<DeleteConfirmation>("Restore Data", parameters, options);
-            var result = await dialog.Result;
-
-            if (result is null || result.Canceled)
-            {
-                Snackbar.Add("Restore cancelled.", Severity.Info);
-                return;
-            }
-
-            await Task.Run(() => BackupService.RestoreBackupAsync(data));
-            Snackbar.Add($"Restored {data.Events.Count} events and {data.Resources.Count} resources.", Severity.Success);
+            await Task.Run(() => BackupService.RestoreEncryptedBackupAsync(passphrase, ms));
+            Snackbar.Add("Backup restored successfully.", Severity.Success);
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            Snackbar.Add("Restore failed: incorrect passphrase or corrupted backup file.", Severity.Error);
         }
         catch (Exception ex)
         {

@@ -21,6 +21,19 @@
     <MudPopoverProvider @rendermode="@InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
 	<script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script>
+        async function downloadFileFromStream(fileName, streamRef) {
+            const blob = new Blob([await streamRef.arrayBuffer()]);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
 </body>
 
 </html>

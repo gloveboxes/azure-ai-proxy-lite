@@ -1,0 +1,18 @@
+@namespace AzureAIProxy.Management.Components
+
+<MudDialog>
+    <DialogContent>
+        <MudText Class="mb-4">@ContentText</MudText>
+        <MudTextField @bind-Value="Passphrase" Label="Passphrase" InputType="@passphraseInputType"
+            Variant="Variant.Outlined" Required="true" Immediate="true"
+            AutoFocus="true" OnKeyDown="OnKeyDown"
+            Adornment="Adornment.End" AdornmentIcon="@passphraseIcon"
+            OnAdornmentClick="TogglePassphraseVisibility" AdornmentAriaLabel="Toggle passphrase visibility"
+            Validation="@(new Func<string, string?>(ValidatePassphrase))" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+            Disabled="@(!IsValid)">@ButtonText</MudButton>
+    </DialogActions>
+</MudDialog>

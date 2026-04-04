@@ -6,15 +6,14 @@
     <Help Title="Backup & Restore" Link="https://gloveboxes.github.io/azure-ai-proxy-lite/" />
 
     <MudText Typo="Typo.body1">
-        Backup and restore events and resources data. Resource endpoints and keys are exported in decrypted form and re-encrypted on restore.
+        Backup and restore events and resources data. Backups are encrypted with a passphrase you provide.
     </MudText>
-    <MudText Typo="Typo.body1"><b>Be sure to store backups securely as they contain sensitive information.</b></MudText>
 
     <MudStack Row="true" Spacing="2">
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
             StartIcon="@Icons.Material.Filled.Download" Disabled="@isBusy"
-            Href="/api/admin/backup" Target="_blank">
-            Backup Data
+            OnClick="BackupAsync">
+            @(isBusy && currentOperation == "backup" ? "Encrypting..." : "Backup Data")
         </MudButton>
 
         <MudButton Variant="Variant.Filled" Color="Color.Secondary" HtmlTag="label"
@@ -22,7 +21,7 @@
             for="restore-file-input">
             @(isBusy && currentOperation == "restore" ? "Restoring..." : "Restore Data")
         </MudButton>
-        <InputFile id="restore-file-input" OnChange="RestoreBackupAsync" accept=".json" style="display:none" />
+        <InputFile id="restore-file-input" OnChange="RestoreBackupAsync" accept=".enc" style="display:none" />
     </MudStack>
 
     <MudDivider />

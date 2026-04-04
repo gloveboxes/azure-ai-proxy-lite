@@ -51,6 +51,8 @@ builder
         options.LoginPath = "/account/login";
         options.LogoutPath = "/account/logout";
         options.Cookie.Name = "AzureAIProxy.Auth";
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         // Don't redirect API calls — return 401/403 directly
@@ -146,20 +148,24 @@ app.MapRazorPages();
 // Map Proxy API routes
 app.MapProxyRoutes();
 
-// Backup download endpoint
-app.MapGet("/api/admin/backup", async (IBackupService backupService) =>
+// Backup download endpoint (encrypted with user-supplied passphrase)
+app.MapGet("/api/admin/backup", async (IBackupService backupService, HttpContext context) =>
 {
-    var data = await backupService.CreateBackupAsync();
-    var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions
+    if (!context.Request.Headers.TryGetValue("X-Backup-Passphrase", out var passphraseValues)
+        || string.IsNullOrWhiteSpace(passphraseValues.ToString()))
     {
-        WriteIndented = true,
-        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-    });
-    var fileName = $"aiproxy-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
-    return Results.File(
-        System.Text.Encoding.UTF8.GetBytes(json),
-        "application/json",
-        fileName);
+        return Results.BadRequest(new { error = "X-Backup-Passphrase header is required." });
+    }
+
+    var passphrase = passphraseValues.ToString();
+    if (passphrase.Length < BackupService.MinPassphraseLength)
+    {
+        return Results.BadRequest(new { error = $"Passphrase must be at least {BackupService.MinPassphraseLength} characters." });
+    }
+
+    var encryptedBytes = await backupService.CreateEncryptedBackupAsync(passphrase);
+    var fileName = $"aiproxy-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.enc";
+    return Results.File(encryptedBytes, "application/octet-stream", fileName);
 }).RequireAuthorization();
 
 // Map Blazor admin UI
