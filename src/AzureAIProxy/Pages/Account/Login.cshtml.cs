@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using Azure;
 using Microsoft.AspNetCore.Authentication;
@@ -14,6 +15,10 @@ namespace AzureAIProxy.Pages.Account;
 [AllowAnonymous]
 public class LoginModel(IConfiguration configuration, ITableStorageService tableStorage) : PageModel
 {
+    private const int MaxFailedAttempts = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+    private static readonly ConcurrentDictionary<string, (int Count, DateTime LastAttempt)> _failedAttempts = new();
+
     public string? ErrorMessage { get; set; }
 
     [BindProperty(SupportsGet = true)]
@@ -23,6 +28,14 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
 
     public async Task<IActionResult> OnPostAsync(string username, string password)
     {
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        if (IsLockedOut(clientIp))
+        {
+            ErrorMessage = "Too many failed login attempts. Please try again later.";
+            return Page();
+        }
+
         var configUsername = configuration["Admin:Username"];
         var configPassword = configuration["Admin:Password"];
 
@@ -34,9 +47,12 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
 
         if (username != configUsername || password != configPassword)
         {
+            RecordFailedAttempt(clientIp);
             ErrorMessage = "Invalid username or password.";
             return Page();
         }
+
+        ClearFailedAttempts(clientIp);
 
         // Ensure the owner record exists in Table Storage
         var ownerTable = tableStorage.GetTableClient(TableNames.Owners);
@@ -74,5 +90,36 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
             });
 
         return LocalRedirect(ReturnUrl ?? "/");
+    }
+
+    private static bool IsLockedOut(string clientIp)
+    {
+        if (!_failedAttempts.TryGetValue(clientIp, out var entry))
+            return false;
+
+        if (entry.Count >= MaxFailedAttempts && DateTime.UtcNow - entry.LastAttempt < LockoutDuration)
+            return true;
+
+        // Lockout expired — clear the entry
+        if (entry.Count >= MaxFailedAttempts)
+        {
+            _failedAttempts.TryRemove(clientIp, out _);
+            return false;
+        }
+
+        return false;
+    }
+
+    private static void RecordFailedAttempt(string clientIp)
+    {
+        _failedAttempts.AddOrUpdate(
+            clientIp,
+            (1, DateTime.UtcNow),
+            (_, existing) => (existing.Count + 1, DateTime.UtcNow));
+    }
+
+    private static void ClearFailedAttempts(string clientIp)
+    {
+        _failedAttempts.TryRemove(clientIp, out _);
     }
 }
