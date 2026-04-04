@@ -332,7 +332,7 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
     {
         var queryParameters = context.Request.Query
             .Where(q => !string.IsNullOrEmpty(q.Value))
-            .Select(q => $"{q.Key}={q.Value!}")
+            .Select(q => $"{Uri.EscapeDataString(q.Key)}={Uri.EscapeDataString(q.Value!)}")
             .ToList();
 
         // Preserve any query parameters already set on the URL (e.g. api-version)
