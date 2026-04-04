@@ -29,7 +29,6 @@ public static class Event
             IsAuthorized = requestContext.IsAuthorized,
             MaxTokenCap = requestContext.MaxTokenCap,
             EventCode = requestContext.EventCode,
-            EventImageUrl = requestContext.EventImageUrl,
             OrganizerName = requestContext.OrganizerName,
             OrganizerEmail = requestContext.OrganizerEmail,
             Capabilities = capabilities

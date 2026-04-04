@@ -9,7 +9,6 @@ public class RequestContext
     public string EventCode { get; set; } = null!;
     public string OrganizerName { get; set; } = null!;
     public string OrganizerEmail { get; set; } = null!;
-    public string? EventImageUrl { get; set; }
     public int MaxTokenCap { get; set; }
     public int DailyRequestCap { get; set; }
     public bool RateLimitExceed { get; set; }

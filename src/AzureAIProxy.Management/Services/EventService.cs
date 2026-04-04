@@ -14,7 +14,6 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
     public async Task<Event?> CreateEventAsync(EventEditorModel model)
     {
         if (string.IsNullOrEmpty(model.EventSharedCode)) model.EventSharedCode = null;
-        if (string.IsNullOrEmpty(model.EventImageUrl)) model.EventImageUrl = null;
 
         string userId = await authService.GetCurrentUserIdAsync();
 
@@ -37,7 +36,6 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
             TimeZoneLabel = model.SelectedTimeZone!.Id,
             OrganizerName = model.OrganizerName!,
             OrganizerEmail = model.OrganizerEmail!,
-            EventImageUrl = model.EventImageUrl,
             MaxTokenCap = model.MaxTokenCap,
             DailyRequestCap = model.DailyRequestCap,
             Active = model.Active,
@@ -186,14 +184,12 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
         }
 
         if (string.IsNullOrEmpty(model.EventSharedCode)) model.EventSharedCode = null;
-        if (string.IsNullOrEmpty(model.EventImageUrl)) model.EventImageUrl = null;
 
         evt.EventCode = model.Name!;
         evt.EventSharedCode = model.EventSharedCode;
         evt.EventMarkdown = model.Description!;
         evt.StartTimestamp = DateTime.SpecifyKind(model.Start!.Value, DateTimeKind.Utc);
         evt.EndTimestamp = DateTime.SpecifyKind(model.End!.Value, DateTimeKind.Utc);
-        evt.EventImageUrl = model.EventImageUrl;
         evt.OrganizerEmail = model.OrganizerEmail!;
         evt.OrganizerName = model.OrganizerName!;
         evt.Active = model.Active;
@@ -260,7 +256,6 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
         TimeZoneLabel = entity.TimeZoneLabel,
         OrganizerName = entity.OrganizerName,
         OrganizerEmail = entity.OrganizerEmail,
-        EventImageUrl = entity.EventImageUrl,
         MaxTokenCap = entity.MaxTokenCap,
         DailyRequestCap = entity.DailyRequestCap,
         Active = entity.Active

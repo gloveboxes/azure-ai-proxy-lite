@@ -13,9 +13,6 @@ public class EventInfoResponse
     [JsonPropertyName("event_code")]
     public string EventCode { get; set; } = null!;
 
-    [JsonPropertyName("event_image_url")]
-    public string? EventImageUrl { get; set; }
-
     [JsonPropertyName("organizer_name")]
     public string OrganizerName { get; set; } = null!;
 

@@ -14,9 +14,6 @@ public class EventEditorModel
     [RegularExpression(@"^[a-zA-Z0-9]{5,}$", ErrorMessage = "Event shared code must be alphanumeric, blank or 5 or more characters long.")]
     public string? EventSharedCode { get; set; }
 
-    [StringLength(256)]
-    public string? EventImageUrl { get; set; }
-
     [Required]
     [StringLength(8192)]
     public string? Description { get; set; }

@@ -33,7 +33,6 @@ public class EventService(ITableStorageService tableStorage, IMemoryCache memory
         {
             EventId = evt.PartitionKey,
             EventCode = evt.EventCode,
-            EventImageUrl = evt.EventImageUrl,
             OrganizerName = evt.OrganizerName,
             EventMarkdown = evt.EventMarkdown,
             StartTimestamp = evt.StartTimestamp,

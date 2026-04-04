@@ -66,10 +66,6 @@
                 HelperText="For users without a GitHub acct. Auth format event-id@shared-code/attendee-email-address"
                 @bind-Value="Model.EventSharedCode" For="@(() => Model.EventSharedCode)" />
 
-            <MudTextField Label="Playground Branding Image URL (Optional)" Counter="256" Immediate="true"
-                HelperText="Size ~24px high by ~200px wide" @bind-Value="Model.EventImageUrl" InputType="InputType.Url"
-                For="@(() => Model.EventImageUrl)" />
-
         </MudCardContent>
 
     </MudCard>

@@ -65,7 +65,6 @@ public class AuthorizeService(ITableStorageService tableStorage, IEventLookupSer
             EventCode = evt.EventCode,
             OrganizerName = evt.OrganizerName,
             OrganizerEmail = evt.OrganizerEmail,
-            EventImageUrl = evt.EventImageUrl,
             MaxTokenCap = evt.MaxTokenCap,
             DailyRequestCap = evt.DailyRequestCap,
             RateLimitExceed = false,

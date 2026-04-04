@@ -90,7 +90,6 @@ def generate_events(
                 "MaxTokenCap": 4096,
                 "DailyRequestCap": 10000,
                 "Active": True,
-                "EventImageUrl": None,
                 "EventSharedCode": None,
             },
             mode=UpdateMode.REPLACE,
