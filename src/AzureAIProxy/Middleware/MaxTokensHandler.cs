@@ -27,12 +27,24 @@ public class MaxTokensHandler(RequestDelegate next)
 
     private static int? GetMaxTokens(JsonDocument requestJsonDoc)
     {
-        return
-            requestJsonDoc.RootElement.ValueKind == JsonValueKind.Object
-            && requestJsonDoc.RootElement.TryGetProperty("max_tokens", out var maxTokensElement)
+        if (requestJsonDoc.RootElement.ValueKind != JsonValueKind.Object)
+            return null;
+
+        // Check both max_tokens and max_completion_tokens for cap validation
+        if (requestJsonDoc.RootElement.TryGetProperty("max_tokens", out var maxTokensElement)
             && maxTokensElement.ValueKind == JsonValueKind.Number
-            && maxTokensElement.TryGetInt32(out int maxTokens)
-            ? maxTokens
-            : null;
+            && maxTokensElement.TryGetInt32(out int maxTokens))
+        {
+            return maxTokens;
+        }
+
+        if (requestJsonDoc.RootElement.TryGetProperty("max_completion_tokens", out var maxCompletionTokensElement)
+            && maxCompletionTokensElement.ValueKind == JsonValueKind.Number
+            && maxCompletionTokensElement.TryGetInt32(out int maxCompletionTokens))
+        {
+            return maxCompletionTokens;
+        }
+
+        return null;
     }
 }

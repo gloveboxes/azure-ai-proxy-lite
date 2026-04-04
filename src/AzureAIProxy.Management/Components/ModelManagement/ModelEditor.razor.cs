@@ -17,6 +17,14 @@ public partial class ModelEditor : ComponentBase
 
     private void ToggleMaskKey() => maskKey = !maskKey;
 
+    private void OnModelTypeChanged(ModelType? newValue)
+    {
+        if (Model is null) return;
+        Model.ModelType = newValue;
+        if (newValue != ModelType.AI_Toolkit)
+            Model.UseMaxCompletionTokens = false;
+    }
+
     protected override Task OnInitializedAsync()
     {
         Model ??= new();

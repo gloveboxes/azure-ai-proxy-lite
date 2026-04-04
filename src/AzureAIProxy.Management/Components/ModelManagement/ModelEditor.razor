@@ -22,7 +22,7 @@
                 <MudTextField Label="Model Deployment or Search Index Name" @bind-Value="Model.DeploymentName"
                     For="@(() => Model.DeploymentName)" Counter="64" Immediate="true" />
 
-                <MudSelect @bind-Value="Model.ModelType" Label="Type" For="@(() => Model.ModelType)">
+                <MudSelect Value="Model.ModelType" Label="Type" For="@(() => Model.ModelType)" ValueChanged="@((ModelType? v) => OnModelTypeChanged(v))">
                 @foreach (ModelType modelType in Enum.GetValues(typeof(ModelType)).Cast<ModelType>()
                     .OrderBy(m => m.ToString().Replace("_", " ")))
                     {
@@ -46,6 +46,12 @@
 
                 <MudSwitch @bind-Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary" />
                 <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled, uses Azure Managed Identity authentication instead of API key</MudText>
+
+                @if (Model.ModelType == ModelType.AI_Toolkit)
+                {
+                    <MudSwitch @bind-Value="Model.UseMaxCompletionTokens" Label="AI Toolkit GPT-5.x compatibility" Color="Color.Primary" />
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled: rewrites max_tokens to max_completion_tokens for GPT-5.x models that require it.</MudText>
+                }
 
                 <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
             }

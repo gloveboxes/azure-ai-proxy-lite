@@ -12,5 +12,6 @@ public class OwnerCatalog
     public string Location { get; set; } = null!;
     public string FriendlyName { get; set; } = null!;
     public bool UseManagedIdentity { get; set; }
+    public bool UseMaxCompletionTokens { get; set; }
     public List<Event> Events { get; set; } = [];
 }

@@ -241,7 +241,7 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
 
         if (requestJsonDoc is not null)
             requestMessage.Content = new StringContent(
-                requestJsonDoc.RootElement.ToString(),
+                GetRequestBody(requestJsonDoc, deployment),
                 Encoding.UTF8,
                 "application/json"
             );
@@ -287,7 +287,7 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
 
         if (requestJsonDoc is not null)
             requestMessage.Content = new StringContent(
-                requestJsonDoc.RootElement.ToString(),
+                GetRequestBody(requestJsonDoc, deployment),
                 Encoding.UTF8,
                 "application/json"
             );
@@ -352,5 +352,45 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
 
         requestUrl.Query = string.Join("&", queryParameters);
         return requestUrl.Uri;
+    }
+
+    /// <summary>
+    /// Returns the JSON request body, rewriting max_tokens to max_completion_tokens
+    /// when the deployment is an AI Toolkit model with UseMaxCompletionTokens enabled.
+    /// This is a workaround for AI Toolkit sending max_tokens
+    /// to models (e.g. GPT-5.x) that only accept max_completion_tokens.
+    /// </summary>
+    private string GetRequestBody(JsonDocument requestJsonDoc, Deployment deployment)
+    {
+        if (deployment.ModelType != ModelType.AI_Toolkit.ToStorageString()
+            || !deployment.UseMaxCompletionTokens
+            || requestJsonDoc.RootElement.ValueKind != JsonValueKind.Object
+            || !requestJsonDoc.RootElement.TryGetProperty("max_tokens", out _)
+            || requestJsonDoc.RootElement.TryGetProperty("max_completion_tokens", out _))
+        {
+            return requestJsonDoc.RootElement.ToString();
+        }
+
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            foreach (var property in requestJsonDoc.RootElement.EnumerateObject())
+            {
+                if (property.NameEquals("max_tokens"))
+                {
+                    writer.WritePropertyName("max_completion_tokens");
+                    property.Value.WriteTo(writer);
+                }
+                else
+                {
+                    property.WriteTo(writer);
+                }
+            }
+            writer.WriteEndObject();
+        }
+
+        logger.LogInformation("Rewrote max_tokens to max_completion_tokens for deployment '{DeploymentName}'", deployment.DeploymentName);
+        return Encoding.UTF8.GetString(stream.ToArray());
     }
 }

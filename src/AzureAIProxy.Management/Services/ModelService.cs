@@ -40,7 +40,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             FriendlyName = model.FriendlyName!,
             EncryptedEndpointUrl = encryption.Encrypt(model.EndpointUrl!),
             EncryptedEndpointKey = string.IsNullOrWhiteSpace(model.EndpointKey) ? string.Empty : encryption.Encrypt(model.EndpointKey),
-            UseManagedIdentity = model.UseManagedIdentity
+            UseManagedIdentity = model.UseManagedIdentity,
+            UseMaxCompletionTokens = model.UseMaxCompletionTokens
         };
 
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
@@ -101,7 +102,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             FriendlyName = entity.FriendlyName,
             EndpointUrl = encryption.Decrypt(entity.EncryptedEndpointUrl),
             EndpointKey = string.IsNullOrWhiteSpace(entity.EncryptedEndpointKey) ? string.Empty : encryption.Decrypt(entity.EncryptedEndpointKey),
-            UseManagedIdentity = entity.UseManagedIdentity
+            UseManagedIdentity = entity.UseManagedIdentity,
+            UseMaxCompletionTokens = entity.UseMaxCompletionTokens
         };
     }
 
@@ -126,7 +128,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             FriendlyName = $"{source.Value.FriendlyName} (Copy)",
             EncryptedEndpointUrl = source.Value.EncryptedEndpointUrl,
             EncryptedEndpointKey = source.Value.EncryptedEndpointKey,
-            UseManagedIdentity = source.Value.UseManagedIdentity
+            UseManagedIdentity = source.Value.UseManagedIdentity,
+            UseMaxCompletionTokens = source.Value.UseMaxCompletionTokens
         };
 
         await catalogTable.AddEntityAsync(entity);
@@ -151,7 +154,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
                 ModelType = ModelTypeExtensions.FromStorageString(entity.ModelType),
                 Location = entity.Location,
                 FriendlyName = entity.FriendlyName,
-                UseManagedIdentity = entity.UseManagedIdentity
+                UseManagedIdentity = entity.UseManagedIdentity,
+                UseMaxCompletionTokens = entity.UseMaxCompletionTokens
             };
 
             // Check which events reference this catalog
@@ -193,6 +197,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         existing.EncryptedEndpointUrl = encryption.Encrypt(ownerCatalog.EndpointUrl);
         existing.EncryptedEndpointKey = string.IsNullOrWhiteSpace(ownerCatalog.EndpointKey) ? string.Empty : encryption.Encrypt(ownerCatalog.EndpointKey);
         existing.UseManagedIdentity = ownerCatalog.UseManagedIdentity;
+        existing.UseMaxCompletionTokens = ownerCatalog.UseMaxCompletionTokens;
 
         await catalogTable.UpdateEntityAsync(existing, existing.ETag, Azure.Data.Tables.TableUpdateMode.Replace);
     }

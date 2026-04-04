@@ -43,6 +43,7 @@ public partial class ModelEdit : ComponentBase
             Location = m.Location,
             Active = m.Active,
             UseManagedIdentity = m.UseManagedIdentity,
+            UseMaxCompletionTokens = m.UseMaxCompletionTokens,
         };
     }
 
@@ -58,7 +59,8 @@ public partial class ModelEdit : ComponentBase
             EndpointUrl = model.EndpointUrl!,
             Location = model.Location!,
             Active = model.Active,
-            UseManagedIdentity = model.UseManagedIdentity
+            UseManagedIdentity = model.UseManagedIdentity,
+            UseMaxCompletionTokens = model.UseMaxCompletionTokens
         };
 
         await ModelService.UpdateOwnerCatalogAsync(m);

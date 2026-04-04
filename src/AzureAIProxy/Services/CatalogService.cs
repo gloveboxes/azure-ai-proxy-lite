@@ -58,7 +58,8 @@ public class CatalogService(
                         ModelType = catalog.ModelType,
                         CatalogId = Guid.Parse(catalogId),
                         Location = catalog.Location,
-                        UseManagedIdentity = catalog.UseManagedIdentity
+                        UseManagedIdentity = catalog.UseManagedIdentity,
+                        UseMaxCompletionTokens = catalog.UseMaxCompletionTokens
                     });
                 }
             }
