@@ -8,7 +8,8 @@
             AutoFocus="true" OnKeyDown="OnKeyDown"
             Adornment="Adornment.End" AdornmentIcon="@passphraseIcon"
             OnAdornmentClick="TogglePassphraseVisibility" AdornmentAriaLabel="Toggle passphrase visibility"
-            Validation="@(new Func<string, string?>(ValidatePassphrase))" />
+            Validation="@(new Func<string, string?>(ValidatePassphrase))"
+            UserAttributes="@(new Dictionary<string, object>{ {"autocomplete", "new-password"} })" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
