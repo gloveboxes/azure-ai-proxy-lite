@@ -21,7 +21,7 @@ hooks:
   postup:
     shell: sh
     continueOnError: true
-    interactive: false
+    interactive: true
     run: |
       echo ""
       echo "============================================="
