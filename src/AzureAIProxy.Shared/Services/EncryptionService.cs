@@ -13,6 +13,11 @@ public class EncryptionService : IEncryptionService
 {
     private readonly byte[] _key;
 
+    // Version prefix to distinguish AES-GCM from legacy AES-CBC payloads.
+    private const byte VersionGcm = 0x01;
+    private const int NonceSizeBytes = 12;
+    private const int TagSizeBytes = 16;
+
     public EncryptionService(string encryptionKey)
     {
         _key = SHA256.HashData(Encoding.UTF8.GetBytes(encryptionKey));
@@ -20,37 +25,48 @@ public class EncryptionService : IEncryptionService
 
     public string Encrypt(string plainText)
     {
-        using var aes = Aes.Create();
-        aes.Key = _key;
-        aes.GenerateIV();
+        ArgumentException.ThrowIfNullOrEmpty(plainText);
 
-        using var encryptor = aes.CreateEncryptor();
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
-        var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+        var nonce = new byte[NonceSizeBytes];
+        RandomNumberGenerator.Fill(nonce);
 
-        // Prepend IV to ciphertext
-        var result = new byte[aes.IV.Length + cipherBytes.Length];
-        Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
-        Buffer.BlockCopy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
+        var cipherBytes = new byte[plainBytes.Length];
+        var tag = new byte[TagSizeBytes];
+
+        using var aesGcm = new AesGcm(_key, TagSizeBytes);
+        aesGcm.Encrypt(nonce, plainBytes, cipherBytes, tag);
+
+        // Format: [version(1)] [nonce(12)] [tag(16)] [ciphertext(N)]
+        var result = new byte[1 + NonceSizeBytes + TagSizeBytes + cipherBytes.Length];
+        result[0] = VersionGcm;
+
+        var span = result.AsSpan();
+        nonce.CopyTo(span.Slice(1, NonceSizeBytes));
+        tag.CopyTo(span.Slice(1 + NonceSizeBytes, TagSizeBytes));
+        cipherBytes.CopyTo(span.Slice(1 + NonceSizeBytes + TagSizeBytes));
 
         return Convert.ToBase64String(result);
     }
 
     public string Decrypt(string cipherText)
     {
+        ArgumentException.ThrowIfNullOrEmpty(cipherText);
+
         var fullBytes = Convert.FromBase64String(cipherText);
+        ReadOnlySpan<byte> fullSpan = fullBytes;
 
-        using var aes = Aes.Create();
-        aes.Key = _key;
+        if (fullSpan.Length < 1 + NonceSizeBytes + TagSizeBytes || fullSpan[0] != VersionGcm)
+            throw new CryptographicException("Invalid AES-GCM payload.");
 
-        var iv = new byte[aes.BlockSize / 8];
-        var cipherBytes = new byte[fullBytes.Length - iv.Length];
-        Buffer.BlockCopy(fullBytes, 0, iv, 0, iv.Length);
-        Buffer.BlockCopy(fullBytes, iv.Length, cipherBytes, 0, cipherBytes.Length);
+        var nonce = fullSpan.Slice(1, NonceSizeBytes);
+        var tag = fullSpan.Slice(1 + NonceSizeBytes, TagSizeBytes);
+        var cipherBytes = fullSpan.Slice(1 + NonceSizeBytes + TagSizeBytes);
+        var plainBytes = new byte[cipherBytes.Length];
 
-        aes.IV = iv;
-        using var decryptor = aes.CreateDecryptor();
-        var plainBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
+        using var aesGcm = new AesGcm(_key, TagSizeBytes);
+        aesGcm.Decrypt(nonce, cipherBytes, tag, plainBytes);
+
         return Encoding.UTF8.GetString(plainBytes);
     }
 }
