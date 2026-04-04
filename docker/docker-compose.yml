@@ -20,7 +20,7 @@ services:
       - "${PROXY_PORT:-8900}:8080"
     environment:
       ASPNETCORE_URLS: "http://+:8080"
-      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__StorageAccount: >-
         DefaultEndpointsProtocol=http;
         AccountName=devstoreaccount1;
