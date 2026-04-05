@@ -46,7 +46,18 @@ public partial class EventEdit : ComponentBase
         Model.Active = evt.Active;
         Model.MaxTokenCap = evt.MaxTokenCap;
         Model.DailyRequestCap = evt.DailyRequestCap;
-        Model.SelectedTimeZone = TimeZoneInfo.FindSystemTimeZoneById(evt.TimeZoneLabel);
+        try
+        {
+            Model.SelectedTimeZone = TimeZoneInfo.FindSystemTimeZoneById(evt.TimeZoneLabel);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            Model.SelectedTimeZone = null;
+        }
+        catch (InvalidTimeZoneException)
+        {
+            Model.SelectedTimeZone = null;
+        }
         Model.SelectedModels = evt.Catalogs.Select(oc => oc.CatalogId.ToString()).ToList();
         Model.AvailableModels = await ModelService.GetOwnerCatalogsAsync();
     }

@@ -9,6 +9,8 @@ public partial class ModelEdit : ComponentBase
     [Parameter]
     public required string Id { get; set; }
 
+    private Guid catalogId;
+
     [Inject]
     public IModelService ModelService { get; set; } = null!;
 
@@ -25,7 +27,13 @@ public partial class ModelEdit : ComponentBase
             return;
         }
 
-        OwnerCatalog? m = await ModelService.GetOwnerCatalogAsync(Guid.Parse(Id));
+        if (!Guid.TryParse(Id, out catalogId))
+        {
+            NavigationManager.NavigateTo("/models");
+            return;
+        }
+
+        OwnerCatalog? m = await ModelService.GetOwnerCatalogAsync(catalogId);
 
         if (m is null)
         {
@@ -51,7 +59,7 @@ public partial class ModelEdit : ComponentBase
     {
         OwnerCatalog m = new()
         {
-            CatalogId = Guid.Parse(Id),
+            CatalogId = catalogId,
             FriendlyName = model.FriendlyName!,
             DeploymentName = model.DeploymentName!.Trim(),
             EndpointKey = model.EndpointKey!,

@@ -133,11 +133,11 @@ public partial class EventMetrics
             new ChartSeries<double>
                 {
                     Name = "New Active Registrations",
-                    Data = activeUsers.Select(au => (double)au.Count).ToArray()
+                    Data = cd.Select(au => (double)au.Count).ToArray()
                 }
         ];
 
-        ActiveUsersChartLabels = activeUsers.Select(au => au.DateStamp.ToString("dd MMM")).ToArray();
+        ActiveUsersChartLabels = cd.Select(au => au.DateStamp.ToString("dd MMM")).ToArray();
         ActiveUsersChartLabels = ScaleLabels(ActiveUsersChartLabels);
 
         return (ActiveUsersChartSeries, ActiveUsersChartLabels);
