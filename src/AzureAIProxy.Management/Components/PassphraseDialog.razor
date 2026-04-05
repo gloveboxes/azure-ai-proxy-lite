@@ -3,13 +3,13 @@
 <MudDialog>
     <DialogContent>
         <MudText Class="mb-4">@ContentText</MudText>
-        <MudTextField @bind-Value="Passphrase" Label="Passphrase" InputType="@passphraseInputType"
+        <MudTextField @bind-Value="Passphrase" Label="Passphrase" InputType="@(showPassphrase ? InputType.Text : InputType.Password)"
             Variant="Variant.Outlined" Required="true" Immediate="true"
             AutoFocus="true" OnKeyDown="OnKeyDown"
             Adornment="Adornment.End" AdornmentIcon="@passphraseIcon"
             OnAdornmentClick="TogglePassphraseVisibility" AdornmentAriaLabel="Toggle passphrase visibility"
             Validation="@(new Func<string, string?>(ValidatePassphrase))"
-            UserAttributes="@(new Dictionary<string, object>{ {"autocomplete", "new-password"} })" />
+            UserAttributes="@PassphraseAttributes" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>

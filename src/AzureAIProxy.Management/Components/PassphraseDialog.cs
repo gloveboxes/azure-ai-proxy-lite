@@ -15,13 +15,19 @@ public partial class PassphraseDialog
     private string? Passphrase { get; set; }
 
     private bool showPassphrase;
-    private InputType passphraseInputType = InputType.Password;
     private string passphraseIcon = Icons.Material.Filled.VisibilityOff;
+    private Dictionary<string, object> PassphraseAttributes => new()
+    {
+        ["autocomplete"] = "new-password",
+        ["name"] = "backup-passphrase",
+        ["autocorrect"] = "off",
+        ["autocapitalize"] = "off",
+        ["spellcheck"] = "false"
+    };
 
     private void TogglePassphraseVisibility()
     {
         showPassphrase = !showPassphrase;
-        passphraseInputType = showPassphrase ? InputType.Text : InputType.Password;
         passphraseIcon = showPassphrase ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
     }
 
@@ -38,11 +44,24 @@ public partial class PassphraseDialog
 
     private void Submit()
     {
-        if (IsValid)
-            MudDialog?.Close(DialogResult.Ok(Passphrase));
+        if (!IsValid)
+            return;
+
+        var enteredPassphrase = Passphrase;
+        Passphrase = string.Empty;
+        showPassphrase = false;
+        passphraseIcon = Icons.Material.Filled.VisibilityOff;
+
+        MudDialog?.Close(DialogResult.Ok(enteredPassphrase));
     }
 
-    private void Cancel() => MudDialog?.Close(DialogResult.Cancel());
+    private void Cancel()
+    {
+        Passphrase = string.Empty;
+        showPassphrase = false;
+        passphraseIcon = Icons.Material.Filled.VisibilityOff;
+        MudDialog?.Close(DialogResult.Cancel());
+    }
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
