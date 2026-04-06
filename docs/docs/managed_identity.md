@@ -117,7 +117,7 @@ The proxy uses `DefaultAzureCredential` which tries authentication methods in or
 2. Fill in:
    - **Friendly Name**: e.g., "Production GPT-4o"
    - **Deployment Name**: Your deployment name
-   - **Type**: Select model type (e.g., `OpenAI_Chat`, `Foundry_Agent`)
+   - **Type**: Select model type (e.g., `Foundry_Model`, `Foundry_Agent`)
    - **Endpoint**: Your endpoint URL
    - **Key**: Leave blank (not used with managed identity)
    - **Region**: Azure region

@@ -6,11 +6,11 @@ As at November 2023, the proxy supports the following model deployment classes:
 
 | Model deployment class | Models | Description |
 | ---------------------- | ------ | ----------- |
-| `openai-chat` | gpt-35-turbo, gpt-35-turbo-16k, or newer | This is the model deployment class for the Azure OpenAI Chat Completions API. |
-| `openai-completions` | davinci-002 or newer | This is the model deployment class for the Azure OpenAI Completions API. |
-| `openai-embeddings` | text-embedding-ada-002 or newer | This is the model deployment class for the Azure OpenAI Embeddings API. |
-| `openai-images-generations` | No model is deploy, just an Azure OpenAI resource in a location that supports the Images Generations API | This is the model deployment class for the Azure OpenAI Images Generations API. |
-| `azure-ai-search` | Not applicable | This allows for pass through acess to an instance of Azure AI Search |
+| `foundry-model` | gpt-35-turbo, gpt-35-turbo-16k, gpt-4o, or newer | This is the model deployment class for Azure OpenAI Chat Completions and Embeddings APIs. |
+| `foundry-agent` | Not applicable | This is the model deployment class for Foundry Agents. |
+| `mcp-server` | Not applicable | This is the model deployment class for MCP Server endpoints. |
+| `ai-toolkit` | Not applicable | This is the model deployment class for AI Toolkit models. |
+| `azure-ai-search` | Not applicable | This allows for pass through access to an instance of Azure AI Search. |
 
 
 :::tip

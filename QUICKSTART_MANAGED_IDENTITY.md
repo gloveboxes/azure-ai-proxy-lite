@@ -47,7 +47,7 @@ az role assignment create \
 - Fill in the form:
   - **Friendly Name**: e.g., "GPT-4o-mini"
   - **Deployment Name**: Your model deployment name (e.g., `gpt-4o-mini`)
-  - **Type**: `OpenAI_Chat`
+  - **Type**: `Foundry_Model`
   - **Endpoint**: Your Azure OpenAI endpoint (e.g., `https://my-openai.openai.azure.com`)
   - **Key**: Leave blank (not used with managed identity)
   - **Region**: Your region (e.g., `eastus`)

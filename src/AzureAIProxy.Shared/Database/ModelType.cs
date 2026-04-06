@@ -2,24 +2,22 @@ namespace AzureAIProxy.Shared.Database;
 
 public enum ModelType
 {
-    OpenAI_Chat,
-    OpenAI_Embedding,
     Azure_AI_Search,
     Foundry_Agent,
     MCP_Server,
-    AI_Toolkit
+    AI_Toolkit,
+    Foundry_Model
 }
 
 public static class ModelTypeExtensions
 {
     private static readonly Dictionary<string, ModelType> _map = new()
     {
-        ["openai-chat"] = ModelType.OpenAI_Chat,
-        ["openai-embedding"] = ModelType.OpenAI_Embedding,
         ["azure-ai-search"] = ModelType.Azure_AI_Search,
         ["foundry-agent"] = ModelType.Foundry_Agent,
         ["mcp-server"] = ModelType.MCP_Server,
         ["ai-toolkit"] = ModelType.AI_Toolkit,
+        ["foundry-model"] = ModelType.Foundry_Model,
     };
 
     private static readonly Dictionary<ModelType, string> _reverseMap =
