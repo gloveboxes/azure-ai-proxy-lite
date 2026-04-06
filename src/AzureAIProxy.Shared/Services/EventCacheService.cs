@@ -16,7 +16,7 @@ public class EventCacheService : IEventCacheService
     public MemoryCacheEntryOptions GetCacheEntryOptions()
     {
         return new MemoryCacheEntryOptions()
-            .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
+            .SetAbsoluteExpiration(TimeSpan.FromHours(2))
             .AddExpirationToken(new CancellationChangeToken(_cts.Token));
     }
 
