@@ -20,7 +20,7 @@ AZURE_AI_SEARCH_KEY = os.environ.get("AZURE_AI_SEARCH_KEY")
 AZURE_AI_SEARCH_INDEX_NAME = os.environ.get("AZURE_AI_SEARCH_INDEX_NAME")
 
 API_VERSION = "2024-11-20"
-MODEL_NAME = "gpt-35-turbo"
+MODEL_NAME = "gpt-4.1-mini"
 
 
 client = AzureOpenAI(

@@ -17,6 +17,7 @@ export type EventDetails = {
   organizerEmail: string;
   proxyUrl?: string;
   aiToolkitEndpoints?: AiToolkitEndpoint[];
+  capabilities?: Record<string, string[]>;
 };
 
 export type AttendeeRegistration = { apiKey: string; active: boolean };

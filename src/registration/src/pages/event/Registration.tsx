@@ -26,6 +26,11 @@ const useStyles = makeStyles({
     fontSize: "20px",
     fontFamily: "Arial, Verdana, sans-serif",
     lineHeight: "1.5",
+    "@media (max-width: 768px)": {
+      marginLeft: "16px",
+      marginRight: "16px",
+      fontSize: "16px",
+    },
   },
   field: {
     display: "flex",
@@ -45,6 +50,9 @@ const useStyles = makeStyles({
   },
   detailsSection: {
     maxWidth: "75%",
+    "@media (max-width: 768px)": {
+      maxWidth: "100%",
+    },
   },
   fullWidthInput: {
     flexGrow: 1,
@@ -66,12 +74,21 @@ const useStyles = makeStyles({
     columnGap: "8px",
     rowGap: "8px",
     alignItems: "center",
+    "@media (max-width: 768px)": {
+      gridTemplateColumns: "1fr",
+      "& > *": {
+        minWidth: "0px",
+      },
+    },
   },
   toolkitLabel: {
     fontSize: "14px",
     fontWeight: "600",
     color: "#444",
     whiteSpace: "nowrap" as const,
+    "@media (max-width: 768px)": {
+      whiteSpace: "normal" as const,
+    },
   },
   toolkitValue: {
     fontSize: "15px",
@@ -86,14 +103,31 @@ const useStyles = makeStyles({
     overflowX: "hidden" as const,
     textOverflow: "ellipsis" as const,
     minWidth: "0px",
+    "@media (max-width: 768px)": {
+      whiteSpace: "normal" as const,
+      overflowWrap: "break-word" as const,
+      wordBreak: "break-word" as const,
+      overflowX: "visible" as const,
+    },
+  },
+  codeCardWrapper: {
+    position: "relative" as const,
+    ...shorthands.margin("12px", "0px", "16px", "0px"),
+  },
+  codeCardCopyButton: {
+    position: "absolute" as const,
+    top: "8px",
+    right: "8px",
   },
   codeCard: {
     ...shorthands.border("1px", "solid", "#e0e0e0"),
     ...shorthands.borderRadius("8px"),
     ...shorthands.padding("16px"),
-    ...shorthands.margin("12px", "0px", "16px", "0px"),
     backgroundColor: "#f8f8f8",
     overflowX: "auto" as const,
+    "@media (max-width: 768px)": {
+      ...shorthands.padding("8px"),
+    },
   },
 });
 
@@ -210,23 +244,31 @@ export const Registration = () => {
           </table>
         </div>
       )}
-      <h3>Generate your API Key</h3>
-      Follow these steps to register and generate your API Key for this event:
-      <ol>
-        <li>Click <strong>Login with GitHub</strong> in the top right corner.</li>
-        <li>Read the event description including the <strong>Terms of use</strong>.</li>
-        <li>Scroll to the bottom of the page and click <strong>Register</strong>.</li>
-        <li>Next, scroll down to the <strong>Registration Details</strong> section for your API Key and Endpoint.</li>
-        <li>Then explore the <strong>Playground</strong> and <strong>SDK</strong> support.</li>
-        <li>Forgotten your API Key? Just <strong>revisit</strong> this page.</li>
-      </ol>
+      {!(state.profileLoaded && state.profile) && (
+        <>
+          <h3>Generate your API Key</h3>
+          Follow these steps to register and generate your API Key for this event:
+          <ol>
+            <li>Click <strong>Login with GitHub</strong> in the top right corner.</li>
+            <li>Read the event description including the <strong>Terms of use</strong>.</li>
+            <li>Scroll to the bottom of the page and click <strong>Register</strong>.</li>
+            <li>Next, scroll down to the <strong>Registration Details</strong> section for your API Key and Endpoint.</li>
+            <li>Then explore the <strong>AI Toolkit</strong> and <strong>SDK</strong> support.</li>
+            <li>Forgotten your API Key? Just <strong>revisit</strong> this page.</li>
+          </ol>
+        </>
+      )}
       <div style={{ textAlign: "left", padding: "0px" }}>
         <ReactMarkdown>{event?.eventMarkdown}</ReactMarkdown>
       </div>
-      <h2>Terms of use</h2>
-      <div>
-        By registering for this event and gaining limited access to Azure AI services for the sole purpose of participating in the "{trimmedEventCode}" event, users acknowledge and agree to use the provided service responsibly and in accordance with the outlined terms. This privilege of limited access to Azure AI services is extended with the expectation that participants will refrain from any form of abuse, including but not limited to, malicious activities, unauthorized access, or any other actions that may disrupt the functionality of the services or compromise the experience for others. We reserve the right to revoke access to the free service in the event of any misuse or violation of these terms. Users are encouraged to engage with the service in a manner that fosters a positive and collaborative community environment.
-      </div>
+      {!attendee && (
+        <>
+          <h2>Terms of use</h2>
+          <div>
+            By registering for this event and gaining limited access to Azure AI services for the sole purpose of participating in the "{trimmedEventCode}" event, users acknowledge and agree to use the provided service responsibly and in accordance with the outlined terms. This privilege of limited access to Azure AI services is extended with the expectation that participants will refrain from any form of abuse, including but not limited to, malicious activities, unauthorized access, or any other actions that may disrupt the functionality of the services or compromise the experience for others. We reserve the right to revoke access to the free service in the event of any misuse or violation of these terms. Users are encouraged to engage with the service in a manner that fosters a positive and collaborative community environment.
+          </div>
+        </>
+      )}
       {state.profileLoaded && state.profile && !attendee && (
         <div>
           <Form method="post">
@@ -295,6 +337,27 @@ export const Registration = () => {
           The real power of the Azure OpenAI Service is in the SDKs that allow you to integrate AI capabilities into your applications. You'll need your API Key and the proxy Endpoint to access AI resources using an SDK such as the OpenAI SDK or making REST calls.
           <br />
           <br />
+          <div className={styles.detailsSection}>
+          <div className={styles.toolkitCard}>
+            <span className={styles.toolkitLabel}>Event API Key:</span>
+            <span className={styles.toolkitValue}>
+              {state.showApiKey ? attendee.apiKey : "••••••••••••••••••••••••••••••••"}
+            </span>
+            <div className={styles.fieldRow}>
+              <Button
+                icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
+                onClick={() =>
+                  dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
+                }
+                size="small"
+              />
+              <Button
+                icon={<CopyRegular />}
+                onClick={() => copyToClipboard(attendee.apiKey)}
+                size="small"
+              />
+            </div>
+          </div>
           <div className={styles.toolkitCard}>
             <span className={styles.toolkitLabel}>Proxy Endpoint:</span>
             <span className={styles.toolkitEndpointValue} title={event?.proxyUrl ?? `${window.location.origin}/api/v1`}>
@@ -308,8 +371,34 @@ export const Registration = () => {
               size="small"
             />
           </div>
+          {event?.capabilities && (() => {
+            const aiToolkitNames = new Set(
+              (event.aiToolkitEndpoints ?? []).map((ep: AiToolkitEndpoint) => ep.deploymentName)
+            );
+            const filtered = Object.entries(event.capabilities)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .flatMap(([, names]) =>
+                [...names].filter((n) => !aiToolkitNames.has(n)).sort((a, b) => a.localeCompare(b))
+              );
+            if (filtered.length === 0) return null;
+            return (
+              <div className={styles.toolkitCard}>
+                <span className={styles.toolkitLabel}>Available Models:</span>
+                <span className={styles.toolkitEndpointValue}>{filtered.join(", ")}</span>
+              </div>
+            );
+          })()}
+          </div>
           <h4>Python example using the OpenAI Python SDK</h4>
           The following Python code demonstrates how to use the OpenAI Python SDK to interact with the Azure OpenAI Service.
+          <div className={styles.codeCardWrapper}>
+          <div className={styles.codeCardCopyButton}>
+            <Button
+              icon={<CopyRegular />}
+              onClick={() => copyToClipboard(`# pip install openai\n\nfrom openai import AzureOpenAI\n\nENDPOINT = "${event?.proxyUrl ?? `${window.location.origin}/api/v1`}"\nAPI_KEY = "<YOUR_EVENT_API_KEY>"\n\nAPI_VERSION = "2024-10-21"\nMODEL_NAME = "gpt-4.1-mini"\n\nclient = AzureOpenAI(\n    azure_endpoint=ENDPOINT,\n    api_key=API_KEY,\n    api_version=API_VERSION,\n)\n\nMESSAGES = [\n    {"role": "system", "content": "You are a helpful assistant."},\n    {"role": "user", "content": "Who won the world series in 2020?"},\n    {\n        "role": "assistant",\n        "content": "The Los Angeles Dodgers won the World Series in 2020.",\n    },\n    {"role": "user", "content": "Where was it played?"},\n]\n\ncompletion = client.chat.completions.create(\n    model=MODEL_NAME,\n    messages=MESSAGES,\n)\n\nprint(completion.model_dump_json(indent=2))`)}
+              size="small"
+            />
+          </div>
           <div className={styles.codeCard}>
           <pre style={{ margin: 0 }}>
             <code style={{ lineHeight: "1", fontSize: "medium" }}>
@@ -320,8 +409,8 @@ from openai import AzureOpenAI
 ENDPOINT = "${event?.proxyUrl ?? `${window.location.origin}/api/v1`}"
 API_KEY = "<YOUR_EVENT_API_KEY>"
 
-API_VERSION = "2024-02-01"
-MODEL_NAME = "gpt-35-turbo"
+API_VERSION = "2024-10-21"
+MODEL_NAME = "gpt-4.1-mini"
 
 client = AzureOpenAI(
     azure_endpoint=ENDPOINT,
@@ -347,6 +436,7 @@ completion = client.chat.completions.create(
 print(completion.model_dump_json(indent=2))`}
             </code>
           </pre>
+          </div>
           </div>
           <h3 style={{ "marginBottom": "10px" }}>More examples</h3>
           <ul>

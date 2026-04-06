@@ -33,6 +33,9 @@ public class EventRegistration
 
     [JsonPropertyName("ai_toolkit_endpoints")]
     public List<AiToolkitEndpoint>? AiToolkitEndpoints { get; set; }
+
+    [JsonPropertyName("capabilities")]
+    public Dictionary<string, List<string>>? Capabilities { get; set; }
 }
 
 public class AiToolkitEndpoint

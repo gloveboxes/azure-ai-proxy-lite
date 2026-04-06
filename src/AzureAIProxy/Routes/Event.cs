@@ -68,6 +68,13 @@ public static class Event
                 .ToList();
         }
 
+        // Get all capabilities (model type → deployment names) for this event
+        var capabilities = await catalogService.GetCapabilitiesAsync(eventId);
+        if (capabilities.Count > 0)
+        {
+            eventRegistrationInfo.Capabilities = capabilities;
+        }
+
         return TypedResults.Ok(eventRegistrationInfo);
     }
 

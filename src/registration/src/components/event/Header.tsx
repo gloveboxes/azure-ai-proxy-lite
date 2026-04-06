@@ -16,6 +16,10 @@ const useStyles = makeStyles({
     display: "grid",
     gridTemplateColumns: "1fr 2fr 1fr",
     textAlign: "center",
+    "@media (max-width: 768px)": {
+      gridTemplateColumns: "auto 1fr",
+      gridTemplateRows: "auto auto",
+    },
   },
   right: {
     justifySelf: "right",
@@ -24,6 +28,12 @@ const useStyles = makeStyles({
     justifyContent: "center",
     alignItems: "center",
     fontSize: "medium",
+    "@media (max-width: 768px)": {
+      gridColumn: "1 / -1",
+      justifySelf: "center",
+      paddingRight: "0px",
+      paddingBottom: "8px",
+    },
   },
   left: {
     justifySelf: "left",
@@ -31,6 +41,9 @@ const useStyles = makeStyles({
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    "@media (max-width: 768px)": {
+      paddingLeft: "12px",
+    },
   },
   logo: {
     height: "24px",
