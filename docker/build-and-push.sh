@@ -44,6 +44,9 @@ docker buildx build \
     --push \
     "${ROOT_DIR}"
 
+echo "==> Cleaning up local buildx cache to free disk space"
+docker buildx prune --force
+
 echo "==> Done. Update docker/.env or docker-compose.yml with:"
 echo "    PROXY_IMAGE=${REPO}/aoai-proxy:${TAG}"
 echo "    REGISTRATION_IMAGE=${REPO}/aoai-proxy-registration:${TAG}"
