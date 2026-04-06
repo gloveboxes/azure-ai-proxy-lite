@@ -109,6 +109,8 @@ builder.Services.AddManagementServices();
 
 // --- Proxy Services ---
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICatalogCacheService, CatalogCacheService>();
+builder.Services.AddSingleton<IEventCacheService, EventCacheService>();
 builder.Services.AddHttpClient<IProxyService, ProxyService>();
 builder.Services.AddProxyServices(useMockProxy);
 

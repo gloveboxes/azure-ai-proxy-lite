@@ -15,7 +15,7 @@ As at November 2023, the proxy supports the following model deployment classes:
 
 :::tip
 
-You can deploy multiple models of the same model deployment class. For example, you can deploy multiple `gpt-35-turbo` models in difference Azure OpenAI resources with the same name. The proxy will round robin across the models of the same deployment name to balance the load.
+Each model deployment must have a unique deployment name.
 
 :::
 

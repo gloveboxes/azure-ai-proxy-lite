@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace AzureAIProxy.Services;
 
-public class EventLookupService(ITableStorageService tableStorage, IMemoryCache memoryCache) : IEventLookupService
+public class EventLookupService(ITableStorageService tableStorage, IMemoryCache memoryCache, IEventCacheService eventCache) : IEventLookupService
 {
     private const string CacheKeyPrefix = "event+lookup+";
 
@@ -20,7 +20,7 @@ public class EventLookupService(ITableStorageService tableStorage, IMemoryCache 
         {
             var response = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
             var evt = response.Value;
-            memoryCache.Set(cacheKey, evt, TimeSpan.FromMinutes(3));
+            memoryCache.Set(cacheKey, evt, eventCache.GetCacheEntryOptions());
             return evt;
         }
         catch (RequestFailedException ex) when (ex.Status == 404)

@@ -13,6 +13,9 @@ public partial class ModelList : ComponentBase
     [Inject]
     public required IDialogService DialogService { get; set; }
 
+    [Inject]
+    public required ISnackbar Snackbar { get; set; }
+
     public IEnumerable<OwnerCatalog>? Models { get; set; }
 
     protected override async Task OnInitializedAsync() => Models = await ModelService.GetOwnerCatalogsAsync();
@@ -38,7 +41,14 @@ public partial class ModelList : ComponentBase
 
     private async Task DuplicateOwnerCatalogAsync(OwnerCatalog resource)
     {
-        await ModelService.DuplicateOwnerCatalogAsync(resource);
-        Models = await ModelService.GetOwnerCatalogsAsync();
+        try
+        {
+            await ModelService.DuplicateOwnerCatalogAsync(resource);
+            Models = await ModelService.GetOwnerCatalogsAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
     }
 }

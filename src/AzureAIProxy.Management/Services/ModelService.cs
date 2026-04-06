@@ -6,7 +6,7 @@ using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class ModelService(IAuthService authService, ITableStorageService tableStorage, IEncryptionService encryption) : IModelService
+public class ModelService(IAuthService authService, ITableStorageService tableStorage, IEncryptionService encryption, ICatalogCacheService catalogCache) : IModelService
 {
     public void Dispose()
     {
@@ -15,6 +15,28 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
     }
 
     protected virtual void Dispose(bool disposing) { }
+
+    private async Task<bool> DeploymentNameExistsAsync(string deploymentName, Guid? excludeCatalogId = null)
+    {
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        await foreach (var entity in catalogTable.QueryAsync<CatalogEntity>(c => c.DeploymentName == deploymentName))
+        {
+            if (excludeCatalogId.HasValue && entity.PartitionKey == excludeCatalogId.Value.ToString())
+                continue;
+            return true;
+        }
+        return false;
+    }
+
+    private async Task<bool> FriendlyNameExistsAsync(string friendlyName)
+    {
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        await foreach (var _ in catalogTable.QueryAsync<CatalogEntity>(c => c.FriendlyName == friendlyName))
+        {
+            return true;
+        }
+        return false;
+    }
 
     public async Task<OwnerCatalog> AddOwnerCatalogAsync(ModelEditorModel model)
     {
@@ -26,6 +48,9 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         {
             throw new InvalidOperationException("User is not a registered owner.");
         }
+
+        if (await DeploymentNameExistsAsync(model.DeploymentName!.Trim()))
+            throw new InvalidOperationException($"A resource with deployment name '{model.DeploymentName!.Trim()}' already exists. Deployment names must be unique.");
 
         var catalogId = Guid.NewGuid().ToString();
         var entity = new CatalogEntity
@@ -46,6 +71,8 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
 
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
         await catalogTable.AddEntityAsync(entity);
+
+        catalogCache.InvalidateAll();
 
         return new OwnerCatalog
         {
@@ -82,6 +109,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         }
 
         await catalogTable.DeleteEntityAsync(id, id);
+        catalogCache.InvalidateAll();
     }
 
     public async Task<OwnerCatalog> GetOwnerCatalogAsync(Guid catalogId)
@@ -115,17 +143,37 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         var sourceId = ownerCatalog.CatalogId.ToString();
         var source = await catalogTable.GetEntityAsync<CatalogEntity>(sourceId, sourceId);
 
+        // Generate a unique deployment name by appending "-copy", "-copy-2", etc.
+        var baseDeploymentName = source.Value.DeploymentName;
+        var newDeploymentName = $"{baseDeploymentName}-copy";
+        int counter = 2;
+        while (await DeploymentNameExistsAsync(newDeploymentName))
+        {
+            newDeploymentName = $"{baseDeploymentName}-copy-{counter}";
+            counter++;
+        }
+
+        // Generate a unique friendly name by appending " (Copy)", " (Copy 2)", etc.
+        var baseFriendlyName = source.Value.FriendlyName;
+        var newFriendlyName = $"{baseFriendlyName} (Copy)";
+        counter = 2;
+        while (await FriendlyNameExistsAsync(newFriendlyName))
+        {
+            newFriendlyName = $"{baseFriendlyName} (Copy {counter})";
+            counter++;
+        }
+
         var newCatalogId = Guid.NewGuid().ToString();
         var entity = new CatalogEntity
         {
             PartitionKey = newCatalogId,
             RowKey = newCatalogId,
             OwnerId = userId,
-            DeploymentName = source.Value.DeploymentName,
+            DeploymentName = newDeploymentName,
             Active = source.Value.Active,
             ModelType = source.Value.ModelType,
             Location = source.Value.Location,
-            FriendlyName = $"{source.Value.FriendlyName} (Copy)",
+            FriendlyName = newFriendlyName,
             EncryptedEndpointUrl = source.Value.EncryptedEndpointUrl,
             EncryptedEndpointKey = source.Value.EncryptedEndpointKey,
             UseManagedIdentity = source.Value.UseManagedIdentity,
@@ -133,6 +181,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         };
 
         await catalogTable.AddEntityAsync(entity);
+        catalogCache.InvalidateAll();
     }
 
     public async Task<IEnumerable<OwnerCatalog>> GetOwnerCatalogsAsync()
@@ -189,6 +238,10 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             return;
         }
 
+        if (existing.DeploymentName != ownerCatalog.DeploymentName.Trim()
+            && await DeploymentNameExistsAsync(ownerCatalog.DeploymentName.Trim(), ownerCatalog.CatalogId))
+            throw new InvalidOperationException($"A resource with deployment name '{ownerCatalog.DeploymentName.Trim()}' already exists. Deployment names must be unique.");
+
         existing.FriendlyName = ownerCatalog.FriendlyName;
         existing.DeploymentName = ownerCatalog.DeploymentName.Trim();
         existing.ModelType = ownerCatalog.ModelType!.Value.ToStorageString();
@@ -200,5 +253,6 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         existing.UseMaxCompletionTokens = ownerCatalog.UseMaxCompletionTokens;
 
         await catalogTable.UpdateEntityAsync(existing, existing.ETag, Azure.Data.Tables.TableUpdateMode.Replace);
+        catalogCache.InvalidateAll();
     }
 }

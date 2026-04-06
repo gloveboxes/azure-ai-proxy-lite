@@ -5,5 +5,10 @@
 <MudStack>
     <Help Title="Create a new resource" Link="https://gloveboxes.github.io/azure-ai-proxy-lite/resources/" />
 
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <MudAlert Severity="Severity.Error" ShowCloseIcon="true" CloseIconClicked="() => ErrorMessage = null">@ErrorMessage</MudAlert>
+    }
+
     <ModelEditor OnValidSubmit="@HandleValidSubmit" />
 </MudStack>

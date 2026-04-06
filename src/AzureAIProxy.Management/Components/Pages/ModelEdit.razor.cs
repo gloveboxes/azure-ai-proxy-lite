@@ -19,6 +19,8 @@ public partial class ModelEdit : ComponentBase
 
     public ModelEditorModel Model { get; set; } = null!;
 
+    public string? ErrorMessage { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         if (string.IsNullOrEmpty(Id))
@@ -71,8 +73,15 @@ public partial class ModelEdit : ComponentBase
             UseMaxCompletionTokens = model.UseMaxCompletionTokens
         };
 
-        await ModelService.UpdateOwnerCatalogAsync(m);
-
-        NavigationManager.NavigateTo("/models");
+        try
+        {
+            ErrorMessage = null;
+            await ModelService.UpdateOwnerCatalogAsync(m);
+            NavigationManager.NavigateTo("/models");
+        }
+        catch (InvalidOperationException ex)
+        {
+            ErrorMessage = ex.Message;
+        }
     }
 }

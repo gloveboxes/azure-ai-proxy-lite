@@ -8,7 +8,7 @@ using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class BackupService(ITableStorageService tableStorage, IEncryptionService encryption) : IBackupService
+public class BackupService(ITableStorageService tableStorage, IEncryptionService encryption, ICatalogCacheService catalogCache, IEventCacheService eventCache) : IBackupService
 {
     private const int SaltSize = 16;
     private const int NonceSize = 12;
@@ -162,6 +162,9 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 Creator = true
             }, TableUpdateMode.Replace);
         }
+
+        catalogCache.InvalidateAll();
+        eventCache.InvalidateAll();
     }
 
     public async Task ClearAllDataAsync()
@@ -199,6 +202,9 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 }
             }
         }
+
+        catalogCache.InvalidateAll();
+        eventCache.InvalidateAll();
     }
 
     // Format: [version(1)] [salt(16)] [nonce(12)] [tag(16)] [ciphertext(N)]

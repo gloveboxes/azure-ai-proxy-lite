@@ -6,7 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace AzureAIProxy.Services;
 
-public class EventService(ITableStorageService tableStorage, IMemoryCache memoryCache) : IEventService
+public class EventService(ITableStorageService tableStorage, IMemoryCache memoryCache, IEventCacheService eventCache) : IEventService
 {
     const string EventRegistrationCacheKey = "event+registration+info";
 
@@ -41,7 +41,7 @@ public class EventService(ITableStorageService tableStorage, IMemoryCache memory
             TimeZoneLabel = evt.TimeZoneLabel
         };
 
-        memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
+        memoryCache.Set(cacheKey, result, eventCache.GetCacheEntryOptions());
         return result;
     }
 }

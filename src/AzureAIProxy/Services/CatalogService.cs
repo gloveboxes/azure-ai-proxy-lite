@@ -9,7 +9,8 @@ namespace AzureAIProxy.Services;
 public class CatalogService(
     ITableStorageService tableStorage,
     IEncryptionService encryption,
-    IMemoryCache memoryCache
+    IMemoryCache memoryCache,
+    ICatalogCacheService catalogCache
 ) : ICatalogService
 {
     const string CatalogFoundryAgentEventKey = "catalog+foundry+agent+event+key";
@@ -31,16 +32,15 @@ public class CatalogService(
         }
     }
 
-    private async Task<List<Deployment>> GetDecryptedEventCatalogAsync(string eventId, string deploymentName)
+    private async Task<Deployment?> GetDeploymentAsync(string eventId, string deploymentName)
     {
         var cacheKey = $"{CatalogEventDeploymentKey}+{eventId}+{deploymentName}";
-        if (memoryCache.TryGetValue(cacheKey, out List<Deployment>? cachedValue))
-            return cachedValue!;
+        if (memoryCache.TryGetValue(cacheKey, out Deployment? cachedValue))
+            return cachedValue;
 
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
         var catalogIds = await GetCatalogIdsForEventAsync(eventId);
 
-        var result = new List<Deployment>();
         foreach (var catalogId in catalogIds)
         {
             try
@@ -50,7 +50,7 @@ public class CatalogService(
                 var catalog = response.Value;
                 if (catalog.Active && catalog.DeploymentName == deploymentName)
                 {
-                    result.Add(new Deployment
+                    var result = new Deployment
                     {
                         DeploymentName = catalog.DeploymentName,
                         EndpointUrl = encryption.Decrypt(catalog.EncryptedEndpointUrl),
@@ -60,14 +60,15 @@ public class CatalogService(
                         Location = catalog.Location,
                         UseManagedIdentity = catalog.UseManagedIdentity,
                         UseMaxCompletionTokens = catalog.UseMaxCompletionTokens
-                    });
+                    };
+                    memoryCache.Set(cacheKey, result, catalogCache.GetCacheEntryOptions());
+                    return result;
                 }
             }
             catch (RequestFailedException ex) when (ex.Status == 404) { }
         }
 
-        memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
-        return result;
+        return null;
     }
 
     public async Task<Deployment?> GetEventFoundryAgentAsync(string eventId)
@@ -97,7 +98,7 @@ public class CatalogService(
                         Location = catalog.Location,
                         UseManagedIdentity = catalog.UseManagedIdentity
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
+                    memoryCache.Set(cacheKey, result, catalogCache.GetCacheEntryOptions());
                     return result;
                 }
             }
@@ -136,7 +137,7 @@ public class CatalogService(
                         Location = catalog.Location,
                         UseManagedIdentity = catalog.UseManagedIdentity
                     };
-                    memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
+                    memoryCache.Set(cacheKey, result, catalogCache.GetCacheEntryOptions());
                     return result;
                 }
             }
@@ -150,11 +151,11 @@ public class CatalogService(
         string eventId, string deploymentName)
     {
         deploymentName = deploymentName.Trim();
-        var deployments = await GetDecryptedEventCatalogAsync(eventId, deploymentName);
-        if (deployments.Count == 0)
+        var deployment = await GetDeploymentAsync(eventId, deploymentName);
+        if (deployment is null)
             return (null, await GetEventCatalogAsync(eventId));
         else
-            return (deployments[new Random().Next(deployments.Count)], []);
+            return (deployment, []);
     }
 
     public async Task<Dictionary<string, List<string>>> GetCapabilitiesAsync(string eventId)
@@ -188,7 +189,7 @@ public class CatalogService(
             .Distinct()
             .ToList();
 
-        memoryCache.Set(cacheKey, result, TimeSpan.FromMinutes(2));
+        memoryCache.Set(cacheKey, result, catalogCache.GetCacheEntryOptions());
         return result;
     }
 

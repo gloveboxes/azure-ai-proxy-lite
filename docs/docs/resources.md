@@ -54,9 +54,3 @@ To work around this, enable the **AI Toolkit GPT-5.x compatibility** toggle when
 
 !!! note
     The **AI Toolkit GPT-5.x compatibility** toggle only appears when the resource type is set to `AI Toolkit`.
-
-### Load balancing resources
-
-For larger events with many attendees (for example 200 concurrent users generating 4 model requests per minute) you can configure multiple resources with the same resource name to balance the load.
-
-For example, you can deploy multiple `gpt-35-turbo` models in different Azure OpenAI resources with the same name. The proxy will round robin across the models of the same deployment name to balance the load. See the [Capacity Planning](./capacity.md) guide for more information.

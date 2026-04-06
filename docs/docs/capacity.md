@@ -46,10 +46,7 @@ So, the Max Token Cap limits the Max response size for a request in the AI Proxy
 
 ## Scaling capacity
 
-There are two ways to scale model capacity:
-
-1. Ask the Azure AI team in increase the TPM limit for a deployment.
-1. Combine capacity from multiple subscriptions. The proxy will load balance across model deployments with the **same name** from multiple subscriptions. Then add the additional deployments to the event. When creating deployments in the proxy, set the deployment **Friendly Name** to identify the deployment/subscription, but ensure the **Deployment Name** is the same. See the [Configuring resources](./resources.md) guide for more information.
+To scale model capacity, ask the Azure AI team to increase the TPM limit for a deployment.
 
 ## Rule of thumb
 

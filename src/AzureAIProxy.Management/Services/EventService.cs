@@ -9,7 +9,7 @@ using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class EventService(IAuthService authService, ITableStorageService tableStorage) : IEventService
+public class EventService(IAuthService authService, ITableStorageService tableStorage, ICatalogCacheService catalogCache, IEventCacheService eventCache) : IEventService
 {
     public async Task<Event?> CreateEventAsync(EventEditorModel model)
     {
@@ -213,6 +213,8 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
             var evt = response.Value;
             evt.CatalogIds = string.Join(",", modelIds);
             await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
+            catalogCache.InvalidateAll();
+            eventCache.InvalidateAll();
         }
         catch (RequestFailedException ex) when (ex.Status == 404) { }
     }
@@ -239,6 +241,8 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
             var oeTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
             try { await oeTable.DeleteEntityAsync(evt.OwnerId, id); }
             catch (RequestFailedException ex) when (ex.Status == 404) { }
+
+            eventCache.InvalidateAll();
         }
         catch (RequestFailedException ex) when (ex.Status == 404) { }
     }

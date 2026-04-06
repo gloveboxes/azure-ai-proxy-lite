@@ -12,9 +12,19 @@ public partial class ModelAdd : ComponentBase
     [Inject]
     public required NavigationManager NavigationManager { get; set; }
 
+    public string? ErrorMessage { get; set; }
+
     public async Task HandleValidSubmit(ModelEditorModel model)
     {
-        OwnerCatalog _ = await ModelService.AddOwnerCatalogAsync(model);
-        NavigationManager.NavigateTo("/models");
+        try
+        {
+            ErrorMessage = null;
+            OwnerCatalog _ = await ModelService.AddOwnerCatalogAsync(model);
+            NavigationManager.NavigateTo("/models");
+        }
+        catch (InvalidOperationException ex)
+        {
+            ErrorMessage = ex.Message;
+        }
     }
 }

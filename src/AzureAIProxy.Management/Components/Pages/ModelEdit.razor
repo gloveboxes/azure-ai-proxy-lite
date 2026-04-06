@@ -6,5 +6,10 @@
 <MudStack>
     <Help Title="Edit model registration" Link="https://gloveboxes.github.io/azure-ai-proxy-lite/resources/" />
 
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <MudAlert Severity="Severity.Error" ShowCloseIcon="true" CloseIconClicked="() => ErrorMessage = null">@ErrorMessage</MudAlert>
+    }
+
     <ModelEditor OnValidSubmit="@OnValidSubmit" @bind-Model="Model" />
 </MudStack>
