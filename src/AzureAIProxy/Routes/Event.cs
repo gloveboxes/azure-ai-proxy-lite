@@ -63,7 +63,7 @@ public static class Event
                 .Select(name => new AiToolkitEndpoint
                 {
                     DeploymentName = name,
-                    EndpointUrl = $"{proxyUrl}/openai/deployments/{name}/chat/completions?api-version=2025-01-01-preview"
+                    EndpointUrl = $"{proxyUrl}/openai/deployments/{name}/chat/completions"
                 })
                 .ToList();
         }

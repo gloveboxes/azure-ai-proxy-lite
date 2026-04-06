@@ -343,13 +343,6 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
                 queryParameters.Insert(0, existing);
         }
 
-        // Azure OpenAI requires api-version; inject a default if not provided by the caller
-        if (!queryParameters.Any(q => q.StartsWith("api-version=", StringComparison.OrdinalIgnoreCase)))
-        {
-            var defaultApiVersion = configuration["DefaultApiVersion"] ?? "2025-01-01-preview";
-            queryParameters.Add($"api-version={defaultApiVersion}");
-        }
-
         requestUrl.Query = string.Join("&", queryParameters);
         return requestUrl.Uri;
     }

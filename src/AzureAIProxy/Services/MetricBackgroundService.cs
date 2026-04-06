@@ -71,7 +71,14 @@ public class MetricBackgroundService : BackgroundService, IMetricChannel
         {
             while (await flushTimer.WaitForNextTickAsync(stoppingToken))
             {
-                await FlushBufferAsync(buffer);
+                try
+                {
+                    await FlushBufferAsync(buffer);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Metric flush failed, will retry next interval");
+                }
             }
         }
         catch (OperationCanceledException) { }
