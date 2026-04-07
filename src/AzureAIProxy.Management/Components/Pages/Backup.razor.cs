@@ -88,7 +88,7 @@ public partial class Backup : ComponentBase
 
         var passphrase = await PromptPassphraseAsync(
             "Decrypt Backup",
-            "Enter the passphrase used when this backup was created.",
+            "Warning: Restoring will clear all your existing data before importing. Enter the passphrase used when this backup was created.",
             "Restore");
 
         if (string.IsNullOrWhiteSpace(passphrase))

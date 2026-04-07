@@ -9,6 +9,10 @@
         Backup and restore events and resources data. Backups are encrypted with a passphrase you provide.
     </MudText>
 
+    <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true">
+        Restoring a backup will clear all existing data before importing the backup.
+    </MudAlert>
+
     <MudStack Row="true" Spacing="2">
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
             StartIcon="@Icons.Material.Filled.Download" Disabled="@isBusy"

@@ -96,6 +96,41 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
             });
         }
 
+        // Backup metrics for each owned event
+        var metricTable = tableStorage.GetTableClient(TableNames.Metrics);
+        foreach (var eventId in eventIds)
+        {
+            await foreach (var metric in metricTable.QueryAsync<MetricEntity>(e => e.PartitionKey == eventId))
+            {
+                backup.Metrics.Add(new BackupMetric
+                {
+                    EventId = metric.PartitionKey,
+                    Resource = metric.Resource,
+                    DateStamp = metric.DateStamp,
+                    PromptTokens = metric.PromptTokens,
+                    CompletionTokens = metric.CompletionTokens,
+                    TotalTokens = metric.TotalTokens,
+                    RequestCount = metric.RequestCount
+                });
+            }
+        }
+
+        // Backup attendees for each owned event
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+        foreach (var eventId in eventIds)
+        {
+            await foreach (var attendee in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == eventId))
+            {
+                backup.Attendees.Add(new BackupAttendee
+                {
+                    EventId = attendee.PartitionKey,
+                    UserId = attendee.RowKey,
+                    ApiKey = attendee.ApiKey,
+                    Active = attendee.Active
+                });
+            }
+        }
+
         return backup;
     }
 
@@ -118,22 +153,14 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
 
     public async Task RestoreBackupAsync(BackupData data)
     {
-        // Remap all ownership to the current authenticated user so backups
-        // created under a different identity (e.g. local admin vs Entra OID) work.
-        var currentUserId = await authService.GetCurrentUserIdAsync();
+        // Clear all existing data first to avoid clashes
+        await ClearAllDataAsync();
 
-        // Collect existing deployment and friendly names for this owner to avoid duplicates
-        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
-        var existingDeploymentNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var existingFriendlyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        await foreach (var existing in catalogTable.QueryAsync<CatalogEntity>(c => c.OwnerId == currentUserId))
-        {
-            existingDeploymentNames.Add(existing.DeploymentName);
-            existingFriendlyNames.Add(existing.FriendlyName);
-        }
+        var currentUserId = await authService.GetCurrentUserIdAsync();
 
         // Build a mapping from old catalog IDs to new catalog IDs so event CatalogIds references stay consistent
         var catalogIdMap = new Dictionary<string, string>();
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
 
         // Restore resources first (events reference catalog IDs)
         foreach (var resource in data.Resources)
@@ -141,62 +168,27 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
             var newCatalogId = Guid.NewGuid().ToString();
             catalogIdMap[resource.CatalogId] = newCatalogId;
 
-            // Deduplicate deployment name
-            var deploymentName = resource.DeploymentName;
-            if (existingDeploymentNames.Contains(deploymentName))
-            {
-                var baseName = deploymentName;
-                int counter = 2;
-                deploymentName = $"{baseName}-restored";
-                while (existingDeploymentNames.Contains(deploymentName))
-                {
-                    deploymentName = $"{baseName}-restored-{counter}";
-                    counter++;
-                }
-            }
-            existingDeploymentNames.Add(deploymentName);
-
-            // Deduplicate friendly name
-            var friendlyName = resource.FriendlyName;
-            if (existingFriendlyNames.Contains(friendlyName))
-            {
-                var baseName = friendlyName;
-                int counter = 2;
-                friendlyName = $"{baseName} (Restored)";
-                while (existingFriendlyNames.Contains(friendlyName))
-                {
-                    friendlyName = $"{baseName} (Restored {counter})";
-                    counter++;
-                }
-            }
-            existingFriendlyNames.Add(friendlyName);
-
-            var entity = new CatalogEntity
+            await catalogTable.AddEntityAsync(new CatalogEntity
             {
                 PartitionKey = newCatalogId,
                 RowKey = newCatalogId,
                 OwnerId = currentUserId,
-                DeploymentName = deploymentName,
+                DeploymentName = resource.DeploymentName,
                 EncryptedEndpointUrl = encryption.Encrypt(resource.EndpointUrl),
                 EncryptedEndpointKey = string.IsNullOrWhiteSpace(resource.EndpointKey) ? string.Empty : encryption.Encrypt(resource.EndpointKey),
                 Active = resource.Active,
                 ModelType = resource.ModelType,
                 Location = resource.Location,
-                FriendlyName = friendlyName,
+                FriendlyName = resource.FriendlyName,
                 UseManagedIdentity = resource.UseManagedIdentity,
                 UseMaxCompletionTokens = resource.UseMaxCompletionTokens
-            };
-
-            try
-            {
-                await catalogTable.AddEntityAsync(entity);
-            }
-            catch (RequestFailedException ex) when (ex.Status == 409) { }
+            });
         }
 
         // Restore events with new IDs and remapped catalog references
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
         var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
+        var eventIdMap = new Dictionary<string, string>();
 
         foreach (var evt in data.Events)
         {
@@ -204,6 +196,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
             var hashBytes = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(guidString));
             var hashString = Convert.ToHexStringLower(hashBytes);
             var newEventId = $"{hashString[..4]}-{hashString[4..8]}";
+            eventIdMap[evt.EventId] = newEventId;
 
             // Remap catalog IDs in the event's CatalogIds field
             var remappedCatalogIds = string.Empty;
@@ -216,7 +209,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 remappedCatalogIds = string.Join(",", newIds);
             }
 
-            var entity = new EventEntity
+            await eventsTable.AddEntityAsync(new EventEntity
             {
                 PartitionKey = newEventId,
                 RowKey = newEventId,
@@ -234,25 +227,58 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 DailyRequestCap = evt.DailyRequestCap,
                 Active = evt.Active,
                 CatalogIds = remappedCatalogIds
-            };
+            });
 
-            try
+            await ownerEventsTable.AddEntityAsync(new OwnerEventEntity
             {
-                await eventsTable.AddEntityAsync(entity);
-            }
-            catch (RequestFailedException ex) when (ex.Status == 409) { }
+                PartitionKey = currentUserId,
+                RowKey = newEventId,
+                Creator = true
+            });
+        }
 
-            // Restore owner-event mapping using current user
-            try
+        // Restore metrics with remapped event IDs
+        var metricTable = tableStorage.GetTableClient(TableNames.Metrics);
+        foreach (var metric in data.Metrics)
+        {
+            var newEventId = eventIdMap.TryGetValue(metric.EventId, out var mapped) ? mapped : metric.EventId;
+
+            await metricTable.AddEntityAsync(new MetricEntity
             {
-                await ownerEventsTable.AddEntityAsync(new OwnerEventEntity
-                {
-                    PartitionKey = currentUserId,
-                    RowKey = newEventId,
-                    Creator = true
-                });
-            }
-            catch (RequestFailedException ex) when (ex.Status == 409) { }
+                PartitionKey = newEventId,
+                RowKey = $"{metric.Resource}|{metric.DateStamp}",
+                Resource = metric.Resource,
+                DateStamp = metric.DateStamp,
+                PromptTokens = metric.PromptTokens,
+                CompletionTokens = metric.CompletionTokens,
+                TotalTokens = metric.TotalTokens,
+                RequestCount = metric.RequestCount
+            });
+        }
+
+        // Restore attendees with remapped event IDs and recreate lookup entries
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+        var lookupTable = tableStorage.GetTableClient(TableNames.AttendeeLookup);
+        foreach (var attendee in data.Attendees)
+        {
+            var newEventId = eventIdMap.TryGetValue(attendee.EventId, out var mapped) ? mapped : attendee.EventId;
+
+            await attendeeTable.AddEntityAsync(new AttendeeEntity
+            {
+                PartitionKey = newEventId,
+                RowKey = attendee.UserId,
+                ApiKey = attendee.ApiKey,
+                Active = attendee.Active
+            });
+
+            await lookupTable.AddEntityAsync(new AttendeeLookupEntity
+            {
+                PartitionKey = AttendeeLookupEntity.GetPartitionKey(attendee.ApiKey),
+                RowKey = attendee.ApiKey,
+                EventId = newEventId,
+                UserId = attendee.UserId,
+                Active = attendee.Active
+            });
         }
 
         await cacheInvalidation.InvalidateAllCachesAsync();

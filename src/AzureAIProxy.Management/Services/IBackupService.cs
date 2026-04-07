@@ -14,6 +14,8 @@ public class BackupData
     public DateTime BackupTimestamp { get; set; }
     public List<BackupEvent> Events { get; set; } = [];
     public List<BackupResource> Resources { get; set; } = [];
+    public List<BackupMetric> Metrics { get; set; } = [];
+    public List<BackupAttendee> Attendees { get; set; } = [];
 }
 
 public class BackupEvent
@@ -48,4 +50,23 @@ public class BackupResource
     public string FriendlyName { get; set; } = null!;
     public bool UseManagedIdentity { get; set; }
     public bool UseMaxCompletionTokens { get; set; }
+}
+
+public class BackupMetric
+{
+    public string EventId { get; set; } = null!;
+    public string Resource { get; set; } = null!;
+    public string DateStamp { get; set; } = null!;
+    public long PromptTokens { get; set; }
+    public long CompletionTokens { get; set; }
+    public long TotalTokens { get; set; }
+    public long RequestCount { get; set; }
+}
+
+public class BackupAttendee
+{
+    public string EventId { get; set; } = null!;
+    public string UserId { get; set; } = null!;
+    public string ApiKey { get; set; } = null!;
+    public bool Active { get; set; }
 }
