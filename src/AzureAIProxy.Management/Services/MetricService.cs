@@ -66,6 +66,64 @@ public class MetricService(ITableStorageService tableStorage) : IMetricService
         return (userCount, (int)totalRequests);
     }
 
+    public async Task<Event?> GetEventForReportAsync(string eventId)
+    {
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+
+        EventEntity evt;
+        try
+        {
+            var response = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
+            evt = response.Value;
+        }
+        catch (Azure.RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
+
+        var result = new Event
+        {
+            EventId = evt.PartitionKey,
+            OwnerId = evt.OwnerId,
+            EventCode = evt.EventCode,
+            EventSharedCode = evt.EventSharedCode,
+            EventMarkdown = evt.EventMarkdown,
+            StartTimestamp = evt.StartTimestamp,
+            EndTimestamp = evt.EndTimestamp,
+            TimeZoneOffset = evt.TimeZoneOffset,
+            TimeZoneLabel = evt.TimeZoneLabel,
+            OrganizerName = evt.OrganizerName,
+            OrganizerEmail = evt.OrganizerEmail,
+            MaxTokenCap = evt.MaxTokenCap,
+            DailyRequestCap = evt.DailyRequestCap,
+            Active = evt.Active
+        };
+
+        var catalogIds = string.IsNullOrEmpty(evt.CatalogIds) ? [] : evt.CatalogIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var catalogId in catalogIds)
+        {
+            try
+            {
+                var catResponse = await catalogTable.GetEntityAsync<CatalogEntity>(catalogId, catalogId);
+                var catalog = catResponse.Value;
+                result.Catalogs.Add(new OwnerCatalog
+                {
+                    CatalogId = Guid.Parse(catalogId),
+                    OwnerId = catalog.OwnerId,
+                    DeploymentName = catalog.DeploymentName,
+                    Active = catalog.Active,
+                    ModelType = ModelTypeExtensions.FromStorageString(catalog.ModelType),
+                    Location = catalog.Location,
+                    FriendlyName = catalog.FriendlyName
+                });
+            }
+            catch (Azure.RequestFailedException ex) when (ex.Status == 404) { }
+        }
+
+        return result;
+    }
+
     public async Task<List<EventRegistrations>> GetAllEventsAsync()
     {
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);

@@ -21,9 +21,6 @@ public partial class EventMetrics
     private IMetricService MetricService { get; set; } = null!;
 
     [Inject]
-    private IEventService EventService { get; set; } = null!;
-
-    [Inject]
     public required IConfiguration Configuration { get; set; }
 
     [Parameter]
@@ -50,9 +47,16 @@ public partial class EventMetrics
     {
         IsLoading = true;
 
+        Event = await MetricService.GetEventForReportAsync(EventId);
+
+        if (Event is null)
+        {
+            IsLoading = false;
+            return;
+        }
+
         (AttendeeCount, RequestCount) = await MetricService.GetAttendeeMetricsAsync(EventId);
         List<EventMetricsData> MetricsData = await MetricService.GetEventMetricsAsync(EventId);
-        Event = await EventService.GetEventAsync(EventId);
 
         if (MetricsData is null)
         {

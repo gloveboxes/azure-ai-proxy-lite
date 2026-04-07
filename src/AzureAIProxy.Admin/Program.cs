@@ -42,11 +42,13 @@ var useEntraAuth = !string.IsNullOrEmpty(builder.Configuration["AzureAd:ClientId
 // Fail fast if neither auth method is properly configured
 if (!useEntraAuth
     && string.IsNullOrEmpty(builder.Configuration["Admin:Username"])
-    && string.IsNullOrEmpty(builder.Configuration["Admin:Password"]))
+    && string.IsNullOrEmpty(builder.Configuration["Admin:Password"])
+    && !builder.Configuration.GetSection("Admin:Users").GetChildren().Any())
 {
     throw new InvalidOperationException(
         "No authentication is configured. Set AzureAd:ClientId for Entra ID auth, " +
-        "or set Admin:Username and Admin:Password for local password auth.");
+        "or set Admin:Username and Admin:Password for local password auth, " +
+        "or configure Admin:Users array for multi-user local auth.");
 }
 
 if (useEntraAuth)

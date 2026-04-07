@@ -24,38 +24,53 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
     };
     public async Task<BackupData> CreateBackupAsync()
     {
+        var currentUserId = await authService.GetCurrentUserIdAsync();
         var backup = new BackupData
         {
             BackupTimestamp = DateTime.UtcNow
         };
 
-        // Backup all events
+        // Backup only events owned by the current user
+        var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
-        await foreach (var entity in eventsTable.QueryAsync<EventEntity>())
+
+        var eventIds = new List<string>();
+        await foreach (var oe in ownerEventsTable.QueryAsync<OwnerEventEntity>(e => e.PartitionKey == currentUserId))
         {
-            backup.Events.Add(new BackupEvent
-            {
-                EventId = entity.PartitionKey,
-                OwnerId = entity.OwnerId,
-                EventCode = entity.EventCode,
-                EventSharedCode = entity.EventSharedCode,
-                EventMarkdown = entity.EventMarkdown,
-                StartTimestamp = entity.StartTimestamp,
-                EndTimestamp = entity.EndTimestamp,
-                TimeZoneOffset = entity.TimeZoneOffset,
-                TimeZoneLabel = entity.TimeZoneLabel,
-                OrganizerName = entity.OrganizerName,
-                OrganizerEmail = entity.OrganizerEmail,
-                MaxTokenCap = entity.MaxTokenCap,
-                DailyRequestCap = entity.DailyRequestCap,
-                Active = entity.Active,
-                CatalogIds = entity.CatalogIds
-            });
+            eventIds.Add(oe.RowKey);
         }
 
-        // Backup all resources with decrypted endpoint and key
+        foreach (var eventId in eventIds)
+        {
+            try
+            {
+                var response = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
+                var entity = response.Value;
+                backup.Events.Add(new BackupEvent
+                {
+                    EventId = entity.PartitionKey,
+                    OwnerId = entity.OwnerId,
+                    EventCode = entity.EventCode,
+                    EventSharedCode = entity.EventSharedCode,
+                    EventMarkdown = entity.EventMarkdown,
+                    StartTimestamp = entity.StartTimestamp,
+                    EndTimestamp = entity.EndTimestamp,
+                    TimeZoneOffset = entity.TimeZoneOffset,
+                    TimeZoneLabel = entity.TimeZoneLabel,
+                    OrganizerName = entity.OrganizerName,
+                    OrganizerEmail = entity.OrganizerEmail,
+                    MaxTokenCap = entity.MaxTokenCap,
+                    DailyRequestCap = entity.DailyRequestCap,
+                    Active = entity.Active,
+                    CatalogIds = entity.CatalogIds
+                });
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+
+        // Backup only resources owned by the current user
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
-        await foreach (var entity in catalogTable.QueryAsync<CatalogEntity>())
+        await foreach (var entity in catalogTable.QueryAsync<CatalogEntity>(c => c.OwnerId == currentUserId))
         {
             string decryptedUrl;
             string decryptedKey;
@@ -107,39 +122,104 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
         // created under a different identity (e.g. local admin vs Entra OID) work.
         var currentUserId = await authService.GetCurrentUserIdAsync();
 
-        // Restore resources first (events reference catalog IDs)
+        // Collect existing deployment and friendly names for this owner to avoid duplicates
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        var existingDeploymentNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var existingFriendlyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await foreach (var existing in catalogTable.QueryAsync<CatalogEntity>(c => c.OwnerId == currentUserId))
+        {
+            existingDeploymentNames.Add(existing.DeploymentName);
+            existingFriendlyNames.Add(existing.FriendlyName);
+        }
+
+        // Build a mapping from old catalog IDs to new catalog IDs so event CatalogIds references stay consistent
+        var catalogIdMap = new Dictionary<string, string>();
+
+        // Restore resources first (events reference catalog IDs)
         foreach (var resource in data.Resources)
         {
+            var newCatalogId = Guid.NewGuid().ToString();
+            catalogIdMap[resource.CatalogId] = newCatalogId;
+
+            // Deduplicate deployment name
+            var deploymentName = resource.DeploymentName;
+            if (existingDeploymentNames.Contains(deploymentName))
+            {
+                var baseName = deploymentName;
+                int counter = 2;
+                deploymentName = $"{baseName}-restored";
+                while (existingDeploymentNames.Contains(deploymentName))
+                {
+                    deploymentName = $"{baseName}-restored-{counter}";
+                    counter++;
+                }
+            }
+            existingDeploymentNames.Add(deploymentName);
+
+            // Deduplicate friendly name
+            var friendlyName = resource.FriendlyName;
+            if (existingFriendlyNames.Contains(friendlyName))
+            {
+                var baseName = friendlyName;
+                int counter = 2;
+                friendlyName = $"{baseName} (Restored)";
+                while (existingFriendlyNames.Contains(friendlyName))
+                {
+                    friendlyName = $"{baseName} (Restored {counter})";
+                    counter++;
+                }
+            }
+            existingFriendlyNames.Add(friendlyName);
+
             var entity = new CatalogEntity
             {
-                PartitionKey = resource.CatalogId,
-                RowKey = resource.CatalogId,
+                PartitionKey = newCatalogId,
+                RowKey = newCatalogId,
                 OwnerId = currentUserId,
-                DeploymentName = resource.DeploymentName,
+                DeploymentName = deploymentName,
                 EncryptedEndpointUrl = encryption.Encrypt(resource.EndpointUrl),
                 EncryptedEndpointKey = string.IsNullOrWhiteSpace(resource.EndpointKey) ? string.Empty : encryption.Encrypt(resource.EndpointKey),
                 Active = resource.Active,
                 ModelType = resource.ModelType,
                 Location = resource.Location,
-                FriendlyName = resource.FriendlyName,
+                FriendlyName = friendlyName,
                 UseManagedIdentity = resource.UseManagedIdentity,
                 UseMaxCompletionTokens = resource.UseMaxCompletionTokens
             };
 
-            await catalogTable.UpsertEntityAsync(entity, TableUpdateMode.Replace);
+            try
+            {
+                await catalogTable.AddEntityAsync(entity);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 409) { }
         }
 
-        // Restore events
+        // Restore events with new IDs and remapped catalog references
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
         var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
 
         foreach (var evt in data.Events)
         {
+            var guidString = $"{Guid.NewGuid()}{Guid.NewGuid()}";
+            var hashBytes = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(guidString));
+            var hashString = Convert.ToHexStringLower(hashBytes);
+            var newEventId = $"{hashString[..4]}-{hashString[4..8]}";
+
+            // Remap catalog IDs in the event's CatalogIds field
+            var remappedCatalogIds = string.Empty;
+            if (!string.IsNullOrEmpty(evt.CatalogIds))
+            {
+                var oldIds = evt.CatalogIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                var newIds = oldIds
+                    .Where(id => catalogIdMap.ContainsKey(id))
+                    .Select(id => catalogIdMap[id]);
+                remappedCatalogIds = string.Join(",", newIds);
+            }
+
             var entity = new EventEntity
             {
-                PartitionKey = evt.EventId,
-                RowKey = evt.EventId,
+                PartitionKey = newEventId,
+                RowKey = newEventId,
                 OwnerId = currentUserId,
                 EventCode = evt.EventCode,
                 EventSharedCode = evt.EventSharedCode,
@@ -153,18 +233,26 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 MaxTokenCap = evt.MaxTokenCap,
                 DailyRequestCap = evt.DailyRequestCap,
                 Active = evt.Active,
-                CatalogIds = evt.CatalogIds
+                CatalogIds = remappedCatalogIds
             };
 
-            await eventsTable.UpsertEntityAsync(entity, TableUpdateMode.Replace);
+            try
+            {
+                await eventsTable.AddEntityAsync(entity);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 409) { }
 
             // Restore owner-event mapping using current user
-            await ownerEventsTable.UpsertEntityAsync(new OwnerEventEntity
+            try
             {
-                PartitionKey = currentUserId,
-                RowKey = evt.EventId,
-                Creator = true
-            }, TableUpdateMode.Replace);
+                await ownerEventsTable.AddEntityAsync(new OwnerEventEntity
+                {
+                    PartitionKey = currentUserId,
+                    RowKey = newEventId,
+                    Creator = true
+                });
+            }
+            catch (RequestFailedException ex) when (ex.Status == 409) { }
         }
 
         await cacheInvalidation.InvalidateAllCachesAsync();
@@ -172,38 +260,81 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
 
     public async Task ClearAllDataAsync()
     {
-        string[] tableNames =
-        [
-            TableNames.Events,
-            TableNames.Attendees,
-            TableNames.AttendeeLookup,
-            TableNames.AttendeeRequests,
-            TableNames.Metrics,
-            TableNames.Catalogs,
-            TableNames.OwnerEvents,
-            TableNames.FoundryAgents
-        ];
+        var currentUserId = await authService.GetCurrentUserIdAsync();
 
-        // Delete all entities per table using batched transactions (max 100 per batch, same partition)
-        foreach (var tableName in tableNames)
+        // Get the current user's event IDs
+        var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
+        var eventIds = new List<string>();
+        await foreach (var oe in ownerEventsTable.QueryAsync<OwnerEventEntity>(e => e.PartitionKey == currentUserId))
         {
-            var table = tableStorage.GetTableClient(tableName);
-            var entities = new List<TableEntity>();
+            eventIds.Add(oe.RowKey);
+        }
 
-            await foreach (var entity in table.QueryAsync<TableEntity>(select: new[] { "PartitionKey", "RowKey" }))
+        // Delete attendees, attendee lookups, attendee requests, metrics, and foundry agents for each owned event
+        var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
+        var lookupTable = tableStorage.GetTableClient(TableNames.AttendeeLookup);
+        var requestTable = tableStorage.GetTableClient(TableNames.AttendeeRequests);
+        var metricTable = tableStorage.GetTableClient(TableNames.Metrics);
+        var foundryTable = tableStorage.GetTableClient(TableNames.FoundryAgents);
+        var eventsTable = tableStorage.GetTableClient(TableNames.Events);
+
+        foreach (var eventId in eventIds)
+        {
+            // Collect attendee API keys before deleting attendees (needed for lookup + request cleanup)
+            var apiKeys = new List<string>();
+            await foreach (var att in attendeeTable.QueryAsync<AttendeeEntity>(e => e.PartitionKey == eventId))
             {
-                entities.Add(entity);
+                apiKeys.Add(att.ApiKey);
+                try { await attendeeTable.DeleteEntityAsync(att.PartitionKey, att.RowKey, att.ETag); }
+                catch (RequestFailedException ex) when (ex.Status == 404) { }
             }
 
-            // Group by partition key for batch delete (Azure requires same partition per transaction)
-            foreach (var group in entities.GroupBy(e => e.PartitionKey))
+            // Delete attendee lookups and requests by API key
+            foreach (var apiKey in apiKeys)
             {
-                foreach (var batch in group.Chunk(100))
+                var lookupPk = AttendeeLookupEntity.GetPartitionKey(apiKey);
+                try { await lookupTable.DeleteEntityAsync(lookupPk, apiKey); }
+                catch (RequestFailedException ex) when (ex.Status == 404) { }
+
+                await foreach (var req in requestTable.QueryAsync<AttendeeRequestEntity>(e => e.PartitionKey == apiKey))
                 {
-                    var actions = batch.Select(e => new TableTransactionAction(TableTransactionActionType.Delete, e));
-                    await table.SubmitTransactionAsync(actions);
+                    try { await requestTable.DeleteEntityAsync(req.PartitionKey, req.RowKey, req.ETag); }
+                    catch (RequestFailedException ex) when (ex.Status == 404) { }
                 }
             }
+
+            // Delete metrics for this event
+            await foreach (var metric in metricTable.QueryAsync<MetricEntity>(e => e.PartitionKey == eventId))
+            {
+                try { await metricTable.DeleteEntityAsync(metric.PartitionKey, metric.RowKey, metric.ETag); }
+                catch (RequestFailedException ex) when (ex.Status == 404) { }
+            }
+
+            // Delete foundry agents for attendees of this event
+            foreach (var apiKey in apiKeys)
+            {
+                await foreach (var fa in foundryTable.QueryAsync<TableEntity>(e => e.PartitionKey == apiKey, select: new[] { "PartitionKey", "RowKey" }))
+                {
+                    try { await foundryTable.DeleteEntityAsync(fa.PartitionKey, fa.RowKey, fa.ETag); }
+                    catch (RequestFailedException ex) when (ex.Status == 404) { }
+                }
+            }
+
+            // Delete the event itself
+            try { await eventsTable.DeleteEntityAsync(eventId, eventId); }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+
+            // Delete the owner-event mapping
+            try { await ownerEventsTable.DeleteEntityAsync(currentUserId, eventId); }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
+        }
+
+        // Delete catalogs owned by current user
+        var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+        await foreach (var catalog in catalogTable.QueryAsync<CatalogEntity>(c => c.OwnerId == currentUserId))
+        {
+            try { await catalogTable.DeleteEntityAsync(catalog.PartitionKey, catalog.RowKey, catalog.ETag); }
+            catch (RequestFailedException ex) when (ex.Status == 404) { }
         }
 
         await cacheInvalidation.InvalidateAllCachesAsync();

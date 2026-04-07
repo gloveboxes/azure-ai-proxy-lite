@@ -58,6 +58,7 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
 
     public async Task<Event?> GetEventAsync(string id)
     {
+        string userId = await authService.GetCurrentUserIdAsync();
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
 
         EventEntity? evt;
@@ -70,6 +71,9 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
         {
             return null;
         }
+
+        if (evt.OwnerId != userId)
+            return null;
 
         var result = MapToEvent(evt);
 
@@ -170,6 +174,7 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
 
     public async Task<Event?> UpdateEventAsync(string id, EventEditorModel model)
     {
+        string userId = await authService.GetCurrentUserIdAsync();
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
 
         EventEntity? evt;
@@ -182,6 +187,9 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
         {
             return null;
         }
+
+        if (evt.OwnerId != userId)
+            return null;
 
         if (string.IsNullOrEmpty(model.EventSharedCode)) model.EventSharedCode = null;
 
@@ -206,13 +214,33 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
 
     public async Task UpdateModelsForEventAsync(string id, IEnumerable<Guid> modelIds)
     {
+        string userId = await authService.GetCurrentUserIdAsync();
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
 
         try
         {
             var response = await eventsTable.GetEntityAsync<EventEntity>(id, id);
             var evt = response.Value;
-            evt.CatalogIds = string.Join(",", modelIds);
+
+            if (evt.OwnerId != userId)
+                return;
+
+            // Verify all catalogs belong to the current user
+            var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
+            var validatedIds = new List<string>();
+            foreach (var modelId in modelIds)
+            {
+                var catId = modelId.ToString();
+                try
+                {
+                    var catResponse = await catalogTable.GetEntityAsync<CatalogEntity>(catId, catId);
+                    if (catResponse.Value.OwnerId == userId)
+                        validatedIds.Add(catId);
+                }
+                catch (RequestFailedException catEx) when (catEx.Status == 404) { }
+            }
+
+            evt.CatalogIds = string.Join(",", validatedIds);
             await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
             await cacheInvalidation.InvalidateAllCachesAsync();
         }
@@ -221,6 +249,7 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
 
     public async Task DeleteEventAsync(string id)
     {
+        string userId = await authService.GetCurrentUserIdAsync();
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
         var attendeeTable = tableStorage.GetTableClient(TableNames.Attendees);
 
@@ -234,6 +263,9 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
         {
             var response = await eventsTable.GetEntityAsync<EventEntity>(id, id);
             var evt = response.Value;
+
+            if (evt.OwnerId != userId)
+                return;
 
             await eventsTable.DeleteEntityAsync(id, id);
 

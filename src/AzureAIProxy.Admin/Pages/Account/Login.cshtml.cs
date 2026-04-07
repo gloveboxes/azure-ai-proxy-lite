@@ -53,16 +53,38 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
             return Page();
         }
 
-        var configUsername = configuration["Admin:Username"];
-        var configPassword = configuration["Admin:Password"];
+        // Check against array of configured users first, then fall back to single Admin:Username/Password
+        var users = configuration.GetSection("Admin:Users").GetChildren().ToList();
+        bool authenticated = false;
 
-        if (string.IsNullOrEmpty(configUsername) || string.IsNullOrEmpty(configPassword))
+        if (users.Count > 0)
         {
-            ErrorMessage = "Admin credentials are not configured. Set Admin__Username and Admin__Password environment variables.";
-            return Page();
+            foreach (var user in users)
+            {
+                var configUser = user["Username"];
+                var configPass = user["Password"];
+                if (!string.IsNullOrEmpty(configUser) && username == configUser && password == configPass)
+                {
+                    authenticated = true;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            var configUsername = configuration["Admin:Username"];
+            var configPassword = configuration["Admin:Password"];
+
+            if (string.IsNullOrEmpty(configUsername) || string.IsNullOrEmpty(configPassword))
+            {
+                ErrorMessage = "Admin credentials are not configured. Set Admin__Username and Admin__Password environment variables.";
+                return Page();
+            }
+
+            authenticated = username == configUsername && password == configPassword;
         }
 
-        if (username != configUsername || password != configPassword)
+        if (!authenticated)
         {
             RecordFailedAttempt(clientIp);
             ErrorMessage = "Invalid username or password.";

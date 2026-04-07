@@ -55,8 +55,14 @@ services:
         AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;
         TableEndpoint=http://azurite:10002/devstoreaccount1;
       EncryptionKey: "${ENCRYPTION_KEY:-change-this-encryption-key-in-production}"
-      Admin__Username: "${ADMIN_USERNAME:-admin}"
-      Admin__Password: "${ADMIN_PASSWORD:-admin}"
+      Admin__Users__0__Username: "${ADMIN_USERNAME:-admin}"
+      Admin__Users__0__Password: "${ADMIN_PASSWORD:-admin}"
+      Admin__Users__1__Username: "user1"
+      Admin__Users__1__Password: "user"
+      Admin__Users__2__Username: "user2"
+      Admin__Users__2__Password: "user"
+      Admin__Users__3__Username: "user3"
+      Admin__Users__3__Password: "user"
       RegistrationUrl: "https://${REGISTRATION_HOST:-localhost}:${REGISTRATION_TLS_PORT:-4443}"
       ProxyInternalUrl: "http://proxy:8080"
     depends_on:

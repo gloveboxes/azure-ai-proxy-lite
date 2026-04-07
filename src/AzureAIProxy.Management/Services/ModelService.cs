@@ -16,10 +16,10 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
 
     protected virtual void Dispose(bool disposing) { }
 
-    private async Task<bool> DeploymentNameExistsAsync(string deploymentName, Guid? excludeCatalogId = null)
+    private async Task<bool> DeploymentNameExistsAsync(string deploymentName, string ownerId, Guid? excludeCatalogId = null)
     {
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
-        await foreach (var entity in catalogTable.QueryAsync<CatalogEntity>(c => c.DeploymentName == deploymentName))
+        await foreach (var entity in catalogTable.QueryAsync<CatalogEntity>(c => c.DeploymentName == deploymentName && c.OwnerId == ownerId))
         {
             if (excludeCatalogId.HasValue && entity.PartitionKey == excludeCatalogId.Value.ToString())
                 continue;
@@ -28,10 +28,10 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         return false;
     }
 
-    private async Task<bool> FriendlyNameExistsAsync(string friendlyName)
+    private async Task<bool> FriendlyNameExistsAsync(string friendlyName, string ownerId)
     {
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
-        await foreach (var _ in catalogTable.QueryAsync<CatalogEntity>(c => c.FriendlyName == friendlyName))
+        await foreach (var _ in catalogTable.QueryAsync<CatalogEntity>(c => c.FriendlyName == friendlyName && c.OwnerId == ownerId))
         {
             return true;
         }
@@ -49,7 +49,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             throw new InvalidOperationException("User is not a registered owner.");
         }
 
-        if (await DeploymentNameExistsAsync(model.DeploymentName!.Trim()))
+        if (await DeploymentNameExistsAsync(model.DeploymentName!.Trim(), userId))
             throw new InvalidOperationException($"A resource with deployment name '{model.DeploymentName!.Trim()}' already exists. Deployment names must be unique.");
 
         var catalogId = Guid.NewGuid().ToString();
@@ -88,36 +88,62 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
 
     public async Task DeleteOwnerCatalogAsync(Guid catalogId)
     {
+        string userId = await authService.GetCurrentUserIdAsync();
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
         var id = catalogId.ToString();
 
+        CatalogEntity catalog;
         try
         {
-            await catalogTable.GetEntityAsync<CatalogEntity>(id, id);
+            var response = await catalogTable.GetEntityAsync<CatalogEntity>(id, id);
+            catalog = response.Value;
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
             return;
         }
 
-        // Check if used in any events by scanning events for this catalog ID
+        if (catalog.OwnerId != userId)
+            return;
+
+        // Check if used in any of the current user's events by scanning owner events for this catalog ID
+        var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
         var eventsTable = tableStorage.GetTableClient(TableNames.Events);
-        await foreach (var evt in eventsTable.QueryAsync<EventEntity>())
+        await foreach (var oe in ownerEventsTable.QueryAsync<OwnerEventEntity>(e => e.PartitionKey == userId))
         {
-            if (!string.IsNullOrEmpty(evt.CatalogIds) && evt.CatalogIds.Split(',').Contains(id))
-                return; // Block deletion when in use
+            try
+            {
+                var evtResponse = await eventsTable.GetEntityAsync<EventEntity>(oe.RowKey, oe.RowKey);
+                var evt = evtResponse.Value;
+                if (!string.IsNullOrEmpty(evt.CatalogIds) && evt.CatalogIds.Split(',').Contains(id))
+                    return; // Block deletion when in use
+            }
+            catch (RequestFailedException evtEx) when (evtEx.Status == 404) { }
         }
 
         await catalogTable.DeleteEntityAsync(id, id);
         await cacheInvalidation.InvalidateAllCachesAsync();
     }
 
-    public async Task<OwnerCatalog> GetOwnerCatalogAsync(Guid catalogId)
+    public async Task<OwnerCatalog?> GetOwnerCatalogAsync(Guid catalogId)
     {
+        string userId = await authService.GetCurrentUserIdAsync();
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
         var id = catalogId.ToString();
-        var response = await catalogTable.GetEntityAsync<CatalogEntity>(id, id);
-        var entity = response.Value;
+
+        CatalogEntity entity;
+        try
+        {
+            var response = await catalogTable.GetEntityAsync<CatalogEntity>(id, id);
+            entity = response.Value;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
+
+        if (entity.OwnerId != userId)
+            return null;
 
         return new OwnerCatalog
         {
@@ -143,11 +169,14 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         var sourceId = ownerCatalog.CatalogId.ToString();
         var source = await catalogTable.GetEntityAsync<CatalogEntity>(sourceId, sourceId);
 
+        if (source.Value.OwnerId != userId)
+            return;
+
         // Generate a unique deployment name by appending "-copy", "-copy-2", etc.
         var baseDeploymentName = source.Value.DeploymentName;
         var newDeploymentName = $"{baseDeploymentName}-copy";
         int counter = 2;
-        while (await DeploymentNameExistsAsync(newDeploymentName))
+        while (await DeploymentNameExistsAsync(newDeploymentName, userId))
         {
             newDeploymentName = $"{baseDeploymentName}-copy-{counter}";
             counter++;
@@ -157,7 +186,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         var baseFriendlyName = source.Value.FriendlyName;
         var newFriendlyName = $"{baseFriendlyName} (Copy)";
         counter = 2;
-        while (await FriendlyNameExistsAsync(newFriendlyName))
+        while (await FriendlyNameExistsAsync(newFriendlyName, userId))
         {
             newFriendlyName = $"{baseFriendlyName} (Copy {counter})";
             counter++;
@@ -192,6 +221,15 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
 
         // Get all catalogs owned by this user
         var results = new List<OwnerCatalog>();
+
+        // Build a set of event IDs owned by this user for efficient lookup
+        var ownerEventsTable = tableStorage.GetTableClient(TableNames.OwnerEvents);
+        var ownerEventIds = new HashSet<string>();
+        await foreach (var oe in ownerEventsTable.QueryAsync<OwnerEventEntity>(e => e.PartitionKey == userId))
+        {
+            ownerEventIds.Add(oe.RowKey);
+        }
+
         await foreach (var entity in catalogTable.QueryAsync<CatalogEntity>(c => c.OwnerId == userId))
         {
             var catalog = new OwnerCatalog
@@ -207,13 +245,19 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
                 UseMaxCompletionTokens = entity.UseMaxCompletionTokens
             };
 
-            // Check which events reference this catalog
-            await foreach (var evt in eventsTable.QueryAsync<EventEntity>())
+            // Check which of the owner's events reference this catalog
+            foreach (var eventId in ownerEventIds)
             {
-                if (!string.IsNullOrEmpty(evt.CatalogIds) && evt.CatalogIds.Split(',').Contains(entity.PartitionKey))
+                try
                 {
-                    catalog.Events.Add(new Event { EventId = evt.PartitionKey });
+                    var evtResponse = await eventsTable.GetEntityAsync<EventEntity>(eventId, eventId);
+                    var evt = evtResponse.Value;
+                    if (!string.IsNullOrEmpty(evt.CatalogIds) && evt.CatalogIds.Split(',').Contains(entity.PartitionKey))
+                    {
+                        catalog.Events.Add(new Event { EventId = evt.PartitionKey });
+                    }
                 }
+                catch (RequestFailedException evtEx) when (evtEx.Status == 404) { }
             }
 
             results.Add(catalog);
@@ -224,6 +268,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
 
     public async Task UpdateOwnerCatalogAsync(OwnerCatalog ownerCatalog)
     {
+        string userId = await authService.GetCurrentUserIdAsync();
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
         var id = ownerCatalog.CatalogId.ToString();
 
@@ -238,8 +283,11 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             return;
         }
 
+        if (existing.OwnerId != userId)
+            return;
+
         if (existing.DeploymentName != ownerCatalog.DeploymentName.Trim()
-            && await DeploymentNameExistsAsync(ownerCatalog.DeploymentName.Trim(), ownerCatalog.CatalogId))
+            && await DeploymentNameExistsAsync(ownerCatalog.DeploymentName.Trim(), userId, ownerCatalog.CatalogId))
             throw new InvalidOperationException($"A resource with deployment name '{ownerCatalog.DeploymentName.Trim()}' already exists. Deployment names must be unique.");
 
         existing.FriendlyName = ownerCatalog.FriendlyName;
