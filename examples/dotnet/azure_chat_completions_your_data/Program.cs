@@ -1,63 +1,42 @@
-﻿// Chat completions your data example
+﻿// Chat completions with Azure AI Search (Your Data) example
 
-// https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/openai/Azure.AI.OpenAI/tests/Samples/Sample08_UseYourOwnData.cs
-// # Create a new Azure Cognitive Search index and load an index with Azure content
-// # https://microsoftlearning.github.io/mslearn-knowledge-mining/Instructions/Labs/10-vector-search-exercise.html
-
+using System.ClientModel;
 using Azure.AI.OpenAI;
+using Azure.AI.OpenAI.Chat;
 using DotNetEnv;
+using OpenAI.Chat;
 
 Env.Load();
 
-// Get the key from the environment variables
-string? key = Environment.GetEnvironmentVariable("YOUR_EVENT_AUTH_TOKEN");
-string? endpoint = Environment.GetEnvironmentVariable("YOUR_AZURE_OPENAI_PROXY_URL");
+string? key = Environment.GetEnvironmentVariable("PROXY_API_KEY");
+string? endpoint = Environment.GetEnvironmentVariable("PROXY_ENDPOINT");
 
-string? searchEndpoint = Environment.GetEnvironmentVariable("YOUR_AZURE_SEARCH_ENDPOINT");
-string? indexName = Environment.GetEnvironmentVariable("YOUR_AZURE_SEARCH_INDEX_NAME");
-string? searchKey = Environment.GetEnvironmentVariable("YOUR_AZURE_SEARCH_KEY");
+string? searchEndpoint = Environment.GetEnvironmentVariable("AZURE_AI_SEARCH_ENDPOINT");
+string? indexName = Environment.GetEnvironmentVariable("AZURE_AI_SEARCH_INDEX_NAME");
+string? searchKey = Environment.GetEnvironmentVariable("AZURE_AI_SEARCH_KEY");
 
 if (key == null || endpoint == null || searchEndpoint == null || indexName == null || searchKey == null)
 {
-    Console.WriteLine("Please set the YOUR_EVENT_AUTH_TOKEN, YOUR_AZURE_OPENAI_PROXY_URL, YOUR_AZURE_SEARCH_ENDPOINT, YOUR_AZURE_SEARCH_INDEX_NAME, and YOUR_AZURE_SEARCH_KEY environment variables.");
+    Console.WriteLine("Please set the PROXY_API_KEY, PROXY_ENDPOINT, AZURE_AI_SEARCH_ENDPOINT, AZURE_AI_SEARCH_INDEX_NAME, and AZURE_AI_SEARCH_KEY environment variables.");
     return;
 }
 
-endpoint += "/api/v1";
+var client = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(key));
+ChatClient chatClient = client.GetChatClient("gpt-4.1-mini");
 
-var client = new OpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(key));
+ChatCompletionOptions options = new();
 
-AzureCognitiveSearchChatExtensionConfiguration contosoExtensionConfig = new()
+#pragma warning disable AOAI001
+options.AddDataSource(new AzureSearchChatDataSource()
 {
-    SearchEndpoint = new Uri(searchEndpoint),
+    Endpoint = new Uri(searchEndpoint),
     IndexName = indexName,
-};
+    Authentication = DataSourceAuthentication.FromApiKey(searchKey),
+});
+#pragma warning restore AOAI001
 
-contosoExtensionConfig.SetSearchKey(searchKey);
+ChatCompletion completion = chatClient.CompleteChat(
+    [new UserChatMessage("What are the differences between Azure Machine Learning and Azure AI services?")],
+    options);
 
-
-
-var chatCompletionsOptions = new ChatCompletionsOptions()
-{
-    DeploymentName = "gpt-3.5-turbo",
-    Messages =
-    {
-        new ChatMessage(ChatRole.User, "What are the differences between Azure Machine Learning and Azure AI services?"),
-
-    },
-    AzureExtensionsOptions = new AzureChatExtensionsOptions()
-    {
-        Extensions = { contosoExtensionConfig }
-    }
-};
-
-Azure.Response<ChatCompletions> completionsResponse = client.GetChatCompletions(chatCompletionsOptions);
-
-var completion = completionsResponse.Value.Choices[0].Message.Content;
-Console.WriteLine($"Content: {completion}");
-
-var role = completionsResponse.Value.Choices[0].Message.AzureExtensionsContext.Messages[0].Role;
-Console.WriteLine($"\nrole: {role}");
-
-var context = completionsResponse.Value.Choices[0].Message.AzureExtensionsContext.Messages[0].Content;
-Console.WriteLine($"\nContext: {context}");
+Console.WriteLine($"Content: {completion.Content[0].Text}");

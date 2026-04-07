@@ -1,8 +1,8 @@
-""" Test Azure OpenAI Chat Completions Stream API """
+""" Test Azure OpenAI Chat Completions Stream API with Azure AI Search (Your Data) """
 
-# Create a new Azure Cognitive Search index and load an index with Azure content
+# Create a new Azure AI Search index and load an index with Azure content
 # https://microsoftlearning.github.io/mslearn-knowledge-mining/Instructions/Labs/10-vector-search-exercise.html
-# https://learn.microsoft.com/en-us/azure/ai-services/openai/use-your-data-quickstart?tabs=command-line%2Cpython-new&pivots=programming-language-python#create-the-python-app
+# https://learn.microsoft.com/en-us/azure/ai-services/openai/use-your-data-quickstart
 
 
 import os
@@ -13,18 +13,18 @@ from openai import AzureOpenAI
 
 load_dotenv()
 
-ENDPOINT_URL = os.environ.get("ENDPOINT_URL")
-API_KEY = os.environ.get("API_KEY")
+ENDPOINT_URL = os.environ.get("PROXY_ENDPOINT")
+API_KEY = os.environ.get("PROXY_API_KEY")
 AZURE_AI_SEARCH_ENDPOINT = os.environ.get("AZURE_AI_SEARCH_ENDPOINT")
 AZURE_AI_SEARCH_KEY = os.environ.get("AZURE_AI_SEARCH_KEY")
 AZURE_AI_SEARCH_INDEX_NAME = os.environ.get("AZURE_AI_SEARCH_INDEX_NAME")
 
-API_VERSION = "2024-11-20"
+API_VERSION = "2024-10-21"
 MODEL_NAME = "gpt-4.1-mini"
 
 
 client = AzureOpenAI(
-    base_url=f"{ENDPOINT_URL}/openai/deployments/gpt-35-turbo/extensions",
+    azure_endpoint=ENDPOINT_URL,
     api_key=API_KEY,
     api_version=API_VERSION,
 )
@@ -39,13 +39,16 @@ messages = [
 ]
 
 body = {
-    "dataSources": [
+    "data_sources": [
         {
-            "type": "AzureCognitiveSearch",
+            "type": "azure_search",
             "parameters": {
                 "endpoint": AZURE_AI_SEARCH_ENDPOINT,
-                "key": AZURE_AI_SEARCH_KEY,
-                "indexName": AZURE_AI_SEARCH_INDEX_NAME,
+                "index_name": AZURE_AI_SEARCH_INDEX_NAME,
+                "authentication": {
+                    "type": "api_key",
+                    "key": AZURE_AI_SEARCH_KEY,
+                },
             },
         }
     ]

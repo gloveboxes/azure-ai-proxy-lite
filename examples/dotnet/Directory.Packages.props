@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Azure.AI.OpenAI" Version="1.0.0-beta.9" />
+    <PackageVersion Include="Azure.AI.OpenAI" Version="2.1.0" />
     <PackageVersion Include="DotNetEnv" Version="2.5.0" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,4 @@
-""" Test Azure OpenAI Functions API """
-
-# See documentation at https://gloveboxes.github.io/azure-openai-service-proxy/category/developer-endpoints/
+""" Test Azure OpenAI Tools API """
 
 import os
 
@@ -25,47 +23,53 @@ messages = [
     {"role": "user", "content": "What's the weather like today in seattle"},
 ]
 
-functions = [
+tools = [
     {
-        "name": "get_current_weather",
-        "description": "Get the current weather",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "The city and state, e.g. San Francisco, CA",
+        "type": "function",
+        "function": {
+            "name": "get_current_weather",
+            "description": "Get the current weather",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA",
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"],
+                        "description": "The temperature unit to use. Infer this from the users location.",
+                    },
                 },
-                "format": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "The temperature unit to use. Infer this from the users location.",
-                },
+                "required": ["location", "format"],
             },
-            "required": ["location", "format"],
         },
     },
     {
-        "name": "get_n_day_weather_forecast",
-        "description": "Get an N-day weather forecast",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "The city and state, e.g. San Francisco, CA",
+        "type": "function",
+        "function": {
+            "name": "get_n_day_weather_forecast",
+            "description": "Get an N-day weather forecast",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA",
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"],
+                        "description": "The temperature unit to use. Infer this from the users location.",
+                    },
+                    "num_days": {
+                        "type": "integer",
+                        "description": "The number of days to forecast",
+                    },
                 },
-                "format": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "The temperature unit to use. Infer this from the users location.",
-                },
-                "num_days": {
-                    "type": "integer",
-                    "description": "The number of days to forecast",
-                },
+                "required": ["location", "format", "num_days"],
             },
-            "required": ["location", "format", "num_days"],
         },
     },
 ]
@@ -80,10 +84,12 @@ client = AzureOpenAI(
 completion = client.chat.completions.create(
     model=DEPLOYMENT_NAME,
     messages=messages,
-    functions=functions,
+    tools=tools,
 )
 
 print(completion.model_dump_json(indent=2))
 print()
 print(completion.choices[0].finish_reason)
-print(completion.choices[0].message.function_call)
+if completion.choices[0].message.tool_calls:
+    for tool_call in completion.choices[0].message.tool_calls:
+        print(f"Tool: {tool_call.function.name}, Args: {tool_call.function.arguments}")

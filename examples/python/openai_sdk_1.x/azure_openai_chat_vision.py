@@ -1,4 +1,4 @@
-"""Test Azure OpenAI GPT 4 Vision API"""
+"""Test Azure OpenAI GPT-4o Vision API"""
 
 import os
 
@@ -7,17 +7,17 @@ from openai import AzureOpenAI
 
 load_dotenv()
 
-ENDPOINT_URL = os.environ.get("ENDPOINT_URL")
-API_KEY = os.environ.get("API_KEY")
-API_VERSION = "2023-09-01-preview"
-MODEL_NAME = "gpt-4"
+ENDPOINT_URL = os.environ.get("PROXY_ENDPOINT")
+API_KEY = os.environ.get("PROXY_API_KEY")
+API_VERSION = "2024-10-21"
+MODEL_NAME = "gpt-4o"
 
 IMAGE_URL = "https://welovecatsandkittens.com/wp-content/uploads/2017/05/cute.jpg"
 
 client = AzureOpenAI(
+    azure_endpoint=ENDPOINT_URL,
     api_key=API_KEY,
     api_version=API_VERSION,
-    base_url=f"{ENDPOINT_URL}/openai/deployments/{MODEL_NAME}/extensions",
 )
 
 response = client.chat.completions.create(

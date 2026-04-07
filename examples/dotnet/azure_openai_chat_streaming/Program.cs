@@ -1,44 +1,36 @@
 ﻿// OpenAI Chat Completions Streaming Example
 
+using System.ClientModel;
 using Azure.AI.OpenAI;
 using DotNetEnv;
-
+using OpenAI.Chat;
 
 Env.Load();
 
-// Get the key from the environment variables
-string? key = Environment.GetEnvironmentVariable("YOUR_EVENT_AUTH_TOKEN");
-string? endpoint = Environment.GetEnvironmentVariable("YOUR_AZURE_OPENAI_PROXY_URL");
+string? key = Environment.GetEnvironmentVariable("PROXY_API_KEY");
+string? endpoint = Environment.GetEnvironmentVariable("PROXY_ENDPOINT");
 
 if (key == null || endpoint == null)
 {
-    Console.WriteLine("Please set the YOUR_EVENT_AUTH_TOKEN and YOUR_AZURE_OPENAI_PROXY_URL environment variables.");
+    Console.WriteLine("Please set the PROXY_API_KEY and PROXY_ENDPOINT environment variables.");
     return;
 }
 
-var client = new OpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(key));
+var client = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(key));
+ChatClient chatClient = client.GetChatClient("gpt-4.1-mini");
 
-var chatCompletionsOptions = new ChatCompletionsOptions()
-{
-    DeploymentName = "gpt-35-turbo", // Use DeploymentName for "model" with non-Azure clients
-    Messages =
-    {
-        new ChatMessage(ChatRole.System, "You are a helpful assistant. You will talk like a pirate."),
-        new ChatMessage(ChatRole.User, "Can you help me?"),
-        new ChatMessage(ChatRole.Assistant, "Arrrr! Of course, me hearty! What can I do for ye?"),
-        new ChatMessage(ChatRole.User, "What's the best way to train a parrot?"),
-    }
-};
+CollectionResult<StreamingChatCompletionUpdate> updates = chatClient.CompleteChatStreaming(
+[
+    new SystemChatMessage("You are a helpful assistant. You will talk like a pirate."),
+    new UserChatMessage("Can you help me?"),
+    new AssistantChatMessage("Arrrr! Of course, me hearty! What can I do for ye?"),
+    new UserChatMessage("What's the best way to train a parrot?"),
+]);
 
-await foreach (StreamingChatCompletionsUpdate chatUpdate in client.GetChatCompletionsStreaming(chatCompletionsOptions))
+foreach (StreamingChatCompletionUpdate update in updates)
 {
-    if (chatUpdate.Role.HasValue)
+    foreach (ChatMessageContentPart part in update.ContentUpdate)
     {
-        Console.Write($"{chatUpdate.Role.Value.ToString().ToUpperInvariant()}: ");
+        Console.Write(part.Text);
     }
-    if (!string.IsNullOrEmpty(chatUpdate.ContentUpdate))
-    {
-        Console.Write(chatUpdate.ContentUpdate);
-    }
-    await Task.Delay(10);
 }

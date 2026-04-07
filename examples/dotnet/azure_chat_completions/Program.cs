@@ -1,35 +1,29 @@
 ﻿// Chat completions example
-using System.Xml.Serialization;
+using System.ClientModel;
 using Azure.AI.OpenAI;
 using DotNetEnv;
+using OpenAI.Chat;
 
 Env.Load();
 
-// Get the key from the environment variables
-string? key = Environment.GetEnvironmentVariable("YOUR_EVENT_AUTH_TOKEN");
-string? endpoint = Environment.GetEnvironmentVariable("YOUR_AZURE_OPENAI_PROXY_URL");
+string? key = Environment.GetEnvironmentVariable("PROXY_API_KEY");
+string? endpoint = Environment.GetEnvironmentVariable("PROXY_ENDPOINT");
 
 if (key == null || endpoint == null)
 {
-    Console.WriteLine("Please set the YOUR_EVENT_AUTH_TOKEN and YOUR_AZURE_OPENAI_PROXY_URL environment variables.");
+    Console.WriteLine("Please set the PROXY_API_KEY and PROXY_ENDPOINT environment variables.");
     return;
 }
 
-var client = new OpenAIClient(new Uri(endpoint + "/api/v1"), new Azure.AzureKeyCredential(key));
+var client = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(key));
+ChatClient chatClient = client.GetChatClient("gpt-4.1-mini");
 
-var chatCompletionsOptions = new ChatCompletionsOptions()
-{
-    DeploymentName = "gpt-3.5-turbo",
-    Messages =
-                {
-                    new ChatMessage(ChatRole.System, "You are a helpful assistant. You will talk like a pirate."),
-                    new ChatMessage(ChatRole.User, "Can you help me?"),
-                    new ChatMessage(ChatRole.Assistant, "Arrrr! Of course, me hearty! What can I do for ye?"),
-                    new ChatMessage(ChatRole.User, "What's the best way to train a parrot?"),
-                }
-};
+ChatCompletion completion = chatClient.CompleteChat(
+[
+    new SystemChatMessage("You are a helpful assistant. You will talk like a pirate."),
+    new UserChatMessage("Can you help me?"),
+    new AssistantChatMessage("Arrrr! Of course, me hearty! What can I do for ye?"),
+    new UserChatMessage("What's the best way to train a parrot?"),
+]);
 
-Azure.Response<ChatCompletions> completionsResponse = client.GetChatCompletions(chatCompletionsOptions);
-
-var completion = completionsResponse.Value.Choices[0].Message.Content;
-Console.WriteLine(completion);
+Console.WriteLine(completion.Content[0].Text);
