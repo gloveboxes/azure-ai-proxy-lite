@@ -4,15 +4,16 @@
 
 ## Introduction to the Azure AI Proxy
 
-The goal of the Azure OpenAI proxy service is to simplify access to Azure AI resources for a `Playground` experience, the `VS Code AI Toolkit`, Azure OpenAI SDKs, LangChain, and REST endpoints for developer events, workshops, and hackathons. Access is granted using a time bound `API Key`.
+The goal of the Azure AI Proxy is to simplify access to Azure AI resources for the `VS Code AI Toolkit`, Azure OpenAI SDKs, LangChain, and REST endpoints for developer events, workshops, and hackathons. Access is granted using a time bound `API Key`.
 
-There are four primary use cases for the Azure OpenAI proxy service:
+There are several primary use cases for the Azure AI Proxy:
 
 1. You are running a hackathon and users can't provision their own Azure OpenAI resources as they don't have a corporate email address.
-2. Accessing and experimenting with models, prompts, and MCP Servers from the AI Toolkit.
-4. Access to developer APIs via REST endpoints and the OpenAI SDKs and LangChain. Access to these services is granted using a time bound event code.
-5. Access to Azure AI Search queries using the Azure OpenAI proxy service. Access to these services is granted using a time bound event code.
-6. Access to an AI `Playground` experience for developers to explore the Azure OpenAI chat completion using a time bound event code and different models and parameters.
+1. Accessing and experimenting with models, prompts, and MCP Servers from the VS Code AI Toolkit.
+1. Access to developer APIs via REST endpoints and the OpenAI SDKs and LangChain. Access to these services is granted using a time bound event code.
+1. Access to Azure AI Foundry Agent Service via the proxy, including agent, assistant, thread, file, conversation, and response operations.
+1. Access to MCP (Model Context Protocol) Servers via the proxy.
+1. Access to Azure AI Search queries using the proxy. Access to these services is granted using a time bound event code.
 
 ## Getting Started with the Azure AI Proxy
 
@@ -22,17 +23,18 @@ Watch this 5-minute video to learn how to get started with the Azure AI Proxy.
 
 ## Bring your own models
 
-The Azure AI Proxy provides the infrastructure to support the deployment of your own models. You need to provide the models supporting your event. Initially, the proxy service supports the `chat completion` and `embeddings` APIs.
+The Azure AI Proxy provides the infrastructure to support the deployment of your own models. You need to provide the models supporting your event. The proxy supports the following APIs:
+
+- **Chat Completions** (Azure OpenAI and Azure Inference)
+- **Embeddings** (text and image)
+- **Azure AI Foundry Agents** (agents, assistants, threads, files, conversations, responses)
+- **MCP Servers** (Model Context Protocol)
+- **Azure AI Search** (search queries)
+- **AI Toolkit** (VS Code AI Toolkit extension integration)
 
 ## The VS Code AI Toolkit
 
-The VS Code AI Toolkit extension is the preferred user experience for experimenting with models, prompts, and MCP Servers using a time bound event code and key.
-
-## OpenAI Proxy Playground
-
-The Azure OpenAI proxy service provides a simple `Playground-like` experience for developers to explore the Azure OpenAI chat completion using the time bound event code with different models and parameters.
-
-![OpenAI Proxy Playground](media/openai_proxy_playground.png)
+The VS Code AI Toolkit extension is the first-class experience for experimenting with models, prompts, and MCP Servers using a time bound event code and key. Attendees can configure the AI Toolkit extension to connect through the proxy using their API key and the proxy endpoint URL.
 
 ## Azure AI Proxy Architecture
 

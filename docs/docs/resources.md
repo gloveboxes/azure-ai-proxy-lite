@@ -1,6 +1,6 @@
 # Configuring resources
 
-To use the Azure OpenAI proxy service, you need to configure the resources. This guide will walk you through the process of configuring the resources.
+To use the Azure AI Proxy, you need to configure the resources. This guide will walk you through the process of configuring the resources.
 
 ## Managing resources
 
@@ -8,8 +8,8 @@ The following assumes you have an AI Proxy deployment for your organization and 
 
 This is typically a one-off process. Once you have configured the resources, you can use the same resources for multiple events.
 
-1. Create the required Azure OpenAI models and AI Search services in your Azure subscription.
-1. Sign into the AI Proxy Admin portal and authenticate using your organization's Entra credentials.
+1. Create the required Azure AI resources (OpenAI models, AI Search services, Foundry Agents, etc.) in your Azure subscription.
+1. Sign into the AI Proxy Admin portal using the admin username and password (see [Authenticating with the AI Proxy Admin](deployment.md#authenticating-with-the-ai-proxy-admin)).
 1. Select the `Resources` tab, then add a collection of resources that you will use for your events.
 
     ![Add resources](./media/proxy-resources.png)
@@ -19,6 +19,18 @@ This is typically a one-off process. Once you have configured the resources, you
 To add a resource, click on the `+ New Resource` button.
 
 ![Image shows how to add a resource](./media/proxy_new_resource.png)
+
+### Resource types
+
+The proxy supports the following resource types:
+
+| Resource Type | Description |
+|--------------|-------------|
+| **Foundry Model** | Azure OpenAI / Foundry model deployments for chat completions and embeddings |
+| **Foundry Agent** | Azure AI Foundry Agent Service for agent, assistant, thread, file, conversation, and response operations |
+| **MCP Server** | Model Context Protocol server endpoints |
+| **AI Toolkit** | Models surfaced to attendees via the VS Code AI Toolkit extension |
+| **Azure AI Search** | Pass-through access to Azure AI Search indexes |
 
 #### Adding Azure Foundry models with Managed Identity
 

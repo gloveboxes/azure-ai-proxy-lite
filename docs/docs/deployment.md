@@ -1,6 +1,6 @@
-# OpenAI proxy service
+# Azure AI Proxy Deployment
 
-The solution consists of three parts; the proxy service, the proxy playground, with a similar look and feel to the official Azure OpenAI Playground, and event admin.
+The solution consists of two parts; the proxy service (which includes the admin portal and API) and the attendee registration app.
 
 ## Setup
 
@@ -9,7 +9,7 @@ This repo is set up for deployment on Azure Container Apps using the configurati
 ### Prerequisites
 
 1. An Azure subscription
-2. Deployed Azure OpenAI Models
+2. Deployed Azure AI models (OpenAI, Foundry, etc.)
 
 
 ### Required software
@@ -21,21 +21,6 @@ Install:
 1. [VS Code](https://code.visualstudio.com/)
 2. [VS Code Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 3. [Docker](https://www.docker.com/products/docker-desktop)
-
-<!-- ## Create an Entra app registration
-
-The AI Proxy admin is secured using Entra. You first need to register an application in your organizations Entra directory.
-
-1. Log into the Azure Portal.
-1. Select `Microsoft Entra ID` from the left-hand menu.
-1. Select `+ Add` dropdown, then select `App registration`.
-1. Name the registration, ensure `Accounts in this organizational directory only` is selected, and select `Register`.
-1. Navigate to `Overview`, and make a note of the `Application (client) ID` as you will need it when you deploy the solution.
-
-    ![](media/app-registration.png)
-
-1. When you deploy the solution, you will need to create a client secret.
-1. After the solution has been deployed, you will need to amend the app registration to add the redirect URI and enable the `ID tokens` under `Authentication`. -->
 
 ## Deploying
 
@@ -71,42 +56,45 @@ The recommended way to deploy this app is with Dev Containers. Install the [VS C
 
     On completion, the following Azure resources will be provisioned:
 
-    ![Azure OpenAI Playground experience](media/azure_resources.png)
+    ![Azure resources](media/azure_resources.png)
 
-7. When `azd` has finished deploying you'll see a link to the Azure Resource Group created for the solution.
-
-    The Admin and Playground links will be displayed when `azd up` completes.
+7. When `azd` has finished deploying you'll see the admin credentials and endpoint URLs displayed in the terminal.
 
     ![](media/app_deployed.png)
 
 ## Authenticating with the AI Proxy Admin
 
-1. Navigate to the Azure Container URL
-2. You will be prompted for the user name and password.
-3. The username is `admin`
-4. The password is obtained from the proxy container deployment.
-   1. Navigate the the `secrets` sidebar menu.
-   2. Copy the `admin password` and paste into the proxy auth page.
+1. Navigate to the proxy service URL displayed after `azd up` completes.
+2. You will be prompted for the username and password.
+3. The username is `admin`.
+4. The password is displayed in the `azd up` output. You can also retrieve it by running:
+
+    ```shell
+    azd env get-value SERVICE_ADMIN_PASSWORD
+    ```
 
 ## Updating the deployed app
 
 To make any changes to the app code, just run:
 
 ```shell
-azd deploy [admin | playground | proxy]
+azd deploy [proxy | registration]
 ```
+
+The `proxy` service deploys the proxy API and admin portal. The `registration` service deploys the attendee registration static web app.
 
 ## Next steps
 
-1. [Deploy an Azure AI Resources](#deploy-an-azure-ai-resources)
+1. [Deploy Azure AI Resources](#deploy-azure-ai-resources)
 1. [Map AI Resources to the AI Proxy](./resources.md)
 1. [Create and manage events](./events.md)
 1. [Capacity planning](./capacity.md)
 
-## Deploy an Azure AI Resources
+## Deploy Azure AI Resources
 
-1. The proxy supports model deployments from the `OpenAI Service` and from `Foundry Projects`.
+1. The proxy supports model deployments from `Azure OpenAI Service`, `Azure AI Foundry Projects`, `MCP Servers`, and `Azure AI Search`.
 2. Make a note of the `endpoint_key` and `endpoint_url` as you'll need them when you configure resources for the AI Proxy.
+3. For Managed Identity deployments, see the [Managed Identity guide](managed_identity.md).
 
 ## Troubleshooting
 

@@ -1,25 +1,21 @@
 # Managing models
 
-## Understanding Azure OpenAI model deployments
+## Understanding Azure AI model deployments
 
-As at November 2023, the proxy supports the following model deployment classes:
+The proxy supports the following model deployment classes:
 
 | Model deployment class | Models | Description |
 | ---------------------- | ------ | ----------- |
-| `foundry-model` | gpt-35-turbo, gpt-35-turbo-16k, gpt-4o, or newer | This is the model deployment class for Azure OpenAI Chat Completions and Embeddings APIs. |
-| `foundry-agent` | Not applicable | This is the model deployment class for Foundry Agents. |
-| `mcp-server` | Not applicable | This is the model deployment class for MCP Server endpoints. |
-| `ai-toolkit` | Not applicable | This is the model deployment class for AI Toolkit models. |
-| `azure-ai-search` | Not applicable | This allows for pass through access to an instance of Azure AI Search. |
+| `foundry-model` | gpt-4o, gpt-4.1, gpt-4.1-mini, or newer | Azure OpenAI Chat Completions and Embeddings APIs. |
+| `foundry-agent` | Not applicable | Azure AI Foundry Agent Service for agent, assistant, thread, file, conversation, and response operations. |
+| `mcp-server` | Not applicable | Model Context Protocol server endpoints. |
+| `ai-toolkit` | Not applicable | Models surfaced to attendees via the VS Code AI Toolkit extension. |
+| `azure-ai-search` | Not applicable | Pass-through access to an instance of Azure AI Search. |
 
+!!! tip
+    Each model deployment must have a unique deployment name.
 
-:::tip
-
-Each model deployment must have a unique deployment name.
-
-:::
-
-## Deploy an Azure OpenAI models
+## Deploy Azure OpenAI models
 
 1. Open the Azure Portal.
 2. Create an Azure OpenAI resource in your subscription. See [Create and deploy an Azure OpenAI Service resource](https://learn.microsoft.com/azure/ai-services/openai/how-to/create-resource) for more information.

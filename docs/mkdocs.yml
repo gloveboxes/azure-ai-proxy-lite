@@ -7,8 +7,9 @@ nav:
   - Attendees: attendee.md
   - Reporting: reporting.md
   - Capacity: capacity.md
-  - Playground: playground.md
+  - AI Toolkit: ai_toolkit.md
   - Developers: developers.md
+  - Managed Identity: managed_identity.md
   - Deployment: deployment.md
   - Workshops: workshops.md
   - FAQ: faq.md
