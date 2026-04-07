@@ -44,6 +44,22 @@ The Azure AI Proxy consists of the following components:
 1. Self-service attendee registration. Attendees can register for an event and receive a time bound API Key to access the AI Proxy service.
 1. The AI Proxy service. The AI Proxy service provides access to the Azure AI resources using a time bound API Key.
 
+## Multi-Tenant Architecture
+
+The Azure AI Proxy is a multi-tenanted solution where **events are the tenant boundary**. A single deployment of the proxy can host multiple concurrent events, each with its own attendees, resource assignments, and usage limits, while sharing the same underlying infrastructure.
+
+### Tenant isolation
+
+- **Event-scoped data** — Attendees, metrics, and configuration are partitioned by Event ID. Each event's data is isolated from other events.
+- **Time-bound access** — API keys are valid only during the event's configured start and end time window. Once an event ends, attendee API keys are no longer authorized.
+- **Per-event capacity controls** — Each event has its own Max Token Cap and Daily Request Cap, preventing one event from consuming resources allocated to another.
+- **Per-attendee usage tracking** — Daily request counts are tracked per attendee and reset at midnight UTC, ensuring fair usage within an event.
+- **Object ownership** — For Azure AI Foundry Agents, the proxy tracks object ownership so that each attendee can only access the agents, threads, files, and other objects they created.
+
+### Shared resources across events
+
+Azure AI resources (models, endpoints, agents, MCP servers) are configured once and can be reused across multiple events. This means organizers can set up their resource catalog independently of event scheduling, and assign the same resources to different events as needed.
+
 ## Open Source
 
 The Azure AI Proxy is an open-source project, licensed under MIT. You can find the source code on [GitHub](https://gloveboxes.github.io/azure-ai-proxy-lite/){:target="_blank"}.
