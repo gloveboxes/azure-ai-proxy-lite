@@ -24,6 +24,5 @@ public class EventCacheService : IEventCacheService
     {
         var oldCts = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
         oldCts.Cancel();
-        oldCts.Dispose();
     }
 }

@@ -199,6 +199,7 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
         evt.TimeZoneOffset = (int)model.SelectedTimeZone.BaseUtcOffset.TotalMinutes;
 
         await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
+        eventCache.InvalidateAll();
 
         return MapToEvent(evt);
     }

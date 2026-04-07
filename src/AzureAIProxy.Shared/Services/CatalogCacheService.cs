@@ -24,6 +24,5 @@ public class CatalogCacheService : ICatalogCacheService
     {
         var oldCts = Interlocked.Exchange(ref _cts, new CancellationTokenSource());
         oldCts.Cancel();
-        oldCts.Dispose();
     }
 }
