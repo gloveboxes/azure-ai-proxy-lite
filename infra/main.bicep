@@ -28,6 +28,14 @@ param entraTenantId string = ''
 })
 param swaLocation string
 
+@description('Location for the Azure AI Foundry project and model deployments')
+@metadata({
+  azd: {
+    type: 'location'
+  }
+})
+param foundryLocation string
+
 // Generate a deterministic encryption key unique to this deployment
 var encryptionKey = '${uniqueString(subscription().id, name, 'enc-key')}${uniqueString(name, location, 'enc-key')}${uniqueString(subscription().id, location, 'enc-key')}'
 
@@ -134,9 +142,10 @@ module foundry 'foundry.bicep' = {
   scope: resourceGroup
   params: {
     name: prefix
-    location: location
+    location: foundryLocation
     tags: tags
     proxyPrincipalId: proxy.outputs.SERVICE_PROXY_IDENTITY_PRINCIPAL_ID
+    proxySystemPrincipalId: proxy.outputs.SERVICE_PROXY_SYSTEM_IDENTITY_PRINCIPAL_ID
   }
 }
 

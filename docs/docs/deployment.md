@@ -71,15 +71,16 @@ The recommended way to deploy this app is with Dev Containers. Install the [VS C
 
     1. **Environment name** — keep it short (max 7 characters) to avoid invalid resource names.
     2. **Azure subscription** — select from your Azure account.
-    3. **Location** — e.g., "centralus" or "eastus".
-    4. **swaLocation** — location for the Static Web App (choose from the allowed list). Recommend deploying in the same location as the proxy.
+    3. **foundryLocation** — location for the Azure AI Foundry project. Choose a region with the model availability you need (e.g., "swedencentral", "eastus2").
+    4. **Location** — location for the proxy infrastructure (e.g., "centralus" or "eastus"). Recommend deploying to the same region as your AI models.
+    5. **swaLocation** — location for the Static Web App (choose from the allowed list). Recommend deploying in the same location as the proxy.
 
     The deployment will automatically:
 
     - Create an Entra ID app registration for admin authentication
     - Provision all Azure resources (Container Apps, Storage, Registry, etc.)
-    - Create an empty Azure AI Foundry project for you to deploy models into
-    - Grant the proxy managed identity access to the Foundry AI Services (no manual RBAC setup needed)
+    - Create an Azure AI Foundry project for you to deploy models into
+    - Grant the proxy managed identity access to the AI Services account (no manual RBAC setup needed)
     - Register the OIDC redirect URI for the admin container
     - Configure the admin container with Entra ID env vars
     - Build and deploy all three services
@@ -190,7 +191,7 @@ For the full local deployment reference (managing the stack, building custom ima
 
 ## Deploy Azure AI Resources
 
-1. The deployment creates an empty **Azure AI Foundry project** in your resource group. Open the [Azure AI Foundry portal](https://ai.azure.com) and deploy models (e.g., GPT-4.1, GPT-4.1-mini) into this project.
+1. The deployment creates an **Azure AI Foundry project** in your resource group. Open the [Azure AI Foundry portal](https://ai.azure.com) and deploy models (e.g., GPT-4.1, GPT-4.1-mini) into this project. The proxy's managed identity is already granted access.
 2. The proxy supports model deployments from `Azure OpenAI Service`, `Azure AI Foundry Projects`, `MCP Servers`, and `Azure AI Search`.
 3. Make a note of the `endpoint_key` and `endpoint_url` as you'll need them when you configure resources for the AI Proxy.
 4. For Managed Identity deployments, see the [Managed Identity guide](managed_identity.md).

@@ -94,6 +94,7 @@ module app '../core/host/container-app-upsert.bicep' = {
 }
 
 output SERVICE_PROXY_IDENTITY_PRINCIPAL_ID string = proxyIdentity.properties.principalId
+output SERVICE_PROXY_SYSTEM_IDENTITY_PRINCIPAL_ID string = app.outputs.systemAssignedIdentityPrincipalId
 output SERVICE_PROXY_NAME string = app.outputs.name
 output SERVICE_PROXY_URI string = app.outputs.uri
 output SERVICE_PROXY_IMAGE_NAME string = app.outputs.imageName
