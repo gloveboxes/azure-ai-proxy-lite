@@ -6,7 +6,7 @@ using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class ModelService(IAuthService authService, ITableStorageService tableStorage, IEncryptionService encryption, ICatalogCacheService catalogCache) : IModelService
+public class ModelService(IAuthService authService, ITableStorageService tableStorage, IEncryptionService encryption, ICacheInvalidationService cacheInvalidation) : IModelService
 {
     public void Dispose()
     {
@@ -72,7 +72,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
         await catalogTable.AddEntityAsync(entity);
 
-        catalogCache.InvalidateAll();
+        await cacheInvalidation.InvalidateAllCachesAsync();
 
         return new OwnerCatalog
         {
@@ -109,7 +109,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         }
 
         await catalogTable.DeleteEntityAsync(id, id);
-        catalogCache.InvalidateAll();
+        await cacheInvalidation.InvalidateAllCachesAsync();
     }
 
     public async Task<OwnerCatalog> GetOwnerCatalogAsync(Guid catalogId)
@@ -181,7 +181,7 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         };
 
         await catalogTable.AddEntityAsync(entity);
-        catalogCache.InvalidateAll();
+        await cacheInvalidation.InvalidateAllCachesAsync();
     }
 
     public async Task<IEnumerable<OwnerCatalog>> GetOwnerCatalogsAsync()
@@ -253,6 +253,6 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
         existing.UseMaxCompletionTokens = ownerCatalog.UseMaxCompletionTokens;
 
         await catalogTable.UpdateEntityAsync(existing, existing.ETag, Azure.Data.Tables.TableUpdateMode.Replace);
-        catalogCache.InvalidateAll();
+        await cacheInvalidation.InvalidateAllCachesAsync();
     }
 }

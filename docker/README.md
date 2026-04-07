@@ -8,26 +8,50 @@ Run the Azure OpenAI Proxy on a local Linux server using Docker Compose with Azu
 cp .env.example .env
 ```
 
-Edit `.env` — you **must** set at least these two values:
+Edit `.env` — you **must** update the following before starting the stack:
 
-| Variable | Why |
-|---|---|
-| `REGISTRATION_HOST` | Set to your server's hostname or IP (e.g. `rpi58`, `192.168.1.50`). The admin UI generates registration links using this value. If left as `localhost`, links will only work from the server itself. |
-| `ENCRYPTION_KEY` | Used to encrypt sensitive data (API keys, deployment credentials) stored in Azurite Table Storage. Use a strong random string, e.g. generate one with: `openssl rand -base64 32`. **Do not use the default value in production.** If you change this key after data has been written, existing encrypted data becomes unreadable. |
+### 1. Set `REGISTRATION_HOST`
 
-Then start everything:
+Update `REGISTRATION_HOST` to your server's hostname or IP address. The admin UI generates attendee registration links using this value. If left as `localhost`, registration links will only work from the server itself.
+
+```env
+REGISTRATION_HOST=192.168.1.50
+```
+
+Use your machine's hostname (e.g. `rpi58`) or LAN IP address so that attendees on the same network can reach the registration page.
+
+### 2. Generate a secure `ENCRYPTION_KEY`
+
+The `ENCRYPTION_KEY` is used to encrypt sensitive data (API keys, deployment credentials) stored in Azurite Table Storage. **Do not use the default value in production.**
+
+Generate a secure random key with `openssl`:
+
+```bash
+openssl rand -base64 32
+```
+
+Copy the output into your `.env` file:
+
+```env
+ENCRYPTION_KEY=<paste-your-generated-key-here>
+```
+
+> **Important:** If you change this key after data has been written, existing encrypted data becomes unreadable. Keep a record of the key if you need to preserve data across restarts.
+
+### 3. Start the stack
 
 ```bash
 docker compose up -d
 ```
 
-Three containers will start:
+Four containers will start:
 
 - **Azurite** — Table Storage emulator (port `10002` internally)
-- **Proxy** — Admin UI + OpenAI proxy API (default port `8900`)
+- **Proxy** — OpenAI proxy API (default port `8900`)
+- **Admin** — Admin management UI (default port `8901`)
 - **Registration** — Event registration SPA with email auth (default port `4280`)
 
-Access the admin UI at `http://<your-host>:8900` and the registration page at `http://<your-host>:4280/event/<event-id>`.
+Access the admin UI at `http://<your-host>:8901` and the registration page at `http://<your-host>:4280/event/<event-id>`.
 
 ## Configuration
 
@@ -35,7 +59,8 @@ All settings are in `.env`. See `.env.example` for defaults.
 
 | Variable | Default | Description |
 |---|---|---|
-| `PROXY_PORT` | `8900` | Host port for the admin UI and proxy API |
+| `PROXY_PORT` | `8900` | Host port for the proxy API |
+| `ADMIN_PORT` | `8901` | Host port for the admin UI |
 | `ADMIN_USERNAME` | `admin` | Admin UI login username |
 | `ADMIN_PASSWORD` | `admin` | Admin UI login password — **change this** |
 | `ENCRYPTION_KEY` | *(insecure default)* | Encryption key for stored secrets — **change this** |
@@ -44,6 +69,7 @@ All settings are in `.env`. See `.env.example` for defaults.
 | `REGISTRATION_HOST` | `localhost` | Hostname/IP used in registration links — **set this to your server** |
 | `AZURITE_TABLE_PORT` | `10002` | Host port for Azurite Table Storage |
 | `PROXY_IMAGE` | `glovebox/aoai-proxy:latest` | Docker Hub image for the proxy |
+| `ADMIN_IMAGE` | `glovebox/aoai-proxy-admin:latest` | Docker Hub image for the admin UI |
 | `REGISTRATION_IMAGE` | `glovebox/aoai-proxy-registration:latest` | Docker Hub image for the registration SPA |
 
 ## Building and Pushing Multi-Architecture Images
@@ -81,9 +107,10 @@ Examples:
 This builds both images for `linux/amd64` and `linux/arm64` and pushes them to Docker Hub:
 
 - `<username>/aoai-proxy:<tag>`
+- `<username>/aoai-proxy-admin:<tag>`
 - `<username>/aoai-proxy-registration:<tag>`
 
-Update `PROXY_IMAGE` and `REGISTRATION_IMAGE` in `.env` if you use a different username or tag.
+Update `PROXY_IMAGE`, `ADMIN_IMAGE`, and `REGISTRATION_IMAGE` in `.env` if you use a different username or tag.
 
 ## Managing the Stack
 

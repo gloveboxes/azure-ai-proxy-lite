@@ -35,6 +35,15 @@ docker buildx build \
     --push \
     "${ROOT_DIR}/src"
 
+echo "==> Building admin image: ${REPO}/aoai-proxy-admin:${TAG}"
+docker buildx build \
+    --platform "${PLATFORMS}" \
+    --tag "${REPO}/aoai-proxy-admin:${TAG}" \
+    --file "${ROOT_DIR}/src/Dockerfile.admin" \
+    --no-cache \
+    --push \
+    "${ROOT_DIR}/src"
+
 echo "==> Building registration image: ${REPO}/aoai-proxy-registration:${TAG}"
 docker buildx build \
     --platform "${PLATFORMS}" \
@@ -49,4 +58,5 @@ docker buildx prune --force
 
 echo "==> Done. Update docker/.env or docker-compose.yml with:"
 echo "    PROXY_IMAGE=${REPO}/aoai-proxy:${TAG}"
+echo "    ADMIN_IMAGE=${REPO}/aoai-proxy-admin:${TAG}"
 echo "    REGISTRATION_IMAGE=${REPO}/aoai-proxy-registration:${TAG}"

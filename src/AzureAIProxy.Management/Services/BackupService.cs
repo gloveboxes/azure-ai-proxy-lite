@@ -8,7 +8,7 @@ using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class BackupService(ITableStorageService tableStorage, IEncryptionService encryption, ICatalogCacheService catalogCache, IEventCacheService eventCache) : IBackupService
+public class BackupService(ITableStorageService tableStorage, IEncryptionService encryption, ICacheInvalidationService cacheInvalidation, IAuthService authService) : IBackupService
 {
     private const int SaltSize = 16;
     private const int NonceSize = 12;
@@ -103,6 +103,10 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
 
     public async Task RestoreBackupAsync(BackupData data)
     {
+        // Remap all ownership to the current authenticated user so backups
+        // created under a different identity (e.g. local admin vs Entra OID) work.
+        var currentUserId = await authService.GetCurrentUserIdAsync();
+
         // Restore resources first (events reference catalog IDs)
         var catalogTable = tableStorage.GetTableClient(TableNames.Catalogs);
         foreach (var resource in data.Resources)
@@ -111,7 +115,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
             {
                 PartitionKey = resource.CatalogId,
                 RowKey = resource.CatalogId,
-                OwnerId = resource.OwnerId,
+                OwnerId = currentUserId,
                 DeploymentName = resource.DeploymentName,
                 EncryptedEndpointUrl = encryption.Encrypt(resource.EndpointUrl),
                 EncryptedEndpointKey = string.IsNullOrWhiteSpace(resource.EndpointKey) ? string.Empty : encryption.Encrypt(resource.EndpointKey),
@@ -136,7 +140,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
             {
                 PartitionKey = evt.EventId,
                 RowKey = evt.EventId,
-                OwnerId = evt.OwnerId,
+                OwnerId = currentUserId,
                 EventCode = evt.EventCode,
                 EventSharedCode = evt.EventSharedCode,
                 EventMarkdown = evt.EventMarkdown,
@@ -154,17 +158,16 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
 
             await eventsTable.UpsertEntityAsync(entity, TableUpdateMode.Replace);
 
-            // Restore owner-event mapping
+            // Restore owner-event mapping using current user
             await ownerEventsTable.UpsertEntityAsync(new OwnerEventEntity
             {
-                PartitionKey = evt.OwnerId,
+                PartitionKey = currentUserId,
                 RowKey = evt.EventId,
                 Creator = true
             }, TableUpdateMode.Replace);
         }
 
-        catalogCache.InvalidateAll();
-        eventCache.InvalidateAll();
+        await cacheInvalidation.InvalidateAllCachesAsync();
     }
 
     public async Task ClearAllDataAsync()
@@ -203,8 +206,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
             }
         }
 
-        catalogCache.InvalidateAll();
-        eventCache.InvalidateAll();
+        await cacheInvalidation.InvalidateAllCachesAsync();
     }
 
     // Format: [version(1)] [salt(16)] [nonce(12)] [tag(16)] [ciphertext(N)]

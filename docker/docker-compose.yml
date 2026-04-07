@@ -21,7 +21,31 @@ services:
     ports:
       - "${PROXY_PORT:-8900}:8080"
     volumes:
-      - dataprotection-keys:/home/app/.aspnet/DataProtection-Keys
+      - dataprotection-keys-proxy:/home/app/.aspnet/DataProtection-Keys
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__StorageAccount: >-
+        DefaultEndpointsProtocol=http;
+        AccountName=devstoreaccount1;
+        AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;
+        TableEndpoint=http://azurite:10002/devstoreaccount1;
+      EncryptionKey: "${ENCRYPTION_KEY:-change-this-encryption-key-in-production}"
+      UseMockProxy: "${USE_MOCK_PROXY:-false}"
+      ProxyUrl: "http://${REGISTRATION_HOST:-localhost}:${PROXY_PORT:-8900}/api/v1"
+    depends_on:
+      azurite:
+        condition: service_healthy
+
+  admin:
+    image: ${ADMIN_IMAGE:-glovebox/aoai-proxy-admin:latest}
+    restart: unless-stopped
+    user: root
+    entrypoint: ["/bin/sh", "-c", "chown 1654:1654 /home/app/.aspnet/DataProtection-Keys && exec runuser -u app -- ./AzureAIProxy.Admin"]
+    ports:
+      - "${ADMIN_PORT:-8901}:8080"
+    volumes:
+      - dataprotection-keys-admin:/home/app/.aspnet/DataProtection-Keys
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -33,12 +57,13 @@ services:
       EncryptionKey: "${ENCRYPTION_KEY:-change-this-encryption-key-in-production}"
       Admin__Username: "${ADMIN_USERNAME:-admin}"
       Admin__Password: "${ADMIN_PASSWORD:-admin}"
-      UseMockProxy: "${USE_MOCK_PROXY:-false}"
       RegistrationUrl: "https://${REGISTRATION_HOST:-localhost}:${REGISTRATION_TLS_PORT:-4443}"
-      ProxyUrl: "http://${REGISTRATION_HOST:-localhost}:${PROXY_PORT:-8900}/api/v1"
+      ProxyInternalUrl: "http://proxy:8080"
     depends_on:
       azurite:
         condition: service_healthy
+      proxy:
+        condition: service_started
 
   registration:
     image: ${REGISTRATION_IMAGE:-glovebox/aoai-proxy-registration:latest}
@@ -54,4 +79,5 @@ services:
 
 volumes:
   azurite-data:
-  dataprotection-keys:
+  dataprotection-keys-proxy:
+  dataprotection-keys-admin:

@@ -1,7 +1,7 @@
 param backendAppName string
 param swaAppName string
 
-resource backend 'Microsoft.App/containerApps@2024-03-01' existing = {
+resource backend 'Microsoft.App/containerApps@2025-01-01' existing = {
   name: backendAppName
 }
 
@@ -20,9 +20,9 @@ resource customBackend 'Microsoft.Web/staticSites/linkedBackends@2024-04-01' = {
 
 // The SWA linking auto-enables Easy Auth with RedirectToLoginPage,
 // which blocks direct browser access to the container app (HTTP 400).
-// Override to AllowAnonymous so the admin UI and proxy API work via direct access.
+// Override to AllowAnonymous so the proxy API works via direct access.
 // The x-ms-client-principal header is still set for requests coming through SWA.
-resource authConfig 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {
+resource authConfig 'Microsoft.App/containerApps/authConfigs@2025-01-01' = {
   name: 'current'
   parent: backend
   dependsOn: [customBackend]
@@ -32,13 +32,6 @@ resource authConfig 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {
     }
     globalValidation: {
       unauthenticatedClientAction: 'AllowAnonymous'
-      excludedPaths: [
-        '/account/login'
-        '/account/logout'
-        '/_framework'
-        '/_content'
-        '/_blazor'
-      ]
     }
     identityProviders: {
       azureStaticWebApps: {

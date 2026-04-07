@@ -10,7 +10,7 @@
 
 1. **How do I authenticate with the AI Proxy Admin portal?**
 
-    The admin portal uses basic authentication. The username is `admin` and the password is displayed in the `azd up` output. You can also retrieve it by running `azd env get-value SERVICE_ADMIN_PASSWORD`.
+    When deployed to Azure, the admin portal uses **Microsoft Entra ID** authentication. Navigate to the admin UI URL and sign in with your organizational Microsoft account. When running locally with Docker, the admin portal uses username/password authentication (configured via `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables).
 
 1. **Can I use Managed Identity instead of API keys?**
 
@@ -30,4 +30,4 @@
 
 1. **How do I update the proxy after making code changes?**
 
-    Run `azd deploy proxy` to redeploy the proxy service, or `azd deploy registration` to redeploy the registration app. Run `azd up` to redeploy everything.
+    Run `azd deploy proxy` to redeploy the proxy API, `azd deploy admin` to redeploy the admin UI, or `azd deploy registration` to redeploy the registration app. Run `azd up` to redeploy everything.

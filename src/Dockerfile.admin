@@ -5,19 +5,18 @@ ARG TARGETARCH
 WORKDIR /src
 
 # copy and publish app and libraries
-COPY ./AzureAIProxy/ ./AzureAIProxy
+COPY ./AzureAIProxy.Admin/ ./AzureAIProxy.Admin
+COPY ./AzureAIProxy.Management/ ./AzureAIProxy.Management
 COPY ./AzureAIProxy.Shared/ ./AzureAIProxy.Shared
-WORKDIR /src/AzureAIProxy
+WORKDIR /src/AzureAIProxy.Admin
 
 RUN dotnet publish -a $TARGETARCH -o /app
 
 # final stage/image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 EXPOSE 8080
-EXPOSE 8081
 WORKDIR /app
 COPY --from=build /app .
-COPY --from=build /src/AzureAIProxy/MockResponses /app/MockResponses
 
 USER $APP_UID
-ENTRYPOINT ["./AzureAIProxy"]
+ENTRYPOINT ["./AzureAIProxy.Admin"]

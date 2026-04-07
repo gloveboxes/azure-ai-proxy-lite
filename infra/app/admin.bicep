@@ -8,16 +8,16 @@ param containerAppsEnvironmentName string
 param containerRegistryName string
 param serviceName string = 'admin'
 param exists bool
-param postgresDatabase string
-param postgresServer string
-param proxyAdminPostgresMaxPoolSize int
 @secure()
-param postgresEncryptionKey string
-param clientId string
-param tenantId string
-param registrationUrl string
+param storageConnectionString string
+@secure()
+param encryptionKey string
 @secure()
 param appInsightsConnectionString string
+param registrationUrl string
+param proxyInternalUrl string
+param entraClientId string = ''
+param entraTenantId string = ''
 param imageName string = ''
 param keyVaultName string = ''
 
@@ -37,36 +37,47 @@ module app '../core/host/container-app-upsert.bicep' = {
     containerAppsEnvironmentName: containerAppsEnvironmentName
     containerRegistryName: containerRegistryName
     targetPort: 8080
+    containerCpuCoreCount: '0.25'
+    containerMemory: '0.5Gi'
+    containerMinReplicas: 0
+    containerMaxReplicas: 1
+    scaleCooldownPeriod: 1800
+    scaleRules: [
+      {
+        name: 'http-requests'
+        http: {
+          metadata: {
+            concurrentRequests: '10'
+          }
+        }
+      }
+    ]
     secrets: [
       {
-        name: 'tenant-id'
-        value: tenantId
+        name: 'encryption-key'
+        value: encryptionKey
       }
       {
-        name: 'client-id'
-        value: clientId
+        name: 'storage-connection-string'
+        value: storageConnectionString
       }
       {
         name: 'app-insights-connection-string'
         value: appInsightsConnectionString
       }
-      {
-        name: 'postgres-encryption-key'
-        value: postgresEncryptionKey
-      }
-      {
-        name: 'postgres-connection-string'
-        value: 'Server=${postgresServer};Port=5432;User Id=${name};Database=${postgresDatabase};Ssl Mode=Require;Maximum Pool Size=${proxyAdminPostgresMaxPoolSize};Application Name=aiproxy;'
-      }
     ]
     env: [
       {
-        name: 'AzureAd__TenantId'
-        secretRef: 'tenant-id'
+        name: 'EncryptionKey'
+        secretRef: 'encryption-key'
       }
       {
-        name: 'AzureAd__ClientId'
-        secretRef: 'client-id'
+        name: 'ConnectionStrings__StorageAccount'
+        secretRef: 'storage-connection-string'
+      }
+      {
+        name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+        secretRef: 'app-insights-connection-string'
       }
       {
         name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'
@@ -77,17 +88,27 @@ module app '../core/host/container-app-upsert.bicep' = {
         value: registrationUrl
       }
       {
-        name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-        secretRef: 'app-insights-connection-string'
+        name: 'ProxyInternalUrl'
+        value: proxyInternalUrl
       }
-      {
-        name: 'PostgresEncryptionKey'
-        secretRef: 'postgres-encryption-key'
-      }
-      {
-        name: 'ConnectionStrings__AoaiProxyContext'
-        secretRef: 'postgres-connection-string'
-      }
+      ...(!empty(entraClientId) ? [
+        {
+          name: 'AzureAd__Instance'
+          value: environment().authentication.loginEndpoint
+        }
+        {
+          name: 'AzureAd__TenantId'
+          value: entraTenantId
+        }
+        {
+          name: 'AzureAd__ClientId'
+          value: entraClientId
+        }
+        {
+          name: 'AzureAd__CallbackPath'
+          value: '/signin-oidc'
+        }
+      ] : [])
     ]
   }
 }

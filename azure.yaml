@@ -11,6 +11,15 @@ services:
       context: ../
       platform: amd64
 
+  admin:
+    project: ./src/AzureAIProxy.Admin
+    language: csharp
+    host: containerapp
+    docker:
+      path: ../Dockerfile.admin
+      context: ../
+      platform: amd64
+
   registration:
     project: ./src/registration
     language: ts
@@ -18,6 +27,18 @@ services:
     dist: dist
 
 hooks:
+  preprovision:
+    shell: sh
+    continueOnError: false
+    interactive: true
+    run: infra/scripts/setup-app-registration.sh
+
+  postprovision:
+    shell: sh
+    continueOnError: true
+    interactive: true
+    run: infra/scripts/setup-app-redirect-uris.sh
+
   postup:
     shell: sh
     continueOnError: true
@@ -25,16 +46,16 @@ hooks:
     run: |
       echo ""
       echo "============================================="
-      echo "  🎉 Deployment Complete!"
+      echo "  Deployment Complete!"
       echo "============================================="
       echo ""
-      echo "Admin Credentials:"
-      echo "  Username: admin"
-      echo "  Password: $(azd env get-value SERVICE_ADMIN_PASSWORD)"
-      echo ""
       echo "Endpoints:"
-      echo "  Proxy API: $(azd env get-value SERVICE_PROXY_URI)"
-      echo "  Registration: $(azd env get-value SERVICE_REGISTRATION_URI)"
+      echo "  Proxy API:     $(azd env get-value SERVICE_PROXY_URI)"
+      echo "  Admin UI:      $(azd env get-value SERVICE_ADMIN_URI)"
+      echo "  Registration:  $(azd env get-value SERVICE_REGISTRATION_URI)"
+      echo ""
+      echo "Admin Authentication: Entra ID (Microsoft login)"
+      echo "  App Registration: $(azd env get-value entraClientId)"
       echo ""
       echo "Proxy Managed Identity:"
       echo "  Principal ID: $(azd env get-value SERVICE_PROXY_IDENTITY_PRINCIPAL_ID)"

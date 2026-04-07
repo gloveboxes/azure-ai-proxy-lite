@@ -11,6 +11,14 @@ param location string
 
 param proxyAppExists bool = false
 
+param adminAppExists bool = false
+
+@description('Entra ID (Azure AD) Client ID for admin UI authentication. Leave empty to use username/password auth.')
+param entraClientId string = ''
+
+@description('Entra ID (Azure AD) Tenant ID for admin UI authentication. Leave empty to use username/password auth.')
+param entraTenantId string = ''
+
 @description('Location for the Registration app resource group')
 @allowed(['centralus', 'eastus2', 'eastasia', 'westeurope', 'westus2'])
 @metadata({
@@ -20,9 +28,6 @@ param proxyAppExists bool = false
 })
 param swaLocation string
 
-var adminUsername = 'admin'
-// Generate a deterministic but unique admin password per deployment
-var adminPassword = '${uniqueString(subscription().id, name, 'admin-pwd')}${uniqueString(name, location, 'admin-pwd')}'
 // Generate a deterministic encryption key unique to this deployment
 var encryptionKey = '${uniqueString(subscription().id, name, 'enc-key')}${uniqueString(name, location, 'enc-key')}${uniqueString(subscription().id, location, 'enc-key')}'
 
@@ -50,7 +55,7 @@ module containerApps 'core/host/container-apps.bicep' = {
   }
 }
 
-// Proxy app (combined proxy + admin)
+// Proxy app (API proxy only)
 module proxy 'app/proxy.bicep' = {
   name: 'proxy'
   scope: resourceGroup
@@ -64,8 +69,29 @@ module proxy 'app/proxy.bicep' = {
     exists: proxyAppExists
     storageConnectionString: storageAccount.outputs.connectionString
     encryptionKey: encryptionKey
-    adminPassword: adminPassword
     registrationUrl: registration.outputs.SERVICE_WEB_URI
+    appInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
+  }
+}
+
+// Admin app (management UI)
+module admin 'app/admin.bicep' = {
+  name: 'admin'
+  scope: resourceGroup
+  params: {
+    name: '${prefix}-admin'
+    location: location
+    tags: tags
+    identityName: '${prefix}-id-admin'
+    containerAppsEnvironmentName: containerApps.outputs.environmentName
+    containerRegistryName: containerApps.outputs.registryName
+    exists: adminAppExists
+    storageConnectionString: storageAccount.outputs.connectionString
+    encryptionKey: encryptionKey
+    registrationUrl: registration.outputs.SERVICE_WEB_URI
+    proxyInternalUrl: 'https://${proxy.outputs.SERVICE_PROXY_NAME}.internal.${containerApps.outputs.defaultDomain}'
+    entraClientId: entraClientId
+    entraTenantId: entraTenantId
     appInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
   }
 }
@@ -102,6 +128,18 @@ module swaLinkDotnet './linkSwaResource.bicep' = {
   }
 }
 
+// Azure AI Foundry project (empty — deploy models into it)
+module foundry 'foundry.bicep' = {
+  name: 'foundry'
+  scope: resourceGroup
+  params: {
+    name: prefix
+    location: location
+    tags: tags
+    proxyPrincipalId: proxy.outputs.SERVICE_PROXY_IDENTITY_PRINCIPAL_ID
+  }
+}
+
 // Monitor application with Azure Monitor
 module monitoring 'core/monitor/monitoring.bicep' = {
   name: 'monitoring'
@@ -125,11 +163,14 @@ output SERVICE_PROXY_NAME string = proxy.outputs.SERVICE_PROXY_NAME
 output SERVICE_PROXY_URI string = proxy.outputs.SERVICE_PROXY_URI
 output SERVICE_PROXY_IMAGE_NAME string = proxy.outputs.SERVICE_PROXY_IMAGE_NAME
 
+output SERVICE_ADMIN_NAME string = admin.outputs.SERVICE_ADMIN_NAME
+output SERVICE_ADMIN_URI string = admin.outputs.SERVICE_ADMIN_URI
+output SERVICE_ADMIN_IMAGE_NAME string = admin.outputs.SERVICE_ADMIN_IMAGE_NAME
+
 output SERVICE_REGISTRATION_URI string = registration.outputs.SERVICE_WEB_URI
 
 output SERVICE_STORAGE_ACCOUNT_NAME string = storageAccount.outputs.name
 
-output SERVICE_ADMIN_USERNAME string = adminUsername
-output SERVICE_ADMIN_PASSWORD string = adminPassword
-#disable-next-line outputs-should-not-contain-secrets
-output SERVICE_ENCRYPTION_KEY string = encryptionKey
+output SERVICE_AI_SERVICES_NAME string = foundry.outputs.aiServicesName
+output SERVICE_AI_SERVICES_ENDPOINT string = foundry.outputs.aiServicesEndpoint
+output SERVICE_AI_PROJECT_NAME string = foundry.outputs.aiProjectName

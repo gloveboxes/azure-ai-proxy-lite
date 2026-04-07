@@ -4,20 +4,19 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>2cf8d7e9-a550-4d5c-9dd8-951d4fb89265</UserSecretsId>
+    <UserSecretsId>4121082c-941f-4ae2-a326-33fcebe0c6a7</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.0.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.4.0" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.4.0" />
+    <PackageReference Include="MudBlazor" Version="9.1.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AzureAIProxy.Management\AzureAIProxy.Management.csproj" />
     <ProjectReference Include="..\AzureAIProxy.Shared\AzureAIProxy.Shared.csproj" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="cp -r $(ProjectDir)/MockResponses $(TargetDir)/MockResponses" />
-  </Target>
 
 </Project>

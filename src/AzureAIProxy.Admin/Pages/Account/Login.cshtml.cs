@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Azure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,7 +11,7 @@ using AzureAIProxy.Shared.Database;
 using AzureAIProxy.Shared.Services;
 using AzureAIProxy.Shared.TableStorage;
 
-namespace AzureAIProxy.Pages.Account;
+namespace AzureAIProxy.Admin.Pages.Account;
 
 [AllowAnonymous]
 public class LoginModel(IConfiguration configuration, ITableStorageService tableStorage) : PageModel
@@ -19,15 +20,31 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
     private static readonly ConcurrentDictionary<string, (int Count, DateTime LastAttempt)> _failedAttempts = new();
 
+    public bool UseEntraAuth => !string.IsNullOrEmpty(configuration["AzureAd:ClientId"]);
+
     public string? ErrorMessage { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
 
-    public void OnGet() { }
+    public IActionResult OnGet()
+    {
+        if (UseEntraAuth)
+        {
+            var redirectUri = Url.IsLocalUrl(ReturnUrl) ? ReturnUrl : "/";
+            return Challenge(
+                new AuthenticationProperties { RedirectUri = redirectUri },
+                OpenIdConnectDefaults.AuthenticationScheme);
+        }
+
+        return Page();
+    }
 
     public async Task<IActionResult> OnPostAsync(string username, string password)
     {
+        if (UseEntraAuth)
+            return RedirectToPage();
+
         var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         if (IsLockedOut(clientIp))
@@ -62,13 +79,20 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
-            await ownerTable.AddEntityAsync(new OwnerEntity
+            try
             {
-                PartitionKey = "owner",
-                RowKey = username,
-                Name = username,
-                Email = $"{username}@admin"
-            });
+                await ownerTable.AddEntityAsync(new OwnerEntity
+                {
+                    PartitionKey = "owner",
+                    RowKey = username,
+                    Name = username,
+                    Email = $"{username}@admin"
+                });
+            }
+            catch (RequestFailedException addEx) when (addEx.Status == 409)
+            {
+                // Another request already created the owner — no-op
+            }
         }
 
         var claims = new List<Claim>
@@ -100,7 +124,6 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
         if (entry.Count >= MaxFailedAttempts && DateTime.UtcNow - entry.LastAttempt < LockoutDuration)
             return true;
 
-        // Lockout expired — clear the entry
         if (entry.Count >= MaxFailedAttempts)
         {
             _failedAttempts.TryRemove(clientIp, out _);

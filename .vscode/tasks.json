@@ -68,15 +68,15 @@
       "problemMatcher": ["$msCompile"]
     },
     {
-      "label": "docker build: managment",
+      "label": "docker build: admin",
       "command": "docker",
       "type": "shell",
       "args": [
         "build",
         "-t",
-        "azureai-proxy",
+        "azureai-proxy-admin",
         "-f",
-        "${workspaceFolder}/src/Dockerfile.management",
+        "${workspaceFolder}/src/Dockerfile.admin",
         "${workspaceFolder}/src"
       ],
       "problemMatcher": ["$msCompile"]

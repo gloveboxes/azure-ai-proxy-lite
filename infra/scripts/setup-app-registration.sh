@@ -29,21 +29,16 @@ if [ $app_count -eq 0 ]; then
     app_id=$(az ad app create --display-name $AUTH_APP_NAME --sign-in-audience AzureADMyOrg --enable-id-token-issuance true | jq -r '.appId')
 else
     echo "App registration for $AUTH_APP_NAME already exists"
-
     app_id=$(echo $app_registrations | jq -r '.[0].appId')
+
+    # Ensure ID token issuance is enabled
+    az ad app update --id $app_id --enable-id-token-issuance true 2>/dev/null
 fi
+
 tenantId=$(az account show | jq -r '.tenantId')
 
-if [ $ENVIRONMENT == 'development' ]; then
-    echo Update the appsettings.Development.json file with the following values:
-    echo "    \"AzureAd\": {"
-    echo "        \"TenantId\": \"$tenantId\","
-    echo "        \"ClientId\": \"$app_id\""
-    echo "    }"
-fi
+echo "Adding environment variables to azd environment"
+azd env set entraClientId $app_id
+azd env set entraTenantId $tenantId
 
-echo Adding environment variables to azd environment
-azd env set AUTH_TENANT_ID $tenantId
-azd env set AUTH_CLIENT_ID $app_id
-
-echo App Registration complete
+echo "App Registration complete (clientId=$app_id, tenantId=$tenantId)"

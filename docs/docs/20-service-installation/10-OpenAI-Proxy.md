@@ -1,6 +1,6 @@
 # Azure AI Proxy Service
 
-The solution consists of two parts; the proxy service (which includes the admin portal and API) and the attendee registration app.
+The solution consists of three services: the proxy API, the admin management UI, and the attendee registration app.
 
 ## Setup
 
@@ -10,6 +10,7 @@ This repo is set up for deployment on Azure Container Apps using the configurati
 
 1. An Azure subscription
 2. Deployed Azure AI models (OpenAI, Foundry, etc.)
+3. Permission to create Entra ID (Azure AD) app registrations in your tenant
 
 ### Required software
 
@@ -33,10 +34,16 @@ The recommended way to deploy this app is with Dev Containers. Install the [VS C
 
 1. Open the repo in VS Code. You will be prompted to `Reopen in Container`, click the button to do so.
 
-1. In the VS Code dev container, open a terminal and run the following commands to authenticate with Azure:
+1. In the VS Code dev container, open a terminal and authenticate with Azure:
 
     ```shell
     azd auth login --use-device-code
+    ```
+
+    If you have **multiple tenants**, also log in with the correct tenant:
+
+    ```shell
+    az login --tenant <your-tenant-id> --use-device-code
     ```
 
 1. Provision and deploy all the resources:
@@ -52,14 +59,18 @@ The recommended way to deploy this app is with Dev Containers. Install the [VS C
     3. Select a location (like "eastus" or "sweden central"). Recommend deploying the proxy to the same location you plan to deploy your models.
     4. Select the 'swaLocation' infrastructure parameter.
 
+    The deployment automatically creates an Entra ID app registration, provisions all resources, configures OIDC authentication on the admin UI, and deploys all three services.
+
     On completion, the following Azure resources will be provisioned:
 
     ![Azure resources](../media/azure_resources.png)
 
-1. When `azd` has finished deploying you'll see the admin credentials and endpoint URLs displayed in the terminal.
+1. When `azd` has finished deploying you'll see the endpoints and Entra ID app registration details in the terminal.
+
+1. Open the **Admin UI** URL and sign in with your Microsoft account.
 
 1. To make any changes to the app code, just run:
 
     ```shell
-    azd deploy [proxy | registration]
+    azd deploy [proxy | admin | registration]
     ```

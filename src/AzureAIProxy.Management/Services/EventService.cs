@@ -9,7 +9,7 @@ using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class EventService(IAuthService authService, ITableStorageService tableStorage, ICatalogCacheService catalogCache, IEventCacheService eventCache) : IEventService
+public class EventService(IAuthService authService, ITableStorageService tableStorage, ICacheInvalidationService cacheInvalidation) : IEventService
 {
     public async Task<Event?> CreateEventAsync(EventEditorModel model)
     {
@@ -199,7 +199,7 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
         evt.TimeZoneOffset = (int)model.SelectedTimeZone.BaseUtcOffset.TotalMinutes;
 
         await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
-        eventCache.InvalidateAll();
+        await cacheInvalidation.InvalidateAllCachesAsync();
 
         return MapToEvent(evt);
     }
@@ -214,8 +214,7 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
             var evt = response.Value;
             evt.CatalogIds = string.Join(",", modelIds);
             await eventsTable.UpdateEntityAsync(evt, evt.ETag, TableUpdateMode.Replace);
-            catalogCache.InvalidateAll();
-            eventCache.InvalidateAll();
+            await cacheInvalidation.InvalidateAllCachesAsync();
         }
         catch (RequestFailedException ex) when (ex.Status == 404) { }
     }
@@ -243,7 +242,7 @@ public class EventService(IAuthService authService, ITableStorageService tableSt
             try { await oeTable.DeleteEntityAsync(evt.OwnerId, id); }
             catch (RequestFailedException ex) when (ex.Status == 404) { }
 
-            eventCache.InvalidateAll();
+            await cacheInvalidation.InvalidateAllCachesAsync();
         }
         catch (RequestFailedException ex) when (ex.Status == 404) { }
     }

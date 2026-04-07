@@ -7,7 +7,7 @@ param containerName string = 'main'
 param containerRegistryName string
 
 @description('Minimum number of replicas to run')
-@minValue(1)
+@minValue(0)
 param containerMinReplicas int = 1
 @description('Maximum number of replicas to run')
 @minValue(1)
@@ -40,6 +40,12 @@ param containerCpuCoreCount string = '0.5'
 @description('Memory allocated to a single container instance, e.g. 1Gi')
 param containerMemory string = '1.0Gi'
 
+@description('Scale rules for the container app')
+param scaleRules array = []
+
+@description('Cooldown period in seconds before scaling to zero (only effective when minReplicas is 0)')
+param scaleCooldownPeriod int = 300
+
 resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: identityName
 }
@@ -52,7 +58,7 @@ module containerRegistryAccess '../security/registry-access.bicep' = {
   }
 }
 
-resource app 'Microsoft.App/containerapps@2024-03-01' = {
+resource app 'Microsoft.App/containerapps@2025-01-01' = {
   name: name
   location: location
   tags: tags
@@ -114,6 +120,8 @@ resource app 'Microsoft.App/containerapps@2024-03-01' = {
       scale: {
         minReplicas: containerMinReplicas
         maxReplicas: containerMaxReplicas
+        cooldownPeriod: containerMinReplicas == 0 ? scaleCooldownPeriod : null
+        rules: !empty(scaleRules) ? scaleRules : null
       }
     }
   }

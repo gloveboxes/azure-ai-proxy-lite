@@ -14,8 +14,6 @@ param storageConnectionString string
 param encryptionKey string
 @secure()
 param appInsightsConnectionString string
-@secure()
-param adminPassword string
 param registrationUrl string
 param defaultApiVersion string = '2025-01-01-preview'
 param imageName string = ''
@@ -39,7 +37,19 @@ module app '../core/host/container-app-upsert.bicep' = {
     targetPort: 8080
     containerCpuCoreCount: '0.75'
     containerMemory: '1.5Gi'
+    containerMinReplicas: 0
     containerMaxReplicas: 1
+    scaleCooldownPeriod: 43200
+    scaleRules: [
+      {
+        name: 'http-requests'
+        http: {
+          metadata: {
+            concurrentRequests: '10'
+          }
+        }
+      }
+    ]
     secrets: [
       {
         name: 'encryption-key'
@@ -52,14 +62,6 @@ module app '../core/host/container-app-upsert.bicep' = {
       {
         name: 'app-insights-connection-string'
         value: appInsightsConnectionString
-      }
-      {
-        name: 'admin-username'
-        value: 'admin'
-      }
-      {
-        name: 'admin-password'
-        value: adminPassword
       }
     ]
     env: [
@@ -74,14 +76,6 @@ module app '../core/host/container-app-upsert.bicep' = {
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
         secretRef: 'app-insights-connection-string'
-      }
-      {
-        name: 'Admin__Username'
-        secretRef: 'admin-username'
-      }
-      {
-        name: 'Admin__Password'
-        secretRef: 'admin-password'
       }
       {
         name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'

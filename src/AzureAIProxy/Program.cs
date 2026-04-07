@@ -4,11 +4,6 @@ using AzureAIProxy.Middleware;
 using AzureAIProxy.Routes;
 using AzureAIProxy.Services;
 using AzureAIProxy.Shared.Services;
-using AzureAIProxy.Management;
-using AzureAIProxy.Management.Services;
-using AzureAIProxy.Components;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 var useMockProxy = builder.Configuration.GetValue<bool>("UseMockProxy", false);
@@ -23,7 +18,6 @@ if (!string.IsNullOrEmpty(storageConnectionString))
 }
 else
 {
-    // Use Managed Identity in production
     var storageAccountName = builder.Configuration["StorageAccountName"]
         ?? throw new InvalidOperationException("StorageAccountName or StorageAccount connection string must be configured");
     var serviceUri = new Uri($"https://{storageAccountName}.table.core.windows.net");
@@ -38,47 +32,9 @@ var encryptionKey = builder.Configuration["EncryptionKey"]
     ?? throw new InvalidOperationException("EncryptionKey must be configured");
 builder.Services.AddSingleton<IEncryptionService>(new EncryptionService(encryptionKey));
 
-// --- Authentication ---
-// Cookie auth for admin UI + proxy API key auth schemes
+// --- Authentication (API key / JWT / Bearer only) ---
 builder
-    .Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    })
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/account/login";
-        options.LogoutPath = "/account/logout";
-        options.Cookie.Name = "AzureAIProxy.Auth";
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
-        options.SlidingExpiration = true;
-        // Don't redirect API calls — return 401/403 directly
-        options.Events.OnRedirectToLogin = context =>
-        {
-            if (context.Request.Path.StartsWithSegments("/api"))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return Task.CompletedTask;
-            }
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            if (context.Request.Path.StartsWithSegments("/api"))
-            {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                return Task.CompletedTask;
-            }
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
-    })
+    .Services.AddAuthentication()
     .AddScheme<ProxyAuthenticationOptions, ApiKeyAuthenticationHandler>(
         ProxyAuthenticationOptions.ApiKeyScheme,
         _ => { }
@@ -92,20 +48,7 @@ builder
         _ => { }
     );
 
-// Authorization - no global fallback policy (would block Blazor framework files).
-// Admin UI auth is enforced by <AuthorizeRouteView> in Routes.razor.
-// Proxy API routes use their own [ApiKeyAuthorize]/[JwtAuthorize]/[BearerTokenAuthorize] attributes.
 builder.Services.AddAuthorization();
-
-// --- Blazor Server (Admin UI) ---
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-builder.Services.AddRazorPages();
-builder.Services.AddMudServices();
-
-// --- Admin Management Services ---
-builder.Services.AddManagementServices();
 
 // --- Proxy Services ---
 builder.Services.AddMemoryCache();
@@ -123,19 +66,15 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseAntiforgery();
-
-// Proxy-specific middleware - only apply to API routes to avoid interfering with Blazor
+// Proxy middleware for API routes
 app.UseWhen(
     context => context.Request.Path.StartsWithSegments("/api"),
     appBuilder =>
@@ -146,35 +85,31 @@ app.UseWhen(
     }
 );
 
-// Map Razor Pages (login/logout)
-app.MapRazorPages();
-
 // Map Proxy API routes
 app.MapProxyRoutes();
 
-// Backup download endpoint (encrypted with user-supplied passphrase)
-app.MapGet("/api/admin/backup", async (IBackupService backupService, HttpContext context) =>
+// Cache invalidation endpoint (called by admin container via internal FQDN).
+// Protected by shared secret. The endpoint only invalidates in-memory caches,
+// so the worst case for an attacker with the key is a cache reset (not data exposure).
+app.MapPost("/internal/cache/invalidate", (
+    ICatalogCacheService catalogCache,
+    IEventCacheService eventCache,
+    IConfiguration config,
+    HttpContext context) =>
 {
-    if (!context.Request.Headers.TryGetValue("X-Backup-Passphrase", out var passphraseValues)
-        || string.IsNullOrWhiteSpace(passphraseValues.ToString()))
+    var expectedKey = config["EncryptionKey"] ?? config["PostgresEncryptionKey"] ?? "";
+    if (string.IsNullOrEmpty(expectedKey))
+        return Results.StatusCode(503);
+
+    if (!context.Request.Headers.TryGetValue("X-Cache-Key", out var keyValues)
+        || !string.Equals(keyValues.ToString(), expectedKey, StringComparison.Ordinal))
     {
-        return Results.BadRequest(new { error = "X-Backup-Passphrase header is required." });
+        return Results.Unauthorized();
     }
 
-    var passphrase = passphraseValues.ToString();
-    if (passphrase.Length < BackupService.MinPassphraseLength)
-    {
-        return Results.BadRequest(new { error = $"Passphrase must be at least {BackupService.MinPassphraseLength} characters." });
-    }
-
-    var encryptedBytes = await backupService.CreateEncryptedBackupAsync(passphrase);
-    var fileName = $"aiproxy-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.enc";
-    return Results.File(encryptedBytes, "application/octet-stream", fileName);
-}).RequireAuthorization();
-
-// Map Blazor admin UI
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
-    .AddAdditionalAssemblies(typeof(AzureAIProxy.Management.Components.Routes).Assembly);
+    catalogCache.InvalidateAll();
+    eventCache.InvalidateAll();
+    return Results.Ok();
+});
 
 app.Run();

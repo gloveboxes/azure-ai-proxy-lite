@@ -6,6 +6,7 @@ public static class ManagementServiceExtensions
 {
     public static IServiceCollection AddManagementServices(this IServiceCollection services)
     {
+        services.AddHttpClient<ICacheInvalidationService, CacheInvalidationService>();
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IModelService, ModelService>();
