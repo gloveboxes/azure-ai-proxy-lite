@@ -31,29 +31,31 @@
                     }
                 </MudSelect>
 
+                @if (Model.ModelType == ModelType.AI_Toolkit)
+                {
+                    <MudSwitch @bind-Value="Model.UseMaxCompletionTokens" Label="AI Toolkit GPT-5.x compatibility" Color="Color.Primary" />
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled: rewrites max_tokens to max_completion_tokens for GPT-5.x models that require it.</MudText>
+                }
+
                 <MudTextField Label="Endpoint (Stored encrypted)" @bind-Value="Model.EndpointUrl"
                     For="@(() => Model.EndpointUrl)" HelperText="For example https://my-ai-resource.azure.com" Counter="256"
-                    Immediate="true" />
-
-                <MudTextField Label="Key (Stored encrypted)" Counter="128" Immediate="true" @bind-Value="Model.EndpointKey"
-                    For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
-                    Adornment="Adornment.End"
-                    AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                    AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey"
-                    Disabled="@(Model.UseManagedIdentity)" />
-
-                <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
                     Immediate="true" />
 
                 <MudSwitch Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
                     ValueChanged="@((bool v) => OnManagedIdentityChanged(v))" />
                 <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled, uses Azure Managed Identity authentication instead of API key</MudText>
 
-                @if (Model.ModelType == ModelType.AI_Toolkit)
+                @if (!Model.UseManagedIdentity)
                 {
-                    <MudSwitch @bind-Value="Model.UseMaxCompletionTokens" Label="AI Toolkit GPT-5.x compatibility" Color="Color.Primary" />
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled: rewrites max_tokens to max_completion_tokens for GPT-5.x models that require it.</MudText>
+                    <MudTextField Label="Key (Stored encrypted)" Counter="128" Immediate="true" @bind-Value="Model.EndpointKey"
+                        For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
+                        Adornment="Adornment.End"
+                        AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                        AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey" />
                 }
+
+                <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
+                    Immediate="true" />
 
                 <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
             }
