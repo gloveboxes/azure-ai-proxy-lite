@@ -1,5 +1,12 @@
 @namespace AzureAIProxy.Management.Components.ModelManagement
 
+<style>
+    .validation-errors {
+        color: var(--mud-palette-primary);
+        font-weight: 500;
+    }
+</style>
+
 <EditForm OnValidSubmit="@HandleValidSubmit" Model="@Model" @bind-Disabled="isSubmitting" @ref="editForm">
     <ValidationSummary />
     <DataAnnotationsValidator />

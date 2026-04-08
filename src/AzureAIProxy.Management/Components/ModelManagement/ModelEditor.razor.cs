@@ -27,10 +27,16 @@ public partial class ModelEditor : ComponentBase
             Model.UseMaxCompletionTokens = false;
     }
 
-    private void OnManagedIdentityChanged(bool newValue)
+    private async Task OnManagedIdentityChanged(bool newValue)
     {
         if (Model is null) return;
         Model.UseManagedIdentity = newValue;
+        StateHasChanged();
+        await Task.Yield();
+        if (!newValue)
+        {
+            editForm?.EditContext?.NotifyFieldChanged(editForm.EditContext.Field(nameof(Model.EndpointKey)));
+        }
         editForm?.EditContext?.Validate();
     }
 
