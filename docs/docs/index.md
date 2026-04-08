@@ -10,28 +10,28 @@ A managed proxy that sits between workshop attendees and Azure AI services, givi
 
 ```mermaid
 graph TD
-    subgraph Azure Services
+    subgraph Azure_Services[Azure Services]
         A1[Azure OpenAI<br/>Chat / Embeddings]
         A2[Azure AI Foundry Agents<br/>Assistants / Threads]
         A3[Azure AI Search]
         A4[MCP Servers]
     end
 
-    subgraph Azure AI Proxy
-        P1[Auth & API Key]
+    subgraph Azure_AI_Proxy[Azure AI Proxy]
+        P1[Auth]
         P2[Rate Limiter]
         P3[Usage Metrics]
-        P4[Event & Capacity Management]
+        P4[Event Management]
     end
 
-    Admin[Admin Portal] <--> Azure AI Proxy
-    Reg[Registration Portal<br/>Static Web App] <--> Azure AI Proxy
+    Admin[Admin Portal] --- Azure_AI_Proxy
+    Reg[Registration Portal<br/>Static Web App] --- Azure_AI_Proxy
 
-    Azure Services --> Azure AI Proxy
+    Azure_Services --> Azure_AI_Proxy
 
-    Azure AI Proxy --> T1[VS Code AI Toolkit]
-    Azure AI Proxy --> T2[OpenAI SDKs<br/>Python / .NET]
-    Azure AI Proxy --> T3[REST / LangChain / curl]
+    Azure_AI_Proxy --> T1[VS Code AI Toolkit]
+    Azure_AI_Proxy --> T2[OpenAI SDKs<br/>Python / .NET]
+    Azure_AI_Proxy --> T3[REST / LangChain / curl]
 
     T1 --> Attendees
     T2 --> Attendees
