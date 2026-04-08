@@ -4,6 +4,7 @@ using AzureAIProxy.Admin.Components;
 using AzureAIProxy.Management;
 using AzureAIProxy.Management.Services;
 using AzureAIProxy.Shared.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
@@ -130,6 +131,7 @@ else
 }
 
 builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
 
 // --- Blazor Server (Admin UI) ---
 builder.Services.AddRazorComponents()

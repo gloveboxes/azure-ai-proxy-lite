@@ -8,11 +8,23 @@ namespace AzureAIProxy.Management.Services;
 
 public class AuthService(AuthenticationStateProvider authenticationStateProvider, ITableStorageService tableStorage) : IAuthService
 {
+    private static string? ResolveUserId(ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? user.FindFirst("oid")?.Value
+            ?? user.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
+            ?? user.FindFirst("sub")?.Value
+            ?? user.Identity?.Name;
+    }
+
     public async Task<string> GetCurrentUserIdAsync()
     {
         AuthenticationState authState = await authenticationStateProvider.GetAuthenticationStateAsync();
-        string userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? throw new ApplicationException("User ID claim not found");
+        if (authState.User.Identity?.IsAuthenticated != true)
+            throw new UnauthorizedAccessException("User is not authenticated");
+
+        string userId = ResolveUserId(authState.User)
+            ?? throw new UnauthorizedAccessException("User ID claim not found");
         return userId;
     }
 

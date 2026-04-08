@@ -11,11 +11,20 @@ namespace AzureAIProxy.Admin.Middleware;
 /// </summary>
 public class EnsureOwnerMiddleware(RequestDelegate next)
 {
+    private static string? ResolveUserId(ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? user.FindFirst("oid")?.Value
+            ?? user.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
+            ?? user.FindFirst("sub")?.Value
+            ?? user.Identity?.Name;
+    }
+
     public async Task InvokeAsync(HttpContext context, ITableStorageService tableStorage)
     {
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = ResolveUserId(context.User);
             var name = context.User.FindFirst(ClaimTypes.Name)?.Value
                 ?? context.User.FindFirst("name")?.Value
                 ?? userId;
