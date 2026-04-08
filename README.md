@@ -67,8 +67,12 @@ graph LR
 - Attendees never see your real Azure API keys or endpoints
 - Encrypted storage for all sensitive configuration (AES encryption)
 - Managed Identity support (eliminate API key storage entirely with RBAC)
-- Object ownership isolation — attendees can only access their own Foundry Service agents/threads/files
-- Maps Foundry Agent Service Managed Identity to Event API Key
+- This update streamlines how the Foundry Agent Service operates by focusing on security and identity management:
+
+    - **Managed Identity Integration**: Automatically maps Foundry Agent Service Managed Identity requirements to the Event API Key, ensuring seamless authentication.
+
+    - **Object Ownership Isolation**: Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.
+
 
 ### Reporting & Analytics
 
