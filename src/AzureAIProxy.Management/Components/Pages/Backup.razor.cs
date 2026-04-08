@@ -21,6 +21,9 @@ public partial class Backup : ComponentBase
     [Inject]
     public required IJSRuntime JS { get; set; }
 
+    [Inject]
+    public required IAuthService AuthService { get; set; }
+
     private bool isBusy;
     private string currentOperation = "";
 
@@ -61,7 +64,9 @@ public partial class Backup : ComponentBase
         try
         {
             var encryptedBytes = await Task.Run(() => BackupService.CreateEncryptedBackupAsync(passphrase));
-            var fileName = $"aiproxy-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.enc";
+            var (email, _) = await AuthService.GetCurrentUserEmailNameAsync();
+            var sanitizedEmail = email.Replace("@", "_at_").Replace(".", "_");
+            var fileName = $"aiproxy-backup-{sanitizedEmail}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.enc";
 
             // Trigger browser download via JS interop
             using var streamRef = new DotNetStreamReference(new MemoryStream(encryptedBytes));

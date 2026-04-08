@@ -170,7 +170,7 @@ app.UseAntiforgery();
 app.MapRazorPages();
 
 // Backup download endpoint (encrypted with user-supplied passphrase)
-app.MapGet("/api/admin/backup", async (IBackupService backupService, HttpContext context) =>
+app.MapGet("/api/admin/backup", async (IBackupService backupService, IAuthService authService, HttpContext context) =>
 {
     if (!context.Request.Headers.TryGetValue("X-Backup-Passphrase", out var passphraseValues)
         || string.IsNullOrWhiteSpace(passphraseValues.ToString()))
@@ -185,7 +185,9 @@ app.MapGet("/api/admin/backup", async (IBackupService backupService, HttpContext
     }
 
     var encryptedBytes = await backupService.CreateEncryptedBackupAsync(passphrase);
-    var fileName = $"aiproxy-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.enc";
+    var (email, _) = await authService.GetCurrentUserEmailNameAsync();
+    var sanitizedEmail = email.Replace("@", "_at_").Replace(".", "_");
+    var fileName = $"aiproxy-backup-{sanitizedEmail}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.enc";
     return Results.File(encryptedBytes, "application/octet-stream", fileName);
 }).RequireAuthorization();
 
