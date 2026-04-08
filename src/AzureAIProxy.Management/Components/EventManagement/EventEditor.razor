@@ -2,71 +2,113 @@
 
 @namespace AzureAIProxy.Management.Components.EventManagement
 
+<style>
+    .validation-errors {
+        color: var(--mud-palette-primary);
+        font-weight: 500;
+    }
+    .editor-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        background-color: #fafafa;
+    }
+    .editor-section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 4px;
+    }
+</style>
+
 <EditForm OnValidSubmit="@HandleValidSubmit" EditContext="@editContext" Disabled="@isSubmitting">
-    <ValidationSummary />
     <DataAnnotationsValidator />
 
     <MudCard>
-
-        <MudCardActions>
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
-                Color="@(isSubmitting ? Color.Info : Color.Primary)" Class="ml-auto"
-                StartIcon="@Icons.Material.Filled.Save" Disabled="@isSubmitting">@(isSubmitting ? "Saving" : "Save")
-            </MudButton>
-        </MudCardActions>
-
         <MudCardContent>
-            <MudTextField Label="Event Name" @bind-Value="Model.Name" For="@(() => Model.Name)" Counter="64"
-                Immediate="true" AutoFocus="true" />
+                <div class="editor-section">
+                    <div class="editor-section-title">Event Details</div>
 
-            <MudSelect T="string" Label="Event Resources" MultiSelection="true" @bind-SelectedValues="Model.SelectedModels"
-                MultiSelectionTextFunc="@(new Func<IReadOnlyList<string>, string>(Model.SelectedModelsDisplay))"
-                HelperText="Event resources are available to attendees between the event start and end dates">
-                @foreach (var model in Model.AvailableModels)
-                {
-                    <MudSelectItem Value="@model.CatalogId.ToString()">@model.FriendlyName</MudSelectItem>
-                }
-            </MudSelect>
+                    <MudTextField Label="Event Name" @bind-Value="Model.Name" For="@(() => Model.Name)" Counter="64"
+                        Immediate="true" AutoFocus="true" />
 
-            <MudTextField Label="Organiser Name" @bind-Value="Model.OrganizerName" For="@(() => Model.OrganizerName)"
-                Counter="128" Immediate="true" />
+                    <MudTextField Label="Markdown Description" @bind-Value="Model.Description" Sizing="InputSizing.Auto" Lines="4" Counter="8192"
+                        Immediate="true" For="@(() => Model.Description)" />
 
-            <MudTextField Label="Organiser Email" @bind-Value="Model.OrganizerEmail" InputType="InputType.Email"
-                For="@(() => Model.OrganizerEmail)" Counter="128" Immediate="true" />
+                    <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
+                </div>
 
-            <MudTextField Label="Start Date" @bind-Value="Model.Start" InputType="InputType.DateTimeLocal"
-                For="@(() => Model.Start)" Format="s"
-                HelperText="Start date and time event resources will be available. Defaults to today so you can test the event." />
+                <div class="editor-section">
+                    <div class="editor-section-title">Organiser</div>
 
-            <MudTextField Label="End Date" @bind-Value="Model.End" InputType="InputType.DateTimeLocal"
-                For="@(() => Model.End)" Format="s"
-                HelperText="End date and time event resources will be available. Defaults to one week from today" />
+                    <MudTextField Label="Organiser Name" @bind-Value="Model.OrganizerName" For="@(() => Model.OrganizerName)"
+                        Counter="128" Immediate="true" />
 
-            <MudAutocomplete T="TimeZoneInfo" @bind-Value="Model.SelectedTimeZone"
-                HelperText="Time Zone for the event. Attendees will see the event in their local time."
-                Label="Time Zone (Start typing the location)" FullWidth="true" For="@(() => Model.SelectedTimeZone)"
-                SearchFunc="FilterTimezones" MinCharacters="0" MaxItems="50"
-                ToStringFunc="@(tz => tz?.DisplayName ?? string.Empty)"
-                CoerceText="false" CoerceValue="false" />
+                    <MudTextField Label="Organiser Email" @bind-Value="Model.OrganizerEmail" InputType="InputType.Email"
+                        For="@(() => Model.OrganizerEmail)" Counter="128" Immediate="true" />
+                </div>
 
-            <MudNumericField Label="Max Token Cap"
-                HelperText="4096 for 1hr events with > 50 people. Long running hacks 4000. See help."
-                @bind-Value="Model.MaxTokenCap" Min="0" Placeholder="4096" For="@(() => Model.MaxTokenCap)" />
+                <div class="editor-section">
+                    <div class="editor-section-title">Schedule</div>
 
-            <MudNumericField Label="Daily Request Cap"
-                HelperText="~1024 for structured workshops. Long running hacks ~5000" @bind-Value="Model.DailyRequestCap"
-                Min="0" Placeholder="1024" For="@(() => Model.DailyRequestCap)" />
+                    <MudTextField Label="Start Date" @bind-Value="Model.Start" InputType="InputType.DateTimeLocal"
+                        For="@(() => Model.Start)" Format="s"
+                        HelperText="Start date and time event resources will be available. Defaults to today so you can test the event." />
 
-            <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
+                    <MudTextField Label="End Date" @bind-Value="Model.End" InputType="InputType.DateTimeLocal"
+                        For="@(() => Model.End)" Format="s"
+                        HelperText="End date and time event resources will be available. Defaults to one week from today" />
 
-            <MudTextField Label="Markdown Description" @bind-Value="Model.Description" Sizing="InputSizing.Auto" Lines="4" Counter="8192"
-                Immediate="true" For="@(() => Model.Description)" />
+                    <MudAutocomplete T="TimeZoneInfo" @bind-Value="Model.SelectedTimeZone"
+                        HelperText="Time Zone for the event. Attendees will see the event in their local time."
+                        Label="Time Zone (Start typing the location)" FullWidth="true" For="@(() => Model.SelectedTimeZone)"
+                        SearchFunc="FilterTimezones" MinCharacters="0" MaxItems="50"
+                        ToStringFunc="@(tz => tz?.DisplayName ?? string.Empty)"
+                        CoerceText="false" CoerceValue="false" />
+                </div>
 
-            <MudTextField Label="Event Shared Code (Optional)" Counter="64" Immediate="true"
-                HelperText="For users without a GitHub acct. Auth format event-id@shared-code/attendee-email-address"
-                @bind-Value="Model.EventSharedCode" For="@(() => Model.EventSharedCode)" />
+                <div class="editor-section">
+                    <div class="editor-section-title">Resources</div>
 
+                    <MudSelect T="string" Label="Event Resources" MultiSelection="true" @bind-SelectedValues="Model.SelectedModels"
+                        MultiSelectionTextFunc="@(new Func<IReadOnlyList<string>, string>(Model.SelectedModelsDisplay))"
+                        HelperText="Event resources are available to attendees between the event start and end dates">
+                        @foreach (var model in Model.AvailableModels)
+                        {
+                            <MudSelectItem Value="@model.CatalogId.ToString()">@model.FriendlyName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </div>
+
+                <div class="editor-section">
+                    <div class="editor-section-title">Limits</div>
+
+                    <MudNumericField Label="Max Token Cap"
+                        HelperText="4096 for 1hr events with > 50 people. Long running hacks 4000. See help."
+                        @bind-Value="Model.MaxTokenCap" Min="0" Placeholder="4096" For="@(() => Model.MaxTokenCap)" />
+
+                    <MudNumericField Label="Daily Request Cap"
+                        HelperText="~1024 for structured workshops. Long running hacks ~5000" @bind-Value="Model.DailyRequestCap"
+                        Min="0" Placeholder="1024" For="@(() => Model.DailyRequestCap)" />
+                </div>
+
+                <div class="editor-section">
+                    <div class="editor-section-title">Access</div>
+
+                    <MudTextField Label="Event Shared Code (Optional)" Counter="64" Immediate="true"
+                        HelperText="For users without a GitHub acct. Auth format event-id@shared-code/attendee-email-address"
+                        @bind-Value="Model.EventSharedCode" For="@(() => Model.EventSharedCode)" />
+                </div>
+
+                <ValidationSummary />
+
+                <div class="d-flex justify-end mt-2">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                        Color="@(isSubmitting ? Color.Info : Color.Primary)"
+                        StartIcon="@Icons.Material.Filled.Save" Disabled="@isSubmitting">@(isSubmitting ? "Saving" : "Save")
+                    </MudButton>
+                </div>
         </MudCardContent>
-
     </MudCard>
 </EditForm>

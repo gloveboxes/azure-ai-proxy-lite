@@ -5,66 +5,96 @@
         color: var(--mud-palette-primary);
         font-weight: 500;
     }
+    .editor-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        background-color: #fafafa;
+    }
+    .editor-section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 4px;
+    }
 </style>
 
 <EditForm OnValidSubmit="@HandleValidSubmit" Model="@Model" @bind-Disabled="isSubmitting" @ref="editForm">
-    <ValidationSummary />
     <DataAnnotationsValidator />
 
     <MudCard>
-        <MudCardActions>
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
-                Color="@(isSubmitting ? Color.Info : Color.Primary)" Class="ml-auto"
-                StartIcon="@Icons.Material.Filled.Save" Disabled="@isSubmitting">@(isSubmitting ? "Saving" : "Save")
-            </MudButton>
-        </MudCardActions>
-
         <MudCardContent>
             @if (Model != null)
             {
-                <MudTextField Label="Friendly Name" @bind-Value="Model.FriendlyName" For="@(() => Model.FriendlyName)"
-                    HelperText="Normally the same as model deployment or search index name" Counter="64" Immediate="true"
-                    AutoFocus="true" />
+                <div class="editor-section">
+                    <div class="editor-section-title">Identity</div>
 
-                <MudTextField Label="Model Deployment or Search Index Name" @bind-Value="Model.DeploymentName"
-                    For="@(() => Model.DeploymentName)" Counter="64" Immediate="true" />
+                    <MudTextField Label="Friendly Name" @bind-Value="Model.FriendlyName" For="@(() => Model.FriendlyName)"
+                        HelperText="Normally the same as model deployment or search index name" Counter="64" Immediate="true"
+                        AutoFocus="true" />
 
-                <MudSelect Value="Model.ModelType" Label="Type" For="@(() => Model.ModelType)" ValueChanged="@((ModelType? v) => OnModelTypeChanged(v))">
-                @foreach (ModelType modelType in Enum.GetValues(typeof(ModelType)).Cast<ModelType>()
-                    .OrderBy(m => m.ToString().Replace("_", " ")))
+                    <MudTextField Label="Model Deployment or Search Index Name" @bind-Value="Model.DeploymentName"
+                        For="@(() => Model.DeploymentName)" Counter="64" Immediate="true" />
+                </div>
+
+                <div class="editor-section">
+                    <div class="editor-section-title">Type</div>
+
+                    <MudSelect Value="Model.ModelType" Label="Type" For="@(() => Model.ModelType)" ValueChanged="@((ModelType? v) => OnModelTypeChanged(v))">
+                    @foreach (ModelType modelType in Enum.GetValues(typeof(ModelType)).Cast<ModelType>()
+                        .OrderBy(m => m.ToString().Replace("_", " ")))
+                        {
+                            <MudSelectItem Value="@((ModelType?)modelType)">@modelType.ToString().Replace("_", " ")
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @if (Model.ModelType == ModelType.AI_Toolkit)
                     {
-                        <MudSelectItem Value="@((ModelType?)modelType)">@modelType.ToString().Replace("_", " ")
-                        </MudSelectItem>
+                        <MudSwitch @bind-Value="Model.UseMaxCompletionTokens" Label="AI Toolkit GPT-5.x compatibility" Color="Color.Primary" />
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2">When enabled: rewrites max_tokens to max_completion_tokens for GPT-5.x models that require it.</MudText>
                     }
-                </MudSelect>
+                </div>
 
-                @if (Model.ModelType == ModelType.AI_Toolkit)
-                {
-                    <MudSwitch @bind-Value="Model.UseMaxCompletionTokens" Label="AI Toolkit GPT-5.x compatibility" Color="Color.Primary" />
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled: rewrites max_tokens to max_completion_tokens for GPT-5.x models that require it.</MudText>
-                }
+                <div class="editor-section">
+                    <div class="editor-section-title">Connection</div>
 
-                <MudTextField Label="Endpoint (Stored encrypted)" @bind-Value="Model.EndpointUrl"
-                    For="@(() => Model.EndpointUrl)" HelperText="For example https://my-ai-resource.azure.com" Counter="256"
-                    Immediate="true" />
+                    <MudTextField Label="Endpoint (Stored encrypted)" @bind-Value="Model.EndpointUrl"
+                        For="@(() => Model.EndpointUrl)" HelperText="For example https://my-ai-resource.azure.com" Counter="256"
+                        Immediate="true" />
 
-                <MudSwitch Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
-                    ValueChanged="@((bool v) => OnManagedIdentityChanged(v))" />
-                <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled, uses Azure Managed Identity authentication instead of API key</MudText>
+                    <MudSwitch Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
+                        ValueChanged="@((bool v) => OnManagedIdentityChanged(v))" />
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2">When enabled, uses Azure Managed Identity authentication instead of API key</MudText>
 
-                @if (!Model.UseManagedIdentity)
-                {
-                    <MudTextField Label="Key (Stored encrypted)" Counter="128" Immediate="true" @bind-Value="Model.EndpointKey"
-                        For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
-                        Adornment="Adornment.End"
-                        AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                        AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey" />
-                }
+                    @if (!Model.UseManagedIdentity)
+                    {
+                        <MudTextField Label="Key (Stored encrypted)" Counter="128" Immediate="true" @bind-Value="Model.EndpointKey"
+                            For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
+                            Adornment="Adornment.End"
+                            AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                            AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey" />
+                    }
 
-                <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
-                    Immediate="true" />
+                    <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
+                        Immediate="true" />
+                </div>
 
-                <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
+                <div class="editor-section">
+                    <div class="editor-section-title">Settings</div>
+
+                    <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
+                </div>
+
+                <ValidationSummary />
+
+                <div class="d-flex justify-end mt-2">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                        Color="@(isSubmitting ? Color.Info : Color.Primary)"
+                        StartIcon="@Icons.Material.Filled.Save" Disabled="@isSubmitting">@(isSubmitting ? "Saving" : "Save")
+                    </MudButton>
+                </div>
             }
         </MudCardContent>
     </MudCard>
