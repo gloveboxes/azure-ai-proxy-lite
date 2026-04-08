@@ -9,33 +9,39 @@ A managed proxy that sits between workshop attendees and Azure AI services, givi
 ## Architecture
 
 ```mermaid
-graph TD
-    subgraph Azure_Services[Azure Services]
-        A1[Azure OpenAI<br/>Chat / Embeddings]
-        A2[Azure AI Foundry Agents<br/>Assistants / Threads]
-        A3[Azure AI Search]
-        A4[MCP Servers]
-    end
+---
+config:
+  flowchart:
+    wrappingWidth: 120
+---
+graph LR
+    Attendees --> Reg[Registration Portal]
+    Attendees --> T1[VS Code AI Toolkit]
+    Attendees --> T2[Model SDKs]
+    Attendees --> T3[REST/Agent Framework]
+    Attendees --> T4[Foundry Agent Service]
+
+    Organiser[Event Organiser] --> Admin[Admin Portal]
+
+    Reg --> Azure_AI_Proxy
+    T1 --> Azure_AI_Proxy
+    T2 --> Azure_AI_Proxy
+    T3 --> Azure_AI_Proxy
+    T4 --> Azure_AI_Proxy
+    Admin --> Azure_AI_Proxy
 
     subgraph Azure_AI_Proxy[Azure AI Proxy]
+        direction LR
         P1[Auth]
         P2[Rate Limiter]
         P3[Usage Metrics]
         P4[Event Management]
     end
 
-    Admin[Admin Portal] --- Azure_AI_Proxy
-    Reg[Registration Portal<br/>Static Web App] --- Azure_AI_Proxy
-
-    Azure_Services --> Azure_AI_Proxy
-
-    Azure_AI_Proxy --> T1[VS Code AI Toolkit]
-    Azure_AI_Proxy --> T2[OpenAI SDKs<br/>Python / .NET]
-    Azure_AI_Proxy --> T3[REST / LangChain / curl]
-
-    T1 --> Attendees
-    T2 --> Attendees
-    T3 --> Attendees
+    Azure_AI_Proxy --> A1[Foundry Models]
+    Azure_AI_Proxy --> A2[Foundry Service Agents]
+    Azure_AI_Proxy --> A3[Azure AI Search]
+    Azure_AI_Proxy --> A4[MCP Servers]
 ```
 
 ### Broad AI Service Support

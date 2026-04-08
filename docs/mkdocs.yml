@@ -17,7 +17,8 @@ nav:
 
 plugins:
   - glightbox
-  - mermaid2
+  - mermaid2:
+      version: 11.4.1
 
 theme:
   name: material
