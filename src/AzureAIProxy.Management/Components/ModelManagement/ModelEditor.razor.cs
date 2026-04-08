@@ -17,6 +17,10 @@ public partial class ModelEditor : ComponentBase
 
     private bool maskKey = true;
 
+    private string EndpointHelperText => Model?.ModelType == ModelType.AI_Toolkit
+        ? "For AI Toolkit, the Foundry model endpoint should include the api-version parameter"
+        : "For example https://my-ai-resource.azure.com";
+
     private void ToggleMaskKey() => maskKey = !maskKey;
 
     private void OnModelTypeChanged(ModelType? newValue)

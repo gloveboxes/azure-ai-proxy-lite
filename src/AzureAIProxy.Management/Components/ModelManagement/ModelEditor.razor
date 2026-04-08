@@ -61,7 +61,7 @@
                     <div class="editor-section-title">Connection</div>
 
                     <MudTextField Label="Endpoint (Stored encrypted)" @bind-Value="Model.EndpointUrl"
-                        For="@(() => Model.EndpointUrl)" HelperText="For example https://my-ai-resource.azure.com" Counter="256"
+                        For="@(() => Model.EndpointUrl)" HelperText="@EndpointHelperText" Counter="256"
                         Immediate="true" />
 
                     <MudSwitch Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
