@@ -50,12 +50,12 @@
                 CoerceText="false" CoerceValue="false" />
 
             <MudNumericField Label="Max Token Cap"
-                HelperText="512 for 1hr events with > 50 people. Long running hacks 4000. See help."
-                @bind-Value="Model.MaxTokenCap" Min="0" Placeholder="512" For="@(() => Model.MaxTokenCap)" />
+                HelperText="4096 for 1hr events with > 50 people. Long running hacks 4000. See help."
+                @bind-Value="Model.MaxTokenCap" Min="0" Placeholder="4096" For="@(() => Model.MaxTokenCap)" />
 
             <MudNumericField Label="Daily Request Cap"
-                HelperText="~256 for structured workshops. Long running hacks ~5000" @bind-Value="Model.DailyRequestCap"
-                Min="0" Placeholder="256" For="@(() => Model.DailyRequestCap)" />
+                HelperText="~1024 for structured workshops. Long running hacks ~5000" @bind-Value="Model.DailyRequestCap"
+                Min="0" Placeholder="1024" For="@(() => Model.DailyRequestCap)" />
 
             <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
 

@@ -32,11 +32,11 @@ public class EventEditorModel
 
     [Required(ErrorMessage = "Specify the maximum number of tokens allowed per request")]
     [Range(1, 100000, ErrorMessage = "Value for MaxTokenCap must be between 1 and 100000")]
-    public int MaxTokenCap { get; set; } = 512;
+    public int MaxTokenCap { get; set; } = 4096;
 
     [Required(ErrorMessage = "Specify the maximum number of requests allowed per day per token")]
     [Range(1, 100000, ErrorMessage = "Value for the maximum number of requests must be between 1 and 100000.")]
-    public int DailyRequestCap { get; set; } = 256;
+    public int DailyRequestCap { get; set; } = 1024;
 
     public bool Active { get; set; }
 
