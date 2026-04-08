@@ -19,6 +19,17 @@ plugins:
   - glightbox
   - mermaid2:
       version: 11.4.1
+      arguments:
+        theme: base
+        themeVariables:
+          primaryColor: "#e7f1fa"
+          primaryBorderColor: "#2b6cb0"
+          primaryTextColor: "#1a202c"
+          lineColor: "#2b6cb0"
+          secondaryColor: "#f7fafc"
+          tertiaryColor: "#edf2f7"
+          clusterBorder: "#2b6cb0"
+          clusterBkg: "#f7fafc"
 
 theme:
   name: material
@@ -60,7 +71,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
+          format: !!python/name:mermaid2.fence_mermaid
   - pymdownx.tasklist:
       custom_checkbox: true
   - attr_list

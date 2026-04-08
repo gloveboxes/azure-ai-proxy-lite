@@ -9,11 +9,6 @@ A managed proxy that sits between workshop attendees and Azure AI services, givi
 ## Architecture
 
 ```mermaid
----
-config:
-  flowchart:
-    wrappingWidth: 120
----
 graph LR
     Attendees --> Reg[Registration Portal]
     Attendees --> T1[VS Code AI Toolkit]
