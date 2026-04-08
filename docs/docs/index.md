@@ -1,6 +1,6 @@
 # Azure AI Proxy
 
-![](media/openai_proxy_banner.jpeg)
+<!-- ![](media/openai_proxy_banner.jpeg) -->
 
 ## Introduction to the Azure AI Proxy
 
