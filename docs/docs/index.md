@@ -14,7 +14,7 @@ graph LR
     Attendees --> T1[VS Code AI Toolkit]
     Attendees --> T2[Microsoft Agent Framework]
     Attendees --> T3[Foundry Agent Service]
-    Attendees --> T4[OpenAI SDKs, LangGraph, REST...]
+    Attendees --> T4[OpenAI SDKs, LangGraph, REST, Others...]
 
     Organiser[Event Organiser] --> Admin[Admin Portal]
 
