@@ -13,9 +13,9 @@ The solution documentation is published [here](https://gloveboxes.github.io/azur
 graph LR
     Attendees --> Reg[Registration Portal]
     Attendees --> T1[VS Code AI Toolkit]
-    Attendees --> T2[Model SDKs]
-    Attendees --> T3[Microsoft Agent Framework]
-    Attendees --> T4[Foundry Agent Service]
+    Attendees --> T2[Microsoft Agent Framework]
+    Attendees --> T3[Foundry Agent Service]
+    Attendees --> T4[Model SDKs]
     Attendees --> T5[LangGraph, REST...]
 
     Organiser[Event Organiser] --> Admin[Admin Portal]
@@ -37,7 +37,7 @@ graph LR
     end
 
     Azure_AI_Proxy --> A1[Foundry Models]
-    Azure_AI_Proxy --> A2[Foundry Service Agents]
+    Azure_AI_Proxy --> A2[Foundry Agent Service]
     Azure_AI_Proxy --> A3[Azure AI Search]
     Azure_AI_Proxy --> A4[MCP Servers]
 ```
