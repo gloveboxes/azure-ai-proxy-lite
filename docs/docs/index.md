@@ -15,7 +15,7 @@ graph LR
     Attendees --> T2[Model SDKs]
     Attendees --> T3[Microsoft Agent Framework]
     Attendees --> T4[Foundry Agent Service]
-    Attendees --> T5[REST]
+    Attendees --> T5[LangGraph, REST...]
 
     Organiser[Event Organiser] --> Admin[Admin Portal]
 
