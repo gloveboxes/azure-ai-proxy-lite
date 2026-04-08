@@ -47,21 +47,24 @@ The recommended way to deploy this app is with Dev Containers. Install the [VS C
 
 3. Open the repo in VS Code.
 4. You will be prompted to `Reopen in Container`, click the button to do so. This will build the container and open the repo in a container.
-5. In the VS Code dev container, open a terminal and log in to Azure:
+5. In the VS Code dev container, open a terminal and set your Azure tenant and subscription IDs once:
 
     ```shell
-    azd auth login --tenant-id <your-tenant-id> --use-device-code
-    azd config set defaults.subscription <your-subscription-id>
+    export AZURE_TENANT_ID=<your-tenant-id>
+    export AZURE_SUBSCRIPTION_ID=<your-subscription-id>
     ```
 
-    The deployment hooks use the Azure CLI (`az`) to create the Entra ID app registration, so you must also log in with `az`:
+6. Log in to both `azd` and the Azure CLI (`az`). Both are required because `azd` deploys the infrastructure while the deployment hooks use `az` to create the Entra ID app registration:
 
     ```shell
-    az login --tenant <your-tenant-id> --use-device-code
-    az account set --subscription <your-subscription-id>
+    azd auth login --tenant-id "$AZURE_TENANT_ID" --use-device-code
+    azd config set defaults.subscription "$AZURE_SUBSCRIPTION_ID"
+
+    az login --tenant "$AZURE_TENANT_ID" --use-device-code
+    az account set --subscription "$AZURE_SUBSCRIPTION_ID"
     ```
 
-6. Provision and deploy the proxy solution:
+7. Provision and deploy the proxy solution:
 
     ```shell
     azd up
@@ -88,7 +91,7 @@ The recommended way to deploy this app is with Dev Containers. Install the [VS C
 
     ![Azure resources](media/azure_resources.png)
 
-7. When `azd` has finished deploying you'll see the endpoints and Entra app registration details in the terminal.
+8. When `azd` has finished deploying you'll see the endpoints and Entra app registration details in the terminal.
 
 ## Authenticating with the AI Proxy Admin
 
