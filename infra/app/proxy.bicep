@@ -39,7 +39,7 @@ module app '../core/host/container-app-upsert.bicep' = {
     containerMemory: '1.5Gi'
     containerMinReplicas: 0
     containerMaxReplicas: 1
-    scaleCooldownPeriod: 43200
+    scaleCooldownPeriod: 172800
     scaleRules: [
       {
         name: 'http-requests'

@@ -7,6 +7,12 @@ param name string
 
 @minLength(1)
 @description('Primary location for all resources')
+@metadata({
+  azd: {
+    type: 'location'
+    title: 'Primary resource location'
+  }
+})
 param location string
 
 param proxyAppExists bool = false
@@ -24,6 +30,7 @@ param entraTenantId string = ''
 @metadata({
   azd: {
     type: 'location'
+    title: 'Static Web App (registration) location'
   }
 })
 param swaLocation string
@@ -32,6 +39,7 @@ param swaLocation string
 @metadata({
   azd: {
     type: 'location'
+    title: 'AI Foundry project location'
   }
 })
 param foundryLocation string
