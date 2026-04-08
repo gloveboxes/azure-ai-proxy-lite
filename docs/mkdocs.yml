@@ -21,6 +21,8 @@ plugins:
       version: 11.4.1
       arguments:
         theme: base
+        flowchart:
+          wrappingWidth: 120
         themeVariables:
           primaryColor: "#e7f1fa"
           primaryBorderColor: "#2b6cb0"
