@@ -14,7 +14,7 @@ namespace AzureAIProxy.Services;
 /// <summary>
 /// Provides methods for sending HTTP requests (GET, POST, DELETE) to specified URLs with support for various content types and query parameters.
 /// </summary>
-public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService metricService, ILogger<ProxyService> logger, IConfiguration configuration)
+public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService metricService, ILogger<ProxyService> logger)
     : IProxyService
 {
     private const int HttpTimeoutSeconds = 60;

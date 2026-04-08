@@ -168,7 +168,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
             var newCatalogId = Guid.NewGuid().ToString();
             catalogIdMap[resource.CatalogId] = newCatalogId;
 
-            await catalogTable.AddEntityAsync(new CatalogEntity
+            await catalogTable.UpsertEntityAsync(new CatalogEntity
             {
                 PartitionKey = newCatalogId,
                 RowKey = newCatalogId,
@@ -209,7 +209,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 remappedCatalogIds = string.Join(",", newIds);
             }
 
-            await eventsTable.AddEntityAsync(new EventEntity
+            await eventsTable.UpsertEntityAsync(new EventEntity
             {
                 PartitionKey = newEventId,
                 RowKey = newEventId,
@@ -229,7 +229,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 CatalogIds = remappedCatalogIds
             });
 
-            await ownerEventsTable.AddEntityAsync(new OwnerEventEntity
+            await ownerEventsTable.UpsertEntityAsync(new OwnerEventEntity
             {
                 PartitionKey = currentUserId,
                 RowKey = newEventId,
@@ -243,7 +243,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
         {
             var newEventId = eventIdMap.TryGetValue(metric.EventId, out var mapped) ? mapped : metric.EventId;
 
-            await metricTable.AddEntityAsync(new MetricEntity
+            await metricTable.UpsertEntityAsync(new MetricEntity
             {
                 PartitionKey = newEventId,
                 RowKey = $"{metric.Resource}|{metric.DateStamp}",
@@ -263,7 +263,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
         {
             var newEventId = eventIdMap.TryGetValue(attendee.EventId, out var mapped) ? mapped : attendee.EventId;
 
-            await attendeeTable.AddEntityAsync(new AttendeeEntity
+            await attendeeTable.UpsertEntityAsync(new AttendeeEntity
             {
                 PartitionKey = newEventId,
                 RowKey = attendee.UserId,
@@ -271,7 +271,7 @@ public class BackupService(ITableStorageService tableStorage, IEncryptionService
                 Active = attendee.Active
             });
 
-            await lookupTable.AddEntityAsync(new AttendeeLookupEntity
+            await lookupTable.UpsertEntityAsync(new AttendeeLookupEntity
             {
                 PartitionKey = AttendeeLookupEntity.GetPartitionKey(attendee.ApiKey),
                 RowKey = attendee.ApiKey,
