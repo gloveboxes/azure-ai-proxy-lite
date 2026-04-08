@@ -13,7 +13,7 @@ graph LR
     Attendees --> Reg[Registration Portal]
     Attendees --> T1[VS Code AI Toolkit]
     Attendees --> T2[Model SDKs]
-    Attendees --> T3[REST/Agent Framework]
+    Attendees --> T3[Agent Framework/REST]
     Attendees --> T4[Foundry Agent Service]
 
     Organiser[Event Organiser] --> Admin[Admin Portal]
