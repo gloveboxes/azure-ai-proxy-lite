@@ -13,8 +13,9 @@ graph LR
     Attendees --> Reg[Registration Portal]
     Attendees --> T1[VS Code AI Toolkit]
     Attendees --> T2[Model SDKs]
-    Attendees --> T3[Agent Framework/REST]
+    Attendees --> T3[Microsoft Agent Framework]
     Attendees --> T4[Foundry Agent Service]
+    Attendees --> T5[REST]
 
     Organiser[Event Organiser] --> Admin[Admin Portal]
 
@@ -23,6 +24,7 @@ graph LR
     T2 --> Azure_AI_Proxy
     T3 --> Azure_AI_Proxy
     T4 --> Azure_AI_Proxy
+    T5 --> Azure_AI_Proxy
     Admin --> Azure_AI_Proxy
 
     subgraph Azure_AI_Proxy[Azure AI Proxy]
