@@ -53,7 +53,7 @@ graph LR
 - Time-bound events with start/end windows — API keys only work during your workshop
 - Self-service attendee registration via GitHub OAuth or shared codes (great for in-person sessions where not everyone has GitHub)
 - Per-event resource assignment — choose exactly which models each event can access
-- Full admin portal for creating events, managing resources, viewing metrics, backup and restore
+- Full admin portal for creating events, managing resources, viewing metrics, and backup and restore
 
 ### Capacity Controls
 
