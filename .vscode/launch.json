@@ -12,12 +12,14 @@
       "name": "AzureAIProxy",
       "type": "dotnet",
       "request": "launch",
+      "preLaunchTask": "build",
       "projectPath": "${workspaceFolder}/src/AzureAIProxy/AzureAIProxy.csproj"
     },
     {
       "name": "AzureAIProxy.Admin",
       "type": "dotnet",
       "request": "launch",
+      "preLaunchTask": "build",
       "projectPath": "${workspaceFolder}/src/AzureAIProxy.Admin/AzureAIProxy.Admin.csproj"
     }
   ],
