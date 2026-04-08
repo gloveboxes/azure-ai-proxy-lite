@@ -48,12 +48,12 @@
 
   "portsAttributes": {
     "8000": {
-      "label": "AzureAIProxy",
-      "onAutoForward": "silent"
-    },
-    "8001": {
       "label": "Admin",
       "onAutoForward": "notify"
+    },
+    "8001": {
+      "label": "AzureAIProxy",
+      "onAutoForward": "silent"
     },
     "5173": {
       "label": "Registration (internal)",
