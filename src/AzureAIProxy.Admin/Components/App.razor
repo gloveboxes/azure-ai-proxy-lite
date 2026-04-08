@@ -20,7 +20,13 @@
     <MudPopoverProvider @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <script src="_framework/blazor.web.js"></script>
 	<script src="_content/MudBlazor/MudBlazor.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script>
+        mermaid.initialize({ startOnLoad: false });
+        window.renderMermaid = function () {
+            return mermaid.run({ querySelector: '.mermaid' });
+        };
+
         async function downloadFileFromStream(fileName, streamRef) {
             const blob = new Blob([await streamRef.arrayBuffer()]);
             const url = URL.createObjectURL(blob);

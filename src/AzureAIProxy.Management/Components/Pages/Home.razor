@@ -1,4 +1,5 @@
 ﻿@page "/"
+@inject IJSRuntime JS
 
 <PageTitle>AI Proxy Admin</PageTitle>
 
@@ -31,10 +32,130 @@
         <MudListItem T="string" Icon="@Icons.Material.Outlined.People"><strong>Step 4:</strong> Promote the event attendee link.</MudListItem>
     </MudList>
 
+    <MudStack Class="home-content">
+    <MudText Typo="Typo.h4">Introduction to the Azure AI Proxy</MudText>
+    <MudText Typo="Typo.body1">A managed, multi-tenant proxy that sits between workshop attendees and Azure AI services, giving organisers full control over access, capacity, and usage tracking. Run multiple workshops simultaneously with full data isolation between events.</MudText>
+
+    <MudText Typo="Typo.h5">Architecture</MudText>
+    <MudPaper Elevation="1" Class="pa-4" Style="overflow-x: auto;">
+        <pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4a90d9', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#2c5f9e', 'lineColor': '#4a90d9', 'secondaryColor': '#a8c8e8', 'tertiaryColor': '#dce9f5'}}}%%
+graph LR
+    Attendees --> Reg[Registration Portal]
+    Attendees --> T1[VS Code AI Toolkit]
+    Attendees --> T2[Microsoft Agent Framework]
+    Attendees --> T3[Foundry Agent Service]
+    Attendees --> T4[OpenAI SDKs, LangGraph, REST, Others...]
+
+    Organiser[Event Organiser] --> Admin[Admin Portal]
+
+    Reg --> Azure_AI_Proxy
+    T1 --> Azure_AI_Proxy
+    T2 --> Azure_AI_Proxy
+    T3 --> Azure_AI_Proxy
+    T4 --> Azure_AI_Proxy
+    Admin --> Azure_AI_Proxy
+
+    subgraph Azure_AI_Proxy[Azure AI Proxy]
+        direction LR
+        P1[Auth]
+        P2[Rate Limiter]
+        P3[Usage Metrics]
+        P4[Event Management]
+    end
+
+    Azure_AI_Proxy --> A1[Foundry Models]
+    Azure_AI_Proxy --> A2[Foundry Agent Service]
+    Azure_AI_Proxy --> A3[Azure AI Search]
+    Azure_AI_Proxy --> A4[MCP Servers]
+        </pre>
+    </MudPaper>
+
+    <MudText Typo="Typo.h5">Broad AI Service Support</MudText>
+    <ul>
+        <li>VS Code AI Toolkit integration for hands-on model experimentation</li>
+        <li>Azure OpenAI chat completions &amp; embeddings (including streaming)</li>
+        <li>Azure AI Foundry Service Agents (assistants, threads, files, conversations, responses)</li>
+        <li>Azure AI Search pass-through for RAG scenarios</li>
+        <li>MCP Server endpoints with streamable HTTP transport</li>
+    </ul>
+
+    <MudText Typo="Typo.h5">Event &amp; Attendee Management</MudText>
+    <ul>
+        <li>Time-bound events with start/end windows — API keys only work during your workshop</li>
+        <li>Self-service attendee registration via GitHub OAuth or shared codes (great for in-person sessions where not everyone has GitHub)</li>
+        <li>Per-event resource assignment — choose exactly which models each event can access</li>
+        <li>Full admin portal for creating events, managing resources, viewing metrics, and backup and restore</li>
+    </ul>
+
+    <MudText Typo="Typo.h5">Capacity Controls</MudText>
+    <ul>
+        <li>Daily request cap per attendee — prevents any one person from consuming all capacity</li>
+        <li>Max token cap per request — stops runaway token usage</li>
+    </ul>
+
+    <MudText Typo="Typo.h5">Security</MudText>
+    <ul>
+        <li>Attendees never see your real Azure API keys or endpoints</li>
+        <li>Encrypted storage for all sensitive configuration (AES encryption)</li>
+        <li>Managed Identity support (eliminate API key storage entirely with RBAC)</li>
+        <li><strong>Managed Identity Integration:</strong> Automatically maps Foundry Agent Service Managed Identity requirements to the Event API Key, ensuring seamless authentication.</li>
+        <li><strong>Object Ownership Isolation:</strong> Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.</li>
+    </ul>
+
+    <MudText Typo="Typo.h5">Reporting &amp; Analytics</MudText>
+    <ul>
+        <li>Per-event usage dashboards: request counts, token usage, active registrations over time</li>
+        <li>Per-model breakdown of prompt/completion tokens</li>
+        <li>Exportable backup of all configuration data</li>
+    </ul>
+
+    <MudText Typo="Typo.h5">Deployment</MudText>
+    <ul>
+        <li>One-command deploy with <code>azd up</code> (Container Apps + Static Web App + Table Storage)</li>
+        <li>Docker Compose for local development</li>
+        <li>Multi-tenant — run multiple workshops simultaneously with full data isolation</li>
+    </ul>
+
+    <MudText Typo="Typo.h5">Developer Experience</MudText>
+    <ul>
+        <li>Drop-in compatible with Azure OpenAI SDKs (Python, .NET, LangChain, REST)</li>
+        <li>Attendees just swap their endpoint URL and use their issued API key</li>
+        <li>Registration page shows available models and copy-paste configuration</li>
+    </ul>
+    </MudStack>
+
     <MudText Typo="Typo.h5">Getting started guide</MudText>
     <MudText Typo="Typo.body1">Check out this 5-minute introduction video.</MudText>
-    <MudPaper Elevation="1" Class="pa-4" Width="560px" Height="315px">
-        <iframe src="https://www.youtube.com/embed/x9N1qivjlfw?si=n18L8F5X5p5YXHYu" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    <MudPaper Elevation="1" Class="pa-4" Style="max-width: 560px; aspect-ratio: 16/9;">
+        <iframe src="https://www.youtube.com/embed/x9N1qivjlfw?si=n18L8F5X5p5YXHYu" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="width: 100%; height: 100%; border: none;"></iframe>
     </MudPaper>
 
 </MudStack>
+
+<style>
+    .home-content {
+        max-width: 100%;
+    }
+
+    .home-content ul {
+        margin: 0;
+        padding-left: 1.2em;
+    }
+
+    @@media (min-width: 960px) {
+        .home-content {
+            max-width: 75%;
+        }
+    }
+</style>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("renderMermaid");
+        }
+    }
+}
