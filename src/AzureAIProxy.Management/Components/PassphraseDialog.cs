@@ -18,7 +18,6 @@ public partial class PassphraseDialog
     private string passphraseIcon = Icons.Material.Filled.VisibilityOff;
     private Dictionary<string, object> PassphraseAttributes => new()
     {
-        ["autocomplete"] = "new-password",
         ["name"] = "backup-passphrase",
         ["autocorrect"] = "off",
         ["autocapitalize"] = "off",

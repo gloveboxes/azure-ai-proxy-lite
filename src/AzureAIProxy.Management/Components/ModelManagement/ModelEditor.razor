@@ -1,6 +1,6 @@
 @namespace AzureAIProxy.Management.Components.ModelManagement
 
-<EditForm OnValidSubmit="@HandleValidSubmit" Model="@Model" @bind-Disabled="isSubmitting" autocomplete="off">
+<EditForm OnValidSubmit="@HandleValidSubmit" Model="@Model" @bind-Disabled="isSubmitting">
     <ValidationSummary />
     <DataAnnotationsValidator />
 
@@ -33,14 +33,13 @@
 
                 <MudTextField Label="Endpoint (Stored encrypted)" @bind-Value="Model.EndpointUrl"
                     For="@(() => Model.EndpointUrl)" HelperText="For example https://my-ai-resource.azure.com" Counter="256"
-                    Immediate="true" UserAttributes="@(new Dictionary<string, object>{ {"autocomplete", "off"}, {"name", "resource-endpoint"} })" />
+                    Immediate="true" />
 
                 <MudTextField Label="Key (Stored encrypted)" Counter="128" Immediate="true" @bind-Value="Model.EndpointKey"
                     For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
                     Adornment="Adornment.End"
                     AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                    AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey"
-                    UserAttributes="@(new Dictionary<string, object>{ {"autocomplete", "off"}, {"name", "resource-key"}, {"autocorrect", "off"}, {"autocapitalize", "off"}, {"spellcheck", "false"} })" />
+                    AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey" />
 
                 <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
                     Immediate="true" />

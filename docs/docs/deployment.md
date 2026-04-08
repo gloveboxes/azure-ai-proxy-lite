@@ -200,4 +200,4 @@ For the full local deployment reference (managing the stack, building custom ima
 
 ## Troubleshooting
 
-If you encounter any issues deploying the solution, please raise an issue on the [GitHub repo](https://gloveboxes.github.io/azure-ai-proxy-lite//issues)
+If you encounter any issues deploying the solution, please raise an issue on the [GitHub repo](https://gloveboxes.github.io/azure-ai-proxy-lite/issues)
