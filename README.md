@@ -24,7 +24,6 @@ graph LR
     T2 --> Azure_AI_Proxy
     T3 --> Azure_AI_Proxy
     T4 --> Azure_AI_Proxy
-    T5 --> Azure_AI_Proxy
     Admin --> Azure_AI_Proxy
 
     subgraph Azure_AI_Proxy[Azure AI Proxy]
