@@ -3,8 +3,14 @@ name: Build and test (.NET)
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
   pull_request:
     branches: ["main", "feature/*"]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
 
 env:
   DOTNET_VERSION: 8.0.x
