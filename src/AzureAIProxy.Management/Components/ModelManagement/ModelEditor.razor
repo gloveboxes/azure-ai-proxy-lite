@@ -30,25 +30,43 @@
                 <div class="editor-section">
                     <div class="editor-section-title">Identity</div>
 
-                    <MudTextField Label="Friendly Name" @bind-Value="Model.FriendlyName" For="@(() => Model.FriendlyName)"
-                        HelperText="Normally the same as model deployment or search index name" Counter="64" Immediate="true"
-                        AutoFocus="true" />
+                    <div class="d-flex align-center gap-2">
+                        <MudTextField Label="Friendly Name" @bind-Value="Model.FriendlyName" For="@(() => Model.FriendlyName)"
+                            HelperText="Normally the same as model deployment or search index name" Counter="64" Immediate="true"
+                            AutoFocus="true" FullWidth="true" />
+                        <MudTooltip Text="This name is for admin purposes only. Attendees will not see this name." Placement="Placement.Top" Arrow="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                Size="Size.Small" Class="tooltip-help-btn" />
+                        </MudTooltip>
+                    </div>
 
-                    <MudTextField Label="Model Deployment or Search Index Name" @bind-Value="Model.DeploymentName"
-                        For="@(() => Model.DeploymentName)" Counter="64" Immediate="true" />
+                    <div class="d-flex align-center gap-2">
+                        <MudTextField Label="Model Deployment or Search Index Name" @bind-Value="Model.DeploymentName"
+                            For="@(() => Model.DeploymentName)" Counter="64" Immediate="true" FullWidth="true" />
+                        <MudTooltip Text="Must match the deployment name in the Foundry. Attendees will see this name." Placement="Placement.Top" Arrow="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                Size="Size.Small" Class="tooltip-help-btn" />
+                        </MudTooltip>
+                    </div>
                 </div>
 
                 <div class="editor-section">
                     <div class="editor-section-title">Type</div>
 
-                    <MudSelect Value="Model.ModelType" Label="Type" For="@(() => Model.ModelType)" ValueChanged="@((ModelType? v) => OnModelTypeChanged(v))">
-                    @foreach (ModelType modelType in Enum.GetValues(typeof(ModelType)).Cast<ModelType>()
-                        .OrderBy(m => m.ToString().Replace("_", " ")))
-                        {
-                            <MudSelectItem Value="@((ModelType?)modelType)">@modelType.ToString().Replace("_", " ")
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
+                    <div class="d-flex align-center gap-2">
+                        <MudSelect Value="Model.ModelType" Label="Type" For="@(() => Model.ModelType)" ValueChanged="@((ModelType? v) => OnModelTypeChanged(v))" FullWidth="true">
+                        @foreach (ModelType modelType in Enum.GetValues(typeof(ModelType)).Cast<ModelType>()
+                            .OrderBy(m => m.ToString().Replace("_", " ")))
+                            {
+                                <MudSelectItem Value="@((ModelType?)modelType)">@modelType.ToString().Replace("_", " ")
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudTooltip Text="Controls how the proxy routes the request and how the model is categorised on the attendee registration page." Placement="Placement.Top" Arrow="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                Size="Size.Small" Class="tooltip-help-btn" />
+                        </MudTooltip>
+                    </div>
 
                     @if (Model.ModelType == ModelType.AI_Toolkit)
                     {
@@ -60,31 +78,61 @@
                 <div class="editor-section">
                     <div class="editor-section-title">Connection</div>
 
-                    <MudTextField Label="Endpoint (Stored encrypted)" @bind-Value="Model.EndpointUrl"
-                        For="@(() => Model.EndpointUrl)" HelperText="@EndpointHelperText" Counter="256"
-                        Immediate="true" />
+                    <div class="d-flex align-center gap-2">
+                        <MudTextField Label="Endpoint (Stored encrypted)" @bind-Value="Model.EndpointUrl"
+                            For="@(() => Model.EndpointUrl)" HelperText="@EndpointHelperText" Counter="256"
+                            Immediate="true" FullWidth="true" />
+                        <MudTooltip Text="@EndpointTooltipText" Placement="Placement.Top" Arrow="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                Size="Size.Small" Class="tooltip-help-btn" />
+                        </MudTooltip>
+                    </div>
 
-                    <MudSwitch Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
-                        ValueChanged="@((bool v) => OnManagedIdentityChanged(v))" />
+                    <div class="d-flex align-center gap-2">
+                        <MudSwitch Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
+                            ValueChanged="@((bool v) => OnManagedIdentityChanged(v))" />
+                        <MudTooltip Text="Enable to use Managed Identity for an upstream model deployed in the Foundry. The Foundry deployment must have a trust relationship with the proxy container. See the docs for enabling." Placement="Placement.Top" Arrow="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                Size="Size.Small" Class="tooltip-help-btn" />
+                        </MudTooltip>
+                    </div>
                     <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2">When enabled, uses Azure Managed Identity authentication instead of API key</MudText>
 
                     @if (!Model.UseManagedIdentity)
                     {
-                        <MudTextField Label="Key (Stored encrypted)" Counter="128" Immediate="true" @bind-Value="Model.EndpointKey"
-                            For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
-                            Adornment="Adornment.End"
-                            AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                            AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey" />
+                        <div class="d-flex align-center gap-2">
+                            <MudTextField Label="Key (Stored encrypted)" Counter="128" Immediate="true" @bind-Value="Model.EndpointKey"
+                                For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
+                                Adornment="Adornment.End"
+                                AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey" FullWidth="true" />
+                            <MudTooltip Text="If not using Managed Identity, the key can be found in the Foundry for the model deployment." Placement="Placement.Top" Arrow="true">
+                                <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                    Size="Size.Small" Class="tooltip-help-btn" />
+                            </MudTooltip>
+                        </div>
                     }
 
-                    <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
-                        Immediate="true" />
+                    <div class="d-flex align-center gap-2">
+                        <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
+                            Immediate="true" FullWidth="true" />
+                        <MudTooltip Text="The region field is for admin documentation purposes only." Placement="Placement.Top" Arrow="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                Size="Size.Small" Class="tooltip-help-btn" />
+                        </MudTooltip>
+                    </div>
                 </div>
 
                 <div class="editor-section">
                     <div class="editor-section-title">Settings</div>
 
-                    <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
+                    <div class="d-flex align-center gap-2">
+                        <MudSwitch @bind-Value="Model.Active" Label="Active" Color="Color.Primary" />
+                        <MudTooltip Text="Must be enabled to allow the model to be used in an event. Also a quick way to disable a model for an event if it's being abused." Placement="Placement.Top" Arrow="true">
+                            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary"
+                                Size="Size.Small" Class="tooltip-help-btn" />
+                        </MudTooltip>
+                    </div>
                 </div>
 
                 <ValidationSummary />

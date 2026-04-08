@@ -18,3 +18,12 @@
     --bs-nav-link-color: var(--mud-palette-primary) !important;
     --bs-nav-link-hover-color: var(--mud-palette-primary-darken) !important;
 }
+
+.mud-tooltip {
+    white-space: normal !important;
+}
+
+.tooltip-help-btn {
+    min-width: 60px;
+    min-height: 60px;
+}

@@ -21,6 +21,10 @@ public partial class ModelEditor : ComponentBase
         ? "For AI Toolkit, the Foundry model endpoint should include the api-version parameter"
         : "For example https://my-ai-resource.azure.com";
 
+    private string EndpointTooltipText => Model?.ModelType == ModelType.AI_Toolkit
+        ? "The endpoint can be found in the Foundry for the model deployment. For AI Toolkit, the endpoint should include the ?api-version=<version> query parameter."
+        : "The endpoint can be found in the Foundry for the model deployment. Do not include the ?api-version=<version> query parameter. SDKs will typically add it automatically and including it here will cause conflicting api versions.";
+
     private void ToggleMaskKey() => maskKey = !maskKey;
 
     private void OnModelTypeChanged(ModelType? newValue)
