@@ -68,6 +68,7 @@ graph LR
 - Encrypted storage for all sensitive configuration (AES encryption)
 - Managed Identity support (eliminate API key storage entirely with RBAC)
 - Object ownership isolation — attendees can only access their own Foundry Service agents/threads/files
+- Maps Foundry Agent Service Managed Identity to Event API Key
 
 ### Reporting & Analytics
 
