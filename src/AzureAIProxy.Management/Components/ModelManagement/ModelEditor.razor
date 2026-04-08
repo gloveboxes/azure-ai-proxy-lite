@@ -1,6 +1,6 @@
 @namespace AzureAIProxy.Management.Components.ModelManagement
 
-<EditForm OnValidSubmit="@HandleValidSubmit" Model="@Model" @bind-Disabled="isSubmitting">
+<EditForm OnValidSubmit="@HandleValidSubmit" Model="@Model" @bind-Disabled="isSubmitting" @ref="editForm">
     <ValidationSummary />
     <DataAnnotationsValidator />
 
@@ -39,12 +39,14 @@
                     For="@(() => Model.EndpointKey)" InputType="@(maskKey ? InputType.Password : InputType.Text)"
                     Adornment="Adornment.End"
                     AdornmentIcon="@(maskKey ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                    AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey" />
+                    AdornmentAriaLabel="Show Password" OnAdornmentClick="ToggleMaskKey"
+                    Disabled="@(Model.UseManagedIdentity)" />
 
                 <MudTextField Label="Region" @bind-Value="Model.Location" For="@(() => Model.Location)" Counter="64"
                     Immediate="true" />
 
-                <MudSwitch @bind-Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary" />
+                <MudSwitch Value="Model.UseManagedIdentity" Label="Use Managed Identity" Color="Color.Primary"
+                    ValueChanged="@((bool v) => OnManagedIdentityChanged(v))" />
                 <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2 mb-2">When enabled, uses Azure Managed Identity authentication instead of API key</MudText>
 
                 @if (Model.ModelType == ModelType.AI_Toolkit)

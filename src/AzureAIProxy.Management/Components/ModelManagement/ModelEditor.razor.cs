@@ -11,6 +11,8 @@ public partial class ModelEditor : ComponentBase
     [Parameter]
     public EventCallback<ModelEditorModel> OnValidSubmit { get; set; }
 
+    private Microsoft.AspNetCore.Components.Forms.EditForm? editForm;
+
     private bool isSubmitting = false;
 
     private bool maskKey = true;
@@ -23,6 +25,13 @@ public partial class ModelEditor : ComponentBase
         Model.ModelType = newValue;
         if (newValue != ModelType.AI_Toolkit)
             Model.UseMaxCompletionTokens = false;
+    }
+
+    private void OnManagedIdentityChanged(bool newValue)
+    {
+        if (Model is null) return;
+        Model.UseManagedIdentity = newValue;
+        editForm?.EditContext?.Validate();
     }
 
     protected override Task OnInitializedAsync()
