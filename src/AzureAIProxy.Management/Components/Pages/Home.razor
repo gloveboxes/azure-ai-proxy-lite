@@ -13,13 +13,10 @@
             <a href="https://gloveboxes.github.io/azure-ai-proxy-lite/" target="_blank" style="color: blue; text-decoration: underline;">Documentation</a>
         </MudListItem>
         <MudListItem T="string" Icon="@Icons.Material.Outlined.ReportProblem">
-            <a href="https://gloveboxes.github.io/azure-ai-proxy-lite/issues" target="_blank" style="color: blue; text-decoration: underline;">Raise an issue</a>
-        </MudListItem>
-        <MudListItem T="string" Icon="@Icons.Material.Outlined.Feedback">
-            <a href="https://gloveboxes.github.io/azure-ai-proxy-lite/discussions" target="_blank" style="color: blue; text-decoration: underline;">Questions or feedback</a>
+            <a href="https://github.com/gloveboxes/azure-ai-proxy-lite/issues" target="_blank" style="color: blue; text-decoration: underline;">Raise an issue</a>
         </MudListItem>
         <MudListItem T="string" Icon="@Icons.Custom.Brands.GitHub">
-            <a href="https://gloveboxes.github.io/azure-ai-proxy-lite/" target="_blank" style="color: blue; text-decoration: underline;">Contributions welcome!</a>
+            <a href="https://github.com/gloveboxes/azure-ai-proxy-lite/" target="_blank" style="color: blue; text-decoration: underline;">Contributions welcome!</a>
         </MudListItem>
     </MudList>
 
@@ -99,8 +96,13 @@ graph LR
         <li>Attendees never see your real Azure API keys or endpoints</li>
         <li>Encrypted storage for all sensitive configuration (AES encryption)</li>
         <li>Managed Identity support (eliminate API key storage entirely with RBAC)</li>
-        <li><strong>Managed Identity Integration:</strong> Automatically maps Foundry Agent Service Managed Identity requirements to the Event API Key, ensuring seamless authentication.</li>
-        <li><strong>Object Ownership Isolation:</strong> Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.</li>
+        <li>
+            This update streamlines how the Foundry Agent Service operates by focusing on security and identity management:
+            <ul>
+                <li><strong>Managed Identity Integration:</strong> Automatically maps Foundry Agent Service Managed Identity requirements to the Event API Key, ensuring seamless authentication.</li>
+                <li><strong>Object Ownership Isolation:</strong> Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.</li>
+            </ul>
+        </li>
     </ul>
 
     <MudText Typo="Typo.h5">Reporting &amp; Analytics</MudText>
@@ -141,6 +143,10 @@ graph LR
     .home-content ul {
         margin: 0;
         padding-left: 1.2em;
+    }
+
+    .home-content ul ul {
+        margin-top: 0.6rem;
     }
 
     @@media (min-width: 960px) {
