@@ -4,13 +4,15 @@
   "version": "1.0.0",
   "description": "Playwright end-to-end tests for Azure AI Proxy Admin",
   "scripts": {
+    "install:deps": "npm ci && sudo env \"PATH=$PATH\" playwright install-deps chromium && playwright install chromium",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "show-report": "playwright show-report"
   },
   "devDependencies": {
-    "@playwright/test": "1.59.1"
+    "@playwright/test": "1.59.1",
+    "@types/node": "22.19.15"
   },
   "overrides": {
     "@playwright/test": "1.59.1",

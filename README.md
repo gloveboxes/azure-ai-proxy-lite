@@ -94,8 +94,6 @@ graph LR
 
 Playwright tests are available under [tests/playwright](tests/playwright).
 
-In this repository's dev container, Playwright prerequisites are installed automatically during post-create.
-
 If you need to refresh Playwright dependencies manually:
 
 ```bash
