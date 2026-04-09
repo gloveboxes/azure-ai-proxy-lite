@@ -45,6 +45,8 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
         if (UseEntraAuth)
             return RedirectToPage();
 
+        var safeReturnUrl = Url.IsLocalUrl(ReturnUrl) ? ReturnUrl : "/";
+
         var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         if (IsLockedOut(clientIp))
@@ -135,7 +137,7 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
                 ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
             });
 
-        return LocalRedirect(ReturnUrl ?? "/");
+        return LocalRedirect(safeReturnUrl!);
     }
 
     private static bool IsLockedOut(string clientIp)
