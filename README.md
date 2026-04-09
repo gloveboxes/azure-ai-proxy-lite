@@ -89,3 +89,34 @@ graph LR
 - Drop-in compatible with Azure OpenAI SDKs (Python, .NET, LangChain, REST)
 - Attendees just swap their endpoint URL and use their issued API key
 - Registration page shows available models and copy-paste configuration
+
+## End-to-End Tests
+
+Playwright tests are available under [tests/playwright](tests/playwright).
+
+In this repository's dev container, Playwright prerequisites are installed automatically during post-create.
+
+If you need to refresh Playwright dependencies manually:
+
+```bash
+npm run e2e:install
+```
+
+From the repository root:
+
+```bash
+npm run e2e:install
+npm run e2e:test
+```
+
+Run authenticated E2E tests too:
+
+```bash
+E2E_RUN_AUTH_TESTS=true npm run e2e:test
+```
+
+Run the interactive UI runner:
+
+```bash
+npm run e2e:test:ui
+```

@@ -29,7 +29,8 @@
         "ms-azuretools.vscode-bicep",
         "esbenp.prettier-vscode",
         "ms-dotnettools.csdevkit",
-        "EditorConfig.EditorConfig"
+        "EditorConfig.EditorConfig",
+        "ms-playwright.playwright"
       ]
     }
   },

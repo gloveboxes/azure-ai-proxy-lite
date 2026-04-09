@@ -1,0 +1,20 @@
+{
+  "name": "azure-ai-proxy-admin-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright end-to-end tests for Azure AI Proxy Admin",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "show-report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.59.1"
+  },
+  "overrides": {
+    "@playwright/test": "1.59.1",
+    "playwright": "1.59.1",
+    "playwright-core": "1.59.1"
+  }
+}
