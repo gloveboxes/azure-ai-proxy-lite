@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Workspace scripts for Azure AI Proxy",
   "scripts": {
-    "e2e:install": "npm --prefix tests/playwright ci && sudo env \"PATH=$PATH\" npm --prefix tests/playwright exec playwright install-deps chromium && npm --prefix tests/playwright exec playwright install chromium",
+    "e2e:install": "npm --prefix tests/playwright run install:deps",
     "e2e:test": "npm --prefix tests/playwright run test --",
     "e2e:test:headed": "npm --prefix tests/playwright run test:headed --",
     "e2e:test:ui": "npm --prefix tests/playwright run test:ui --",

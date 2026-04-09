@@ -6,8 +6,8 @@
       "outputLocation": "dist",
       "appBuildCommand": "npm run build",
       "run": "npm run dev",
-      "appDevserverUrl": "http://localhost:5173",
-      "apiDevserverUrl": "http://localhost:8001"
+      "appDevserverUrl": "http://127.0.0.1:5173",
+      "apiDevserverUrl": "http://127.0.0.1:8001"
     }
   }
 }

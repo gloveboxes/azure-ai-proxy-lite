@@ -6,7 +6,11 @@ echo Setting up Python environment...
 pip3 install -r requirements-dev.txt
 
 echo Setting up commit hooks...
-pre-commit install --install-hooks
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    pre-commit install --install-hooks
+else
+    echo "Not inside a Git repository, skipping pre-commit hook installation."
+fi
 
 echo Setting up Registration environment...
 cd src/registration
@@ -14,16 +18,7 @@ npm i
 cd /workspaces/azure-ai-proxy-lite
 npm install -g @azure/static-web-apps-cli
 
-echo Setting up Playwright test environment...
-if [ -d tests/playwright ]; then
-    cd tests/playwright
-    npm ci
-    # Install Chromium plus required Linux runtime packages in one step.
-    npx playwright install --with-deps chromium
-    cd /workspaces/azure-ai-proxy-lite
-else
-    echo "tests/playwright not found, skipping Playwright setup"
-fi
+echo "Playwright setup is on-demand. Run 'npm run e2e:install' when you need E2E tests."
 
 # On arm64 hosts, the SWA CLI's StaticSitesClient binary is x86-64 only.
 # Install QEMU user-mode emulation + x86-64 libraries so it can run transparently.

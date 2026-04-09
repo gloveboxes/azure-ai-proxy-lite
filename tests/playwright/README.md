@@ -6,11 +6,10 @@ This folder contains end-to-end tests for the Admin Blazor app.
 
 These tests are intended to run from this repository's dev container.
 
-- Playwright dependencies and browser runtime libraries are provisioned by [.devcontainer/post-create.sh](../../.devcontainer/post-create.sh).
-- Chromium is installed during post-create.
+- Playwright dependencies and browser runtime libraries are installed on demand.
 - Azurite is available via the dev container compose setup.
 
-If you need to refresh the setup manually from repo root, run:
+Before your first E2E run (or whenever you need to refresh), run from repo root:
 
 ```bash
 npm run e2e:install
