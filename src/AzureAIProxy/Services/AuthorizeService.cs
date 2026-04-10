@@ -118,6 +118,22 @@ public class AuthorizeService(ITableStorageService tableStorage, IEventLookupSer
         try { await lookupTable.AddEntityAsync(lookup); }
         catch (RequestFailedException ex) when (ex.Status == 409) { }
 
+        // Also store a lookup keyed by the original shared-code string so that
+        // subsequent requests resolve on the first table read instead of
+        // re-running the full registration flow (event lookup + 2× 409 writes).
+        try
+        {
+            await lookupTable.AddEntityAsync(new AttendeeLookupEntity
+            {
+                PartitionKey = AttendeeLookupEntity.GetPartitionKey(apiKey),
+                RowKey = apiKey,
+                EventId = eventId,
+                UserId = userId,
+                Active = true
+            });
+        }
+        catch (RequestFailedException ex) when (ex.Status == 409) { }
+
         return lookup;
     }
 
