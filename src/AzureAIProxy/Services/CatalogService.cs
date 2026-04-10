@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Azure;
 using AzureAIProxy.Shared.Database;
 using AzureAIProxy.Shared.Services;
@@ -10,7 +11,8 @@ public class CatalogService(
     ITableStorageService tableStorage,
     IEncryptionService encryption,
     IMemoryCache memoryCache,
-    ICatalogCacheService catalogCache
+    ICatalogCacheService catalogCache,
+    ILogger<CatalogService> logger
 ) : ICatalogService
 {
     const string CatalogFoundryAgentEventKey = "catalog+foundry+agent+event+key";
@@ -66,6 +68,12 @@ public class CatalogService(
                 }
             }
             catch (RequestFailedException ex) when (ex.Status == 404) { }
+            catch (CryptographicException ex)
+            {
+                logger.LogError(ex, "Failed to decrypt catalog entry '{CatalogId}' for deployment '{DeploymentName}'. " +
+                    "This usually means the EncryptionKey has changed since the catalog was created. " +
+                    "Re-save the catalog entry with the current key.", catalogId, deploymentName);
+            }
         }
 
         return null;
@@ -103,6 +111,12 @@ public class CatalogService(
                 }
             }
             catch (RequestFailedException ex) when (ex.Status == 404) { }
+            catch (CryptographicException ex)
+            {
+                logger.LogError(ex, "Failed to decrypt catalog entry '{CatalogId}' for Foundry Agent lookup. " +
+                    "This usually means the EncryptionKey has changed since the catalog was created. " +
+                    "Re-save the catalog entry with the current key.", catalogId);
+            }
         }
 
         return null;
@@ -142,6 +156,12 @@ public class CatalogService(
                 }
             }
             catch (RequestFailedException ex) when (ex.Status == 404) { }
+            catch (CryptographicException ex)
+            {
+                logger.LogError(ex, "Failed to decrypt catalog entry '{CatalogId}' for MCP Server '{DeploymentName}'. " +
+                    "This usually means the EncryptionKey has changed since the catalog was created. " +
+                    "Re-save the catalog entry with the current key.", catalogId, deploymentName);
+            }
         }
 
         return null;
