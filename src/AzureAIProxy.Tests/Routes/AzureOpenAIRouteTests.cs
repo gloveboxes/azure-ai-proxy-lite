@@ -187,6 +187,29 @@ public class AzureOpenAIRouteTests : IClassFixture<ProxyAppFixture>
         Assert.Contains("model-b", body);
     }
 
+    [SkippableFact]
+    public async Task ChatCompletions_ManagedIdentityCatalog_Returns200()
+    {
+        Skip.IfNot(_fixture.Available, "Azurite not available");
+
+        var eventId = $"evt-{Guid.NewGuid():N}";
+        var catalogId = Guid.NewGuid().ToString();
+        await _fixture.SeedEventAsync(eventId, "owner-test", catalogIds: catalogId);
+        await _fixture.SeedCatalogAsync(catalogId, "gpt-4o-mi", ModelType.Foundry_Model.ToStorageString(),
+            useManagedIdentity: true);
+        var apiKey = await _fixture.SeedAttendeeAsync("user-1", eventId);
+
+        var request = new HttpRequestMessage(HttpMethod.Post,
+            "/api/v1/openai/deployments/gpt-4o-mi/chat/completions?api-version=2024-10-21");
+        request.Headers.Add("api-key", apiKey);
+        request.Content = JsonContent("{\"model\":\"gpt-4o-mi\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}");
+
+        var response = await _fixture.Client.SendAsync(request);
+
+        // MockProxyService handles managed-identity branch and returns OK
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     private static StringContent JsonContent(string json) =>
         new(json, Encoding.UTF8, "application/json");
 }

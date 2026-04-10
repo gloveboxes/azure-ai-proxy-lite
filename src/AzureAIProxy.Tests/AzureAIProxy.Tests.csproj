@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AzureAIProxy\AzureAIProxy.csproj" />
     <ProjectReference Include="..\AzureAIProxy.Shared\AzureAIProxy.Shared.csproj" />
+    <ProjectReference Include="..\AzureAIProxy.Management\AzureAIProxy.Management.csproj" />
   </ItemGroup>
 
   <ItemGroup>

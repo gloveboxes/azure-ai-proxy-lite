@@ -3,6 +3,7 @@ using System.Text.Json;
 using AzureAIProxy.Models;
 using AzureAIProxy.Services;
 using AzureAIProxy.Shared.Database;
+using AzureAIProxy.Management.Services;
 using Microsoft.Extensions.Options;
 
 namespace AzureAIProxy.Tests.TestDoubles;
@@ -37,7 +38,7 @@ internal sealed class StubRateLimitService : IRateLimitService
     }
 }
 
-internal sealed class NoopMetricService : IMetricService
+internal sealed class NoopMetricService : AzureAIProxy.Services.IMetricService
 {
     public int Calls { get; private set; }
 
@@ -113,4 +114,31 @@ internal static class TestData
         {
             Content = new StringContent(content)
         };
+}
+
+// ── Management service test doubles ─────────────────────────────────────
+
+/// <summary>
+/// Stub IAuthService that returns a configurable user ID.
+/// </summary>
+internal sealed class StubManagementAuthService(string userId = "test-owner-1") : IAuthService
+{
+    public Task<string> GetCurrentUserIdAsync() => Task.FromResult(userId);
+
+    public Task<(string email, string name)> GetCurrentUserEmailNameAsync() =>
+        Task.FromResult(($"{userId}@example.com", userId));
+}
+
+/// <summary>
+/// No-op cache invalidation — just counts calls.
+/// </summary>
+internal sealed class NoopCacheInvalidationService : ICacheInvalidationService
+{
+    public int Calls { get; private set; }
+
+    public Task InvalidateAllCachesAsync()
+    {
+        Calls++;
+        return Task.CompletedTask;
+    }
 }

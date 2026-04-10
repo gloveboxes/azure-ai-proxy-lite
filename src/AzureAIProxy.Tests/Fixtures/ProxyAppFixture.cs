@@ -63,9 +63,30 @@ public class ProxyAppFixture : IAsyncLifetime
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Calls the /internal/cache/invalidate endpoint to flush the in-memory
+    /// event and catalog caches. Call this after mutating seeded data when a
+    /// previous request may have populated the cache with stale values.
+    /// </summary>
+    public async Task InvalidateCacheAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/internal/cache/invalidate");
+        request.Headers.Add("X-Cache-Key", EncryptionKey);
+        var response = await Client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+    }
+
     #region Seed helpers
 
-    public async Task SeedEventAsync(string eventId, string ownerId, string catalogIds = "")
+    public async Task SeedEventAsync(
+        string eventId,
+        string ownerId,
+        string catalogIds = "",
+        int dailyRequestCap = 1000,
+        bool active = true,
+        DateTime? startTimestamp = null,
+        DateTime? endTimestamp = null,
+        string? eventSharedCode = null)
     {
         var eventsTable = TableStorage.GetTableClient(TableNames.Events);
         await eventsTable.UpsertEntityAsync(new EventEntity
@@ -75,20 +96,21 @@ public class ProxyAppFixture : IAsyncLifetime
             OwnerId = ownerId,
             EventCode = $"CODE-{eventId[..8]}",
             EventMarkdown = "# Test Event",
-            StartTimestamp = DateTime.UtcNow.AddHours(-1),
-            EndTimestamp = DateTime.UtcNow.AddHours(1),
+            StartTimestamp = startTimestamp ?? DateTime.UtcNow.AddHours(-1),
+            EndTimestamp = endTimestamp ?? DateTime.UtcNow.AddHours(1),
             TimeZoneOffset = 0,
             TimeZoneLabel = "UTC",
             OrganizerName = $"Org-{ownerId}",
             OrganizerEmail = $"{ownerId}@example.com",
             MaxTokenCap = 500,
-            DailyRequestCap = 1000,
-            Active = true,
-            CatalogIds = catalogIds
+            DailyRequestCap = dailyRequestCap,
+            Active = active,
+            CatalogIds = catalogIds,
+            EventSharedCode = eventSharedCode
         }, TableUpdateMode.Replace);
     }
 
-    public async Task SeedCatalogAsync(string catalogId, string deploymentName, string modelType)
+    public async Task SeedCatalogAsync(string catalogId, string deploymentName, string modelType, bool active = true, bool useManagedIdentity = false)
     {
         var catalogTable = TableStorage.GetTableClient(TableNames.Catalogs);
         await catalogTable.UpsertEntityAsync(new CatalogEntity
@@ -97,13 +119,13 @@ public class ProxyAppFixture : IAsyncLifetime
             RowKey = catalogId,
             OwnerId = "owner",
             DeploymentName = deploymentName,
-            Active = true,
+            Active = active,
             ModelType = modelType,
             Location = "eastus",
             FriendlyName = deploymentName,
             EncryptedEndpointUrl = Encryption.Encrypt("https://fake-endpoint.example.com"),
             EncryptedEndpointKey = Encryption.Encrypt("fake-api-key"),
-            UseManagedIdentity = false,
+            UseManagedIdentity = useManagedIdentity,
             UseMaxCompletionTokens = false
         }, TableUpdateMode.Replace);
     }

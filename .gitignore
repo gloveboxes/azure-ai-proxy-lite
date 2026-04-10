@@ -21,3 +21,6 @@ appsettings.*.json
 attendees_*.json
 events_*.json
 generate_*.log
+
+# Test results
+TestResults/

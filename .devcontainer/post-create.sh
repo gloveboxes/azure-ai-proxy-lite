@@ -18,6 +18,9 @@ npm i
 cd /workspaces/azure-ai-proxy-lite
 npm install -g @azure/static-web-apps-cli
 
+echo Installing test coverage tools...
+dotnet tool install --global dotnet-reportgenerator-globaltool
+
 echo "Playwright setup is on-demand. Run 'npm run e2e:install' when you need E2E tests."
 
 # SWA CLI's StaticSitesClient is x86-64 only.

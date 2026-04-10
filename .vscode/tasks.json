@@ -106,20 +106,21 @@
       "problemMatcher": ["$msCompile"]
     },
     {
-      "label": "test",
-      "command": "dotnet",
-      "type": "process",
-      "args": [
-        "test",
-        "${workspaceFolder}/src/AzureAIProxy.Tests/AzureAIProxy.Tests.csproj",
-        "--verbosity",
-        "normal"
-      ],
+      "label": "e2e proxy unit and route tests",
+      "type": "shell",
+      "command": "dotnet test ${workspaceFolder}/src/AzureAIProxy.Tests/AzureAIProxy.Tests.csproj --verbosity normal",
       "problemMatcher": "$msCompile",
       "group": {
         "kind": "test",
         "isDefault": true
       }
+    },
+    {
+      "label": "test coverage summary",
+      "type": "shell",
+      "command": "rm -rf ${workspaceFolder}/src/AzureAIProxy.Tests/TestResults && dotnet test ${workspaceFolder}/src/AzureAIProxy.Tests/AzureAIProxy.Tests.csproj --collect:\"XPlat Code Coverage\" --verbosity normal && reportgenerator -reports:${workspaceFolder}/src/AzureAIProxy.Tests/TestResults/**/coverage.cobertura.xml -targetdir:${workspaceFolder}/src/AzureAIProxy.Tests/TestResults/Summary -reporttypes:TextSummary && cat ${workspaceFolder}/src/AzureAIProxy.Tests/TestResults/Summary/Summary.txt",
+      "problemMatcher": "$msCompile",
+      "group": "test"
     }
   ]
 }
