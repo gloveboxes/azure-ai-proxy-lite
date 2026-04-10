@@ -1,0 +1,145 @@
+using Azure.Data.Tables;
+using AzureAIProxy.Shared.Services;
+using AzureAIProxy.Shared.TableStorage;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+
+namespace AzureAIProxy.Tests.Fixtures;
+
+/// <summary>
+/// Boots the real AzureAIProxy app with UseMockProxy=true and Azurite table storage.
+/// Exercises the full pipeline: auth → middleware → route handler → mock proxy → response.
+/// </summary>
+public class ProxyAppFixture : IAsyncLifetime
+{
+    private const string EncryptionKey = "dev-encryption-key-change-in-production";
+
+    private WebApplicationFactory<Program>? _factory;
+    private TableServiceClient? _tableServiceClient;
+    private ITableStorageService? _tableStorage;
+
+    public HttpClient Client { get; private set; } = null!;
+    public ITableStorageService TableStorage => _tableStorage!;
+    public IEncryptionService Encryption { get; } = new EncryptionService(EncryptionKey);
+    public bool Available { get; private set; }
+
+    public async Task InitializeAsync()
+    {
+        var result = await AzuriteHelper.TryCreateLocalAzuriteClientWithConnectionStringAsync();
+        if (result is null)
+        {
+            Available = false;
+            return;
+        }
+
+        Available = true;
+        _tableServiceClient = result.Value.client;
+        _connectionString = result.Value.connectionString;
+
+        var connectionString = _connectionString!;
+
+        _factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment("Development");
+                builder.UseSetting("ConnectionStrings:StorageAccount", connectionString);
+                builder.UseSetting("EncryptionKey", EncryptionKey);
+                builder.UseSetting("UseMockProxy", "true");
+                builder.UseSetting("ProxyUrl", "http://localhost/api/v1");
+            });
+
+        Client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        _tableStorage = new TableStorageService(_tableServiceClient);
+    }
+
+    public Task DisposeAsync()
+    {
+        Client?.Dispose();
+        _factory?.Dispose();
+        return Task.CompletedTask;
+    }
+
+    #region Seed helpers
+
+    public async Task SeedEventAsync(string eventId, string ownerId, string catalogIds = "")
+    {
+        var eventsTable = TableStorage.GetTableClient(TableNames.Events);
+        await eventsTable.UpsertEntityAsync(new EventEntity
+        {
+            PartitionKey = eventId,
+            RowKey = eventId,
+            OwnerId = ownerId,
+            EventCode = $"CODE-{eventId[..8]}",
+            EventMarkdown = "# Test Event",
+            StartTimestamp = DateTime.UtcNow.AddHours(-1),
+            EndTimestamp = DateTime.UtcNow.AddHours(1),
+            TimeZoneOffset = 0,
+            TimeZoneLabel = "UTC",
+            OrganizerName = $"Org-{ownerId}",
+            OrganizerEmail = $"{ownerId}@example.com",
+            MaxTokenCap = 500,
+            DailyRequestCap = 1000,
+            Active = true,
+            CatalogIds = catalogIds
+        }, TableUpdateMode.Replace);
+    }
+
+    public async Task SeedCatalogAsync(string catalogId, string deploymentName, string modelType)
+    {
+        var catalogTable = TableStorage.GetTableClient(TableNames.Catalogs);
+        await catalogTable.UpsertEntityAsync(new CatalogEntity
+        {
+            PartitionKey = catalogId,
+            RowKey = catalogId,
+            OwnerId = "owner",
+            DeploymentName = deploymentName,
+            Active = true,
+            ModelType = modelType,
+            Location = "eastus",
+            FriendlyName = deploymentName,
+            EncryptedEndpointUrl = Encryption.Encrypt("https://fake-endpoint.example.com"),
+            EncryptedEndpointKey = Encryption.Encrypt("fake-api-key"),
+            UseManagedIdentity = false,
+            UseMaxCompletionTokens = false
+        }, TableUpdateMode.Replace);
+    }
+
+    public async Task<string> SeedAttendeeAsync(string userId, string eventId)
+    {
+        var attendeeTable = TableStorage.GetTableClient(TableNames.Attendees);
+        var lookupTable = TableStorage.GetTableClient(TableNames.AttendeeLookup);
+
+        var apiKey = Guid.NewGuid().ToString();
+
+        await attendeeTable.UpsertEntityAsync(new AttendeeEntity
+        {
+            PartitionKey = eventId,
+            RowKey = userId,
+            ApiKey = apiKey,
+            Active = true
+        }, TableUpdateMode.Replace);
+
+        await lookupTable.UpsertEntityAsync(new AttendeeLookupEntity
+        {
+            PartitionKey = AttendeeLookupEntity.GetPartitionKey(apiKey),
+            RowKey = apiKey,
+            EventId = eventId,
+            UserId = userId,
+            Active = true
+        }, TableUpdateMode.Replace);
+
+        return apiKey;
+    }
+
+    #endregion
+
+    #region Azurite connection
+
+    private string? _connectionString;
+
+    #endregion
+}
