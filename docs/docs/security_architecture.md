@@ -136,9 +136,9 @@ sequenceDiagram
 |---------|-------|-----------|
 | `allowSharedKeyAccess` | `false` | Forces Entra ID authentication only — no connection strings |
 | `defaultToOAuthAuthentication` | `true` | Portal defaults to Entra ID instead of key-based auth |
-| `publicNetworkAccess` | `Disabled` | No direct internet access to storage |
-| `networkAcls.defaultAction` | `Deny` | Deny all network access by default |
-| `networkAcls.bypass` | `AzureServices` | Allow trusted Azure services (Container Apps) |
+| `publicNetworkAccess` | `Enabled` | Allows Container Apps to reach storage over public endpoint (no private endpoints configured) |
+| `networkAcls.defaultAction` | `Allow` | Permits network access; access control enforced via Entra ID RBAC (shared key access is disabled) |
+| `networkAcls.bypass` | `AzureServices` | Allow trusted Azure services |
 | `minimumTlsVersion` | `TLS1_2` | Enforce modern TLS |
 
 ### Container Apps security
