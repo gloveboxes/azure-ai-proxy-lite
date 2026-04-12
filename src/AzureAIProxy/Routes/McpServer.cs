@@ -82,7 +82,7 @@ public static class McpServer
         // Append query parameters from the incoming request
         var queryParams = context.Request.Query
             .Where(q => !string.IsNullOrEmpty(q.Value))
-            .Select(q => $"{q.Key}={q.Value!}")
+            .Select(q => $"{Uri.EscapeDataString(q.Key)}={Uri.EscapeDataString(q.Value!)}")
             .ToList();
 
         if (!string.IsNullOrEmpty(upstreamUrl.Query))

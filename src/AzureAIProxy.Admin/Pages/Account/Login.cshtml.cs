@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Azure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -65,7 +67,7 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
             {
                 var configUser = user["Username"];
                 var configPass = user["Password"];
-                if (!string.IsNullOrEmpty(configUser) && username == configUser && password == configPass)
+                if (!string.IsNullOrEmpty(configUser) && !string.IsNullOrEmpty(configPass) && FixedTimeEquals(username, configUser) && FixedTimeEquals(password, configPass))
                 {
                     authenticated = true;
                     break;
@@ -83,7 +85,7 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
                 return Page();
             }
 
-            authenticated = username == configUsername && password == configPassword;
+            authenticated = FixedTimeEquals(username, configUsername) && FixedTimeEquals(password, configPassword);
         }
 
         if (!authenticated)
@@ -168,5 +170,12 @@ public class LoginModel(IConfiguration configuration, ITableStorageService table
     private static void ClearFailedAttempts(string clientIp)
     {
         _failedAttempts.TryRemove(clientIp, out _);
+    }
+
+    private static bool FixedTimeEquals(string a, string b)
+    {
+        var bytesA = Encoding.UTF8.GetBytes(a);
+        var bytesB = Encoding.UTF8.GetBytes(b);
+        return CryptographicOperations.FixedTimeEquals(bytesA, bytesB);
     }
 }

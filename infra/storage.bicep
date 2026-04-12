@@ -9,8 +9,8 @@ param tags object = {}
 param accessTier string = 'Hot'
 param allowBlobPublicAccess bool = false
 param allowCrossTenantReplication bool = false
-param allowSharedKeyAccess bool = true
-param defaultToOAuthAuthentication bool = false
+param allowSharedKeyAccess bool = false
+param defaultToOAuthAuthentication bool = true
 @allowed([ 'AzureDnsZone', 'Standard' ])
 param dnsEndpointType string = 'Standard'
 param kind string = 'StorageV2'
@@ -47,5 +47,4 @@ resource storage 'Microsoft.Storage/storageAccounts@2022-05-01' = {
 }
 
 output name string = storage.name
-#disable-next-line outputs-should-not-contain-secrets
-output connectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+output id string = storage.id

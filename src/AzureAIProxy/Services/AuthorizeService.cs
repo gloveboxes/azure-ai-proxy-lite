@@ -10,14 +10,29 @@ namespace AzureAIProxy.Services;
 
 public class AuthorizeService(ITableStorageService tableStorage, IEventLookupService eventLookupService, ILogger<AuthorizeService> logger) : IAuthorizeService
 {
+    private const int MaxApiKeyLength = 512;
+    private const int MaxClientPrincipalHeaderLength = 16 * 1024;
+
     public async Task<RequestContext?> IsUserAuthorizedAsync(string apiKey)
     {
+        if (!IsPlausibleApiKey(apiKey))
+        {
+            logger.LogWarning("Authentication denied: malformed api-key header.");
+            return null;
+        }
+
+        if (!AttendeeLookupEntity.TryGetPartitionKey(apiKey, out var lookupPartitionKey))
+        {
+            logger.LogWarning("Authentication denied: invalid attendee lookup partition key derived from api-key.");
+            return null;
+        }
+
         var lookupTable = tableStorage.GetTableClient(TableNames.AttendeeLookup);
         AttendeeLookupEntity? lookup;
         try
         {
             var response = await lookupTable.GetEntityAsync<AttendeeLookupEntity>(
-                AttendeeLookupEntity.GetPartitionKey(apiKey), apiKey);
+                lookupPartitionKey, apiKey);
             lookup = response.Value;
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
@@ -28,6 +43,11 @@ public class AuthorizeService(ITableStorageService tableStorage, IEventLookupSer
                 logger.LogWarning("API key not found in attendee lookup table and does not match shared-code format.");
                 return null;
             }
+        }
+        catch (RequestFailedException ex) when (ex.Status == 400)
+        {
+            logger.LogWarning("Authentication denied: malformed api-key header caused invalid table lookup.");
+            return null;
         }
 
         // Fetch event data via cached lookup
@@ -139,15 +159,66 @@ public class AuthorizeService(ITableStorageService tableStorage, IEventLookupSer
 
     public Task<string?> GetRequestContextFromJwtAsync(string jwt)
     {
-        var decoded = Encoding.ASCII.GetString(Convert.FromBase64String(jwt));
-        var principal = JsonSerializer.Deserialize<JsonElement>(decoded);
+        if (string.IsNullOrWhiteSpace(jwt) || jwt.Length > MaxClientPrincipalHeaderLength)
+            return Task.FromResult((string?)null);
 
-        if (principal.TryGetProperty("userId", out var userIdElement)
-            && userIdElement.ValueKind == JsonValueKind.String
-            && !string.IsNullOrEmpty(userIdElement.GetString()))
+        if (!TryDecodeClientPrincipal(jwt, out var decoded))
         {
-            return Task.FromResult(userIdElement.GetString());
+            logger.LogWarning("Authentication denied: x-ms-client-principal header is not valid base64 payload.");
+            return Task.FromResult((string?)null);
         }
+
+        try
+        {
+            var principal = JsonSerializer.Deserialize<JsonElement>(decoded);
+            if (principal.ValueKind != JsonValueKind.Object)
+                return Task.FromResult((string?)null);
+
+            if (principal.TryGetProperty("userId", out var userIdElement)
+                && userIdElement.ValueKind == JsonValueKind.String
+                && !string.IsNullOrWhiteSpace(userIdElement.GetString()))
+            {
+                return Task.FromResult(userIdElement.GetString());
+            }
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "Authentication denied: x-ms-client-principal header contained invalid JSON.");
+        }
+
         return Task.FromResult((string?)null);
+    }
+
+    private static bool IsPlausibleApiKey(string apiKey)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return false;
+
+        if (apiKey.Length < 2 || apiKey.Length > MaxApiKeyLength)
+            return false;
+
+        if (!string.Equals(apiKey, apiKey.Trim(), StringComparison.Ordinal))
+            return false;
+
+        return !apiKey.Any(char.IsControl);
+    }
+
+    private static bool TryDecodeClientPrincipal(string encoded, out string decoded)
+    {
+        decoded = string.Empty;
+
+        var normalized = encoded.Replace('-', '+').Replace('_', '/');
+        var remainder = normalized.Length % 4;
+        if (remainder != 0)
+        {
+            normalized = normalized.PadRight(normalized.Length + (4 - remainder), '=');
+        }
+
+        var buffer = new byte[normalized.Length];
+        if (!Convert.TryFromBase64String(normalized, buffer, out var bytesWritten))
+            return false;
+
+        decoded = Encoding.UTF8.GetString(buffer, 0, bytesWritten);
+        return true;
     }
 }

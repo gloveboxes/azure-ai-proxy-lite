@@ -52,7 +52,18 @@ public class AttendeeLookupEntity : ITableEntity
     public string UserId { get; set; } = null!;
     public bool Active { get; set; }
 
-    public static string GetPartitionKey(string apiKey) => apiKey[..2].ToLowerInvariant();
+    public static bool TryGetPartitionKey(string? apiKey, out string partitionKey)
+    {
+        partitionKey = string.Empty;
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Length < 2)
+            return false;
+
+        partitionKey = apiKey[..2].ToLowerInvariant();
+        return true;
+    }
+
+    public static string GetPartitionKey(string apiKey) =>
+        TryGetPartitionKey(apiKey, out var partitionKey) ? partitionKey : "__";
 }
 
 public class AttendeeRequestEntity : ITableEntity

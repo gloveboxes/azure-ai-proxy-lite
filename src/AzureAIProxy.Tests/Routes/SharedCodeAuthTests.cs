@@ -62,4 +62,19 @@ public class SharedCodeAuthTests : IClassFixture<ProxyAppFixture>
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [SkippableFact]
+    public async Task ShortMalformedApiKey_Returns401_Not500()
+    {
+        Skip.IfNot(_fixture.Available, "Azurite not available");
+
+        var request = new HttpRequestMessage(HttpMethod.Post,
+            "/api/v1/openai/deployments/gpt-4o/chat/completions?api-version=2024-10-21");
+        request.Headers.Add("api-key", "x");
+        request.Content = JsonContent("{\"model\":\"gpt-4o\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}");
+
+        var response = await _fixture.Client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }

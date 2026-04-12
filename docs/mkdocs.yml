@@ -10,6 +10,7 @@ nav:
   - AI Toolkit: ai_toolkit.md
   - Developers: developers.md
   - Managed Identity: managed_identity.md
+  - Security Architecture: security_architecture.md
   - Deployment: deployment.md
   - Workshops: workshops.md
   - FAQ: faq.md

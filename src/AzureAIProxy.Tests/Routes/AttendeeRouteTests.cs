@@ -67,6 +67,20 @@ public class AttendeeRouteTests : IClassFixture<ProxyAppFixture>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [SkippableFact]
+    public async Task Register_MalformedBase64Jwt_Returns401()
+    {
+        Skip.IfNot(_fixture.Available, "Azurite not available");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/attendee/event/some-event/register");
+        request.Headers.Add("x-ms-client-principal", "%%%not-base64%%%");
+        request.Content = new StringContent("", Encoding.UTF8, "application/json");
+
+        var response = await _fixture.Client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     // --- Attendee registration flow ---
 
     [SkippableFact]

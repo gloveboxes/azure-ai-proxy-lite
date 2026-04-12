@@ -83,7 +83,7 @@ module proxy 'app/proxy.bicep' = {
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
     exists: proxyAppExists
-    storageConnectionString: storageAccount.outputs.connectionString
+    storageAccountName: storageAccount.outputs.name
     encryptionKey: encryptionKey
     registrationUrl: registration.outputs.SERVICE_WEB_URI
     appInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
@@ -102,7 +102,7 @@ module admin 'app/admin.bicep' = {
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
     exists: adminAppExists
-    storageConnectionString: storageAccount.outputs.connectionString
+    storageAccountName: storageAccount.outputs.name
     encryptionKey: encryptionKey
     registrationUrl: registration.outputs.SERVICE_WEB_URI
     proxyInternalUrl: 'https://${proxy.outputs.SERVICE_PROXY_NAME}.internal.${containerApps.outputs.defaultDomain}'
@@ -120,6 +120,30 @@ module storageAccount 'storage.bicep' = {
     name: take('${replace(prefix, '-', '')}st', 24)
     location: location
     tags: tags
+  }
+}
+
+// Grant proxy identity Storage Table Data Contributor scoped to the storage account.
+module storageRoleProxy 'core/security/storage-role-assignment.bicep' = {
+  name: 'storage-role-proxy'
+  scope: resourceGroup
+  params: {
+    storageAccountName: storageAccount.outputs.name
+    principalId: proxy.outputs.SERVICE_PROXY_IDENTITY_PRINCIPAL_ID
+    roleDefinitionId: '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3' // Storage Table Data Contributor
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Grant admin identity Storage Table Data Contributor scoped to the storage account.
+module storageRoleAdmin 'core/security/storage-role-assignment.bicep' = {
+  name: 'storage-role-admin'
+  scope: resourceGroup
+  params: {
+    storageAccountName: storageAccount.outputs.name
+    principalId: admin.outputs.SERVICE_ADMIN_IDENTITY_PRINCIPAL_ID
+    roleDefinitionId: '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3' // Storage Table Data Contributor
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -153,7 +177,6 @@ module foundry 'foundry.bicep' = {
     location: foundryLocation
     tags: tags
     proxyPrincipalId: proxy.outputs.SERVICE_PROXY_IDENTITY_PRINCIPAL_ID
-    proxySystemPrincipalId: proxy.outputs.SERVICE_PROXY_SYSTEM_IDENTITY_PRINCIPAL_ID
   }
 }
 

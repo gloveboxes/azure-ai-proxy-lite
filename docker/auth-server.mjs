@@ -184,8 +184,9 @@ async function handleAuth(req, res, url) {
     const user = { email, userId: makeUserId(email) };
     const cookieVal = Buffer.from(JSON.stringify(user)).toString("base64");
     console.log(`Login: ${email} → userId ${user.userId}`);
+    const secureSuffix = req.socket.encrypted ? "; Secure" : "";
     res.writeHead(302, {
-      "Set-Cookie": `${COOKIE_NAME}=${encodeURIComponent(cookieVal)}; Path=/; HttpOnly; SameSite=Lax`,
+      "Set-Cookie": `${COOKIE_NAME}=${encodeURIComponent(cookieVal)}; Path=/; HttpOnly; SameSite=Lax${secureSuffix}`,
       Location: redirect,
     });
     res.end();
@@ -196,8 +197,9 @@ async function handleAuth(req, res, url) {
   if (url.pathname === "/.auth/logout") {
     const redirect =
       url.searchParams.get("post_logout_redirect_uri") || "/";
+    const secureSuffix = req.socket.encrypted ? "; Secure" : "";
     res.writeHead(302, {
-      "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; Max-Age=0`,
+      "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureSuffix}`,
       Location: redirect,
     });
     res.end();

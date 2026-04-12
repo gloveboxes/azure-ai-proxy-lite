@@ -1,5 +1,7 @@
 using Azure.Data.Tables;
 using Azure.Identity;
+using System.Security.Cryptography;
+using System.Text;
 using AzureAIProxy.Middleware;
 using AzureAIProxy.Routes;
 using AzureAIProxy.Services;
@@ -102,7 +104,9 @@ app.MapPost("/internal/cache/invalidate", (
         return Results.StatusCode(503);
 
     if (!context.Request.Headers.TryGetValue("X-Cache-Key", out var keyValues)
-        || !string.Equals(keyValues.ToString(), expectedKey, StringComparison.Ordinal))
+        || !CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(keyValues.ToString()),
+            Encoding.UTF8.GetBytes(expectedKey)))
     {
         return Results.Unauthorized();
     }
