@@ -6,24 +6,37 @@ This page documents the security architecture of the Azure AI Proxy when deploye
 
 ```mermaid
 graph LR
-    attendee["👤 Attendee"] -->|"GitHub OAuth"| reg["Registration<br/>(Static Web App)"]
-    sdk["🖥️ SDK Client"] -->|"api-key (TLS)"| proxy
-    reg -->|"Linked Backend"| proxy
-    admin_user["👤 Admin"] -->|"Entra ID"| admin
-
-    subgraph Azure["Azure — Entra ID Tenant"]
-        proxy["API Proxy"]
-        admin["Admin UI"]
-        storage[("Table Storage<br/>Shared Key: Off")]
-        ai["AI Foundry Models"]
-        key["AI Foundry Models"]
+    subgraph Users[" "]
+        admin_user["👤 Admin"]
+        attendee["👤 Attendee"]
+        sdk["🖥️ SDK Client"]
+        rest["🌐 REST Client"]
     end
 
+    admin_user -->|"Entra ID"| admin
+    sdk -->|"api-key (TLS)"| proxy
+    rest -->|"api-key (TLS)"| proxy
+    attendee -->|"GitHub OAuth"| reg
+
+    subgraph Azure["Azure — Entra ID Tenant"]
+        admin["Admin UI"]
+        proxy["API Proxy"]
+        reg["Registration<br/>(Static Web App)"]
+        storage[("Table Storage<br/>Shared Key: Off")]
+        ai["AI Foundry Models"]
+        mcp["MCP Server (optional)"]
+        ais["AI Search (optional)"]
+    end
+
+    reg -->|"Linked Backend"| proxy
     proxy -->|"Managed Identity"| storage
-    proxy -->|"Managed Identity<br/>(default)"| ai
-    proxy -->|"API Key"| key
+    proxy -->|"Managed Identity (default)"| ai
+    proxy -->|"Managed Idendity<br>or API Key"| mcp
+    proxy -->|"Managed Idendity<br>or API Key"| ais
     admin -->|"Managed Identity"| storage
     admin -.->|"Cache Invalidation<br/>(internal)"| proxy
+
+    style Users fill:none,stroke:none
 ```
 
 ## Identity model
