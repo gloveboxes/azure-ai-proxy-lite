@@ -30,7 +30,7 @@ graph LR
 
     reg -->|"Linked Backend"| proxy
     proxy -->|"Managed Identity"| storage
-    proxy -->|"Managed Identity (default)"| ai
+    proxy -->|"Managed Identity"| ai
     proxy -->|"Managed Idendity<br>or API Key"| mcp
     proxy -->|"Managed Idendity<br>or API Key"| ais
     admin -->|"Managed Identity"| storage
