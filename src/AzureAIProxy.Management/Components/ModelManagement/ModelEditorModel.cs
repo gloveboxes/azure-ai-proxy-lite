@@ -32,7 +32,7 @@ public class ModelEditorModel
     [Required]
     public ModelType? ModelType { get; set; } = null;
 
-    public bool UseManagedIdentity { get; set; }
+    public bool UseManagedIdentity { get; set; } = true;
 
     public bool UseMaxCompletionTokens { get; set; }
 }

@@ -15,11 +15,13 @@ graph LR
         proxy["API Proxy"]
         admin["Admin UI"]
         storage[("Table Storage<br/>Shared Key: Off")]
-        ai["AI Foundry +<br/>OpenAI Models"]
+        ai["AI Foundry Models"]
+        key["AI Foundry Models"]
     end
 
     proxy -->|"Managed Identity"| storage
-    proxy -->|"Managed Identity"| ai
+    proxy -->|"Managed Identity<br/>(default)"| ai
+    proxy -->|"API Key"| key
     admin -->|"Managed Identity"| storage
     admin -.->|"Cache Invalidation<br/>(internal)"| proxy
 ```
