@@ -12,7 +12,7 @@ public class RateLimiterHandler(RequestDelegate next, IRateLimitService rateLimi
         if (requestContext is not null)
         {
             var requestCount = rateLimitService.GetRequestCount(requestContext.ApiKey);
-            if (requestCount > requestContext.DailyRequestCap)
+            if (requestCount >= requestContext.DailyRequestCap)
             {
                 await OpenAIErrorResponse.TooManyRequests(
                     $"The event daily request rate of {requestContext.DailyRequestCap} calls has been exceeded. Requests are disabled until UTC midnight."

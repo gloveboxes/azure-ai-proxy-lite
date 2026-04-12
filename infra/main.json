@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "10092234626709959480"
+      "templateHash": "2084989660039417922"
     }
   },
   "parameters": {
@@ -19,10 +19,14 @@
     },
     "location": {
       "type": "string",
-      "minLength": 1,
       "metadata": {
+        "azd": {
+          "type": "location",
+          "title": "Primary resource location"
+        },
         "description": "Primary location for all resources"
-      }
+      },
+      "minLength": 1
     },
     "proxyAppExists": {
       "type": "bool",
@@ -57,7 +61,8 @@
       ],
       "metadata": {
         "azd": {
-          "type": "location"
+          "type": "location",
+          "title": "Static Web App (registration) location"
         },
         "description": "Location for the Registration app resource group"
       }
@@ -66,7 +71,8 @@
       "type": "string",
       "metadata": {
         "azd": {
-          "type": "location"
+          "type": "location",
+          "title": "AI Foundry project location"
         },
         "description": "Location for the Azure AI Foundry project and model deployments"
       }
@@ -448,8 +454,8 @@
           "exists": {
             "value": "[parameters('proxyAppExists')]"
           },
-          "storageConnectionString": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.connectionString.value]"
+          "storageAccountName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.name.value]"
           },
           "encryptionKey": {
             "value": "[variables('encryptionKey')]"
@@ -468,7 +474,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "3134569624788462644"
+              "templateHash": "4466748364948598300"
             }
           },
           "parameters": {
@@ -502,8 +508,8 @@
             "exists": {
               "type": "bool"
             },
-            "storageConnectionString": {
-              "type": "securestring"
+            "storageAccountName": {
+              "type": "string"
             },
             "encryptionKey": {
               "type": "securestring"
@@ -581,7 +587,7 @@
                     "value": 1
                   },
                   "scaleCooldownPeriod": {
-                    "value": 43200
+                    "value": 172800
                   },
                   "scaleRules": {
                     "value": [
@@ -602,10 +608,6 @@
                         "value": "[parameters('encryptionKey')]"
                       },
                       {
-                        "name": "storage-connection-string",
-                        "value": "[parameters('storageConnectionString')]"
-                      },
-                      {
                         "name": "app-insights-connection-string",
                         "value": "[parameters('appInsightsConnectionString')]"
                       }
@@ -618,8 +620,12 @@
                         "secretRef": "encryption-key"
                       },
                       {
-                        "name": "ConnectionStrings__StorageAccount",
-                        "secretRef": "storage-connection-string"
+                        "name": "AZURE_CLIENT_ID",
+                        "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2023-01-31').clientId]"
+                      },
+                      {
+                        "name": "StorageAccountName",
+                        "value": "[parameters('storageAccountName')]"
                       },
                       {
                         "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
@@ -1209,8 +1215,8 @@
           "exists": {
             "value": "[parameters('adminAppExists')]"
           },
-          "storageConnectionString": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.connectionString.value]"
+          "storageAccountName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.name.value]"
           },
           "encryptionKey": {
             "value": "[variables('encryptionKey')]"
@@ -1238,7 +1244,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "5165108788637876858"
+              "templateHash": "5554268225550761398"
             }
           },
           "parameters": {
@@ -1272,8 +1278,8 @@
             "exists": {
               "type": "bool"
             },
-            "storageConnectionString": {
-              "type": "securestring"
+            "storageAccountName": {
+              "type": "string"
             },
             "encryptionKey": {
               "type": "securestring"
@@ -1358,7 +1364,7 @@
                     "value": 1
                   },
                   "scaleCooldownPeriod": {
-                    "value": 1800
+                    "value": 172800
                   },
                   "scaleRules": {
                     "value": [
@@ -1379,17 +1385,13 @@
                         "value": "[parameters('encryptionKey')]"
                       },
                       {
-                        "name": "storage-connection-string",
-                        "value": "[parameters('storageConnectionString')]"
-                      },
-                      {
                         "name": "app-insights-connection-string",
                         "value": "[parameters('appInsightsConnectionString')]"
                       }
                     ]
                   },
                   "env": {
-                    "value": "[flatten(createArray(createArray(createObject('name', 'EncryptionKey', 'secretRef', 'encryption-key'), createObject('name', 'ConnectionStrings__StorageAccount', 'secretRef', 'storage-connection-string'), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'secretRef', 'app-insights-connection-string'), createObject('name', 'ASPNETCORE_FORWARDEDHEADERS_ENABLED', 'value', 'true'), createObject('name', 'RegistrationUrl', 'value', parameters('registrationUrl')), createObject('name', 'ProxyInternalUrl', 'value', parameters('proxyInternalUrl'))), if(not(empty(parameters('entraClientId'))), createArray(createObject('name', 'AzureAd__Instance', 'value', environment().authentication.loginEndpoint), createObject('name', 'AzureAd__TenantId', 'value', parameters('entraTenantId')), createObject('name', 'AzureAd__ClientId', 'value', parameters('entraClientId')), createObject('name', 'AzureAd__CallbackPath', 'value', '/signin-oidc')), createArray())))]"
+                    "value": "[flatten(createArray(createArray(createObject('name', 'EncryptionKey', 'secretRef', 'encryption-key'), createObject('name', 'AZURE_CLIENT_ID', 'value', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2023-01-31').clientId), createObject('name', 'StorageAccountName', 'value', parameters('storageAccountName')), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'secretRef', 'app-insights-connection-string'), createObject('name', 'ASPNETCORE_FORWARDEDHEADERS_ENABLED', 'value', 'true'), createObject('name', 'RegistrationUrl', 'value', parameters('registrationUrl')), createObject('name', 'ProxyInternalUrl', 'value', parameters('proxyInternalUrl'))), if(not(empty(parameters('entraClientId'))), createArray(createObject('name', 'AzureAd__Instance', 'value', environment().authentication.loginEndpoint), createObject('name', 'AzureAd__TenantId', 'value', parameters('entraTenantId')), createObject('name', 'AzureAd__ClientId', 'value', parameters('entraClientId')), createObject('name', 'AzureAd__CallbackPath', 'value', '/signin-oidc')), createArray())))]"
                   }
                 },
                 "template": {
@@ -1954,7 +1956,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "10937800105126805495"
+              "templateHash": "13779452115465493095"
             }
           },
           "parameters": {
@@ -1988,11 +1990,11 @@
             },
             "allowSharedKeyAccess": {
               "type": "bool",
-              "defaultValue": true
+              "defaultValue": false
             },
             "defaultToOAuthAuthentication": {
               "type": "bool",
-              "defaultValue": false
+              "defaultValue": true
             },
             "dnsEndpointType": {
               "type": "string",
@@ -2014,12 +2016,12 @@
               "type": "object",
               "defaultValue": {
                 "bypass": "AzureServices",
-                "defaultAction": "Allow"
+                "defaultAction": "Deny"
               }
             },
             "publicNetworkAccess": {
               "type": "string",
-              "defaultValue": "Enabled",
+              "defaultValue": "Disabled",
               "allowedValues": [
                 "Enabled",
                 "Disabled"
@@ -2067,15 +2069,169 @@
               "type": "string",
               "value": "[parameters('name')]"
             },
-            "connectionString": {
+            "id": {
               "type": "string",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', parameters('name'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '2022-05-01').keys[0].value, environment().suffixes.storage)]"
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
             }
           }
         }
       },
       "dependsOn": [
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('{0}-rg', parameters('name')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "storage-role-proxy",
+      "resourceGroup": "[format('{0}-rg', parameters('name'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.name.value]"
+          },
+          "principalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'proxy'), '2025-04-01').outputs.SERVICE_PROXY_IDENTITY_PRINCIPAL_ID.value]"
+          },
+          "roleDefinitionId": {
+            "value": "0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3"
+          },
+          "principalType": {
+            "value": "ServicePrincipal"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "13146500908004644016"
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string"
+            },
+            "principalId": {
+              "type": "string"
+            },
+            "principalType": {
+              "type": "string",
+              "defaultValue": "ServicePrincipal",
+              "allowedValues": [
+                "Device",
+                "ForeignGroup",
+                "Group",
+                "ServicePrincipal",
+                "User"
+              ]
+            },
+            "roleDefinitionId": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+              "name": "[guid(resourceGroup().id, parameters('storageAccountName'), parameters('principalId'), parameters('roleDefinitionId'))]",
+              "properties": {
+                "principalId": "[parameters('principalId')]",
+                "principalType": "[parameters('principalType')]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'proxy')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('{0}-rg', parameters('name')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "storage-role-admin",
+      "resourceGroup": "[format('{0}-rg', parameters('name'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.name.value]"
+          },
+          "principalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'admin'), '2025-04-01').outputs.SERVICE_ADMIN_IDENTITY_PRINCIPAL_ID.value]"
+          },
+          "roleDefinitionId": {
+            "value": "0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3"
+          },
+          "principalType": {
+            "value": "ServicePrincipal"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "13146500908004644016"
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string"
+            },
+            "principalId": {
+              "type": "string"
+            },
+            "principalType": {
+              "type": "string",
+              "defaultValue": "ServicePrincipal",
+              "allowedValues": [
+                "Device",
+                "ForeignGroup",
+                "Group",
+                "ServicePrincipal",
+                "User"
+              ]
+            },
+            "roleDefinitionId": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+              "name": "[guid(resourceGroup().id, parameters('storageAccountName'), parameters('principalId'), parameters('roleDefinitionId'))]",
+              "properties": {
+                "principalId": "[parameters('principalId')]",
+                "principalType": "[parameters('principalType')]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'admin')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('{0}-rg', parameters('name')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account')]"
       ]
     },
     {
@@ -2327,9 +2483,6 @@
           },
           "proxyPrincipalId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'proxy'), '2025-04-01').outputs.SERVICE_PROXY_IDENTITY_PRINCIPAL_ID.value]"
-          },
-          "proxySystemPrincipalId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'proxy'), '2025-04-01').outputs.SERVICE_PROXY_SYSTEM_IDENTITY_PRINCIPAL_ID.value]"
           }
         },
         "template": {
@@ -2339,7 +2492,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.42.1.51946",
-              "templateHash": "581409916203064280"
+              "templateHash": "6106855315238716465"
             }
           },
           "parameters": {
@@ -2358,12 +2511,6 @@
               "type": "string",
               "metadata": {
                 "description": "Principal ID of the proxy user-assigned managed identity for ACR pull"
-              }
-            },
-            "proxySystemPrincipalId": {
-              "type": "string",
-              "metadata": {
-                "description": "Principal ID of the proxy system-assigned managed identity used by DefaultAzureCredential"
               }
             }
           },
@@ -2408,20 +2555,6 @@
               "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', format('{0}-aifoundry', parameters('name'))), parameters('proxyPrincipalId'), '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')]",
               "properties": {
                 "principalId": "[parameters('proxyPrincipalId')]",
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')]",
-                "principalType": "ServicePrincipal"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.CognitiveServices/accounts', format('{0}-aifoundry', parameters('name')))]"
-              ]
-            },
-            {
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', format('{0}-aifoundry', parameters('name')))]",
-              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', format('{0}-aifoundry', parameters('name'))), parameters('proxySystemPrincipalId'), '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')]",
-              "properties": {
-                "principalId": "[parameters('proxySystemPrincipalId')]",
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')]",
                 "principalType": "ServicePrincipal"
               },

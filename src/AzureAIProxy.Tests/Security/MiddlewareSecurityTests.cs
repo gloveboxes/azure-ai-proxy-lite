@@ -117,7 +117,7 @@ public class MiddlewareSecurityTests
     }
 
     [Fact]
-    public async Task RateLimiterHandler_AtDailyCap_StillAllowed()
+    public async Task RateLimiterHandler_AtDailyCap_ReturnsTooManyRequests()
     {
         var nextCalled = false;
         var rateLimit = new StubRateLimitService { RequestCountToReturn = 100 };
@@ -129,9 +129,11 @@ public class MiddlewareSecurityTests
 
         var context = new DefaultHttpContext();
         context.Items["RequestContext"] = TestData.CreateRequestContext(apiKey: "key-1", dailyRequestCap: 100);
+        context.Response.Body = new MemoryStream();
 
         await middleware.InvokeAsync(context);
 
-        Assert.True(nextCalled);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, context.Response.StatusCode);
+        Assert.False(nextCalled);
     }
 }

@@ -8,7 +8,7 @@ namespace AzureAIProxy.Tests.Routes;
 /// <summary>
 /// Verifies that the daily request rate limit is enforced end-to-end through
 /// the real application pipeline. Seeds an event with a low DailyRequestCap
-/// and confirms that requests are rejected with 429 once the cap is exceeded.
+/// and confirms that requests are rejected with 429 once the cap is reached.
 /// </summary>
 public class DailyRateLimitRouteTests : IClassFixture<ProxyAppFixture>
 {
@@ -51,26 +51,20 @@ public class DailyRateLimitRouteTests : IClassFixture<ProxyAppFixture>
         var catalogId = Guid.NewGuid().ToString();
 
         // DailyRequestCap = 1.
-        // The RateLimiterHandler checks `requestCount > DailyRequestCap` BEFORE the
+        // The RateLimiterHandler checks `requestCount >= DailyRequestCap` BEFORE the
         // request executes, and IncrementUsage runs AFTER the response. So:
-        //   Request 1: count=0 (0 > 1 false → passes), then increments to 1
-        //   Request 2: count=1 (1 > 1 false → passes), then increments to 2
-        //   Request 3: count=2 (2 > 1 true  → 429)
+        //   Request 1: count=0 (0 >= 1 false → passes), then increments to 1
+        //   Request 2: count=1 (1 >= 1 true  → 429)
         await _fixture.SeedEventAsync(eventId, "owner-limit", catalogIds: catalogId, dailyRequestCap: 1);
         await _fixture.SeedCatalogAsync(catalogId, "gpt-4o", ModelType.Foundry_Model.ToStorageString());
         var apiKey = await _fixture.SeedAttendeeAsync("user-limit", eventId);
 
-        // First two requests succeed (count goes 0→1→2)
-        for (int i = 0; i < 2; i++)
-        {
-            var request = CreateChatRequest(apiKey);
-            var response = await _fixture.Client.SendAsync(request);
+        // First request succeeds (count goes 0→1)
+        var firstRequest = CreateChatRequest(apiKey);
+        var firstResponse = await _fixture.Client.SendAsync(firstRequest);
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
-            Assert.True(response.StatusCode == HttpStatusCode.OK,
-                $"Request {i + 1} should have succeeded but got {(int)response.StatusCode}");
-        }
-
-        // Third request sees count=2 > cap=1 → 429
+        // Second request sees count=1 >= cap=1 → 429
         var blockedRequest = CreateChatRequest(apiKey);
         var blockedResponse = await _fixture.Client.SendAsync(blockedRequest);
 
@@ -87,20 +81,17 @@ public class DailyRateLimitRouteTests : IClassFixture<ProxyAppFixture>
         var eventId = $"evt-{Guid.NewGuid():N}";
         var catalogId = Guid.NewGuid().ToString();
 
-        // cap=1 → 2 requests succeed, 3rd blocked (see timing notes above)
+        // cap=1 → 1 request succeeds, 2nd blocked (see timing notes above)
         await _fixture.SeedEventAsync(eventId, "owner-limit", catalogIds: catalogId, dailyRequestCap: 1);
         await _fixture.SeedCatalogAsync(catalogId, "gpt-4o", ModelType.Foundry_Model.ToStorageString());
         var keyA = await _fixture.SeedAttendeeAsync("user-a", eventId);
         var keyB = await _fixture.SeedAttendeeAsync("user-b", eventId);
 
-        // Send 2 requests with key A to accumulate count past the cap
-        for (int i = 0; i < 2; i++)
-        {
-            var resp = await _fixture.Client.SendAsync(CreateChatRequest(keyA));
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-        }
+        // Send 1 request with key A to reach the cap
+        var firstA = await _fixture.Client.SendAsync(CreateChatRequest(keyA));
+        Assert.Equal(HttpStatusCode.OK, firstA.StatusCode);
 
-        // Key A is now rate-limited (count=2 > cap=1)
+        // Key A is now rate-limited (count=1 >= cap=1)
         var limitedResp = await _fixture.Client.SendAsync(CreateChatRequest(keyA));
         Assert.Equal(HttpStatusCode.TooManyRequests, limitedResp.StatusCode);
 

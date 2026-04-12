@@ -8,8 +8,7 @@ param containerAppsEnvironmentName string
 param containerRegistryName string
 param serviceName string = 'proxy'
 param exists bool
-@secure()
-param storageConnectionString string
+param storageAccountName string
 @secure()
 param encryptionKey string
 @secure()
@@ -56,10 +55,6 @@ module app '../core/host/container-app-upsert.bicep' = {
         value: encryptionKey
       }
       {
-        name: 'storage-connection-string'
-        value: storageConnectionString
-      }
-      {
         name: 'app-insights-connection-string'
         value: appInsightsConnectionString
       }
@@ -70,8 +65,13 @@ module app '../core/host/container-app-upsert.bicep' = {
         secretRef: 'encryption-key'
       }
       {
-        name: 'ConnectionStrings__StorageAccount'
-        secretRef: 'storage-connection-string'
+        // Explicitly select the user-assigned identity for DefaultAzureCredential.
+        name: 'AZURE_CLIENT_ID'
+        value: proxyIdentity.properties.clientId
+      }
+      {
+        name: 'StorageAccountName'
+        value: storageAccountName
       }
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

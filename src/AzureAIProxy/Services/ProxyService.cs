@@ -184,8 +184,7 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
 
             foreach (var key in form.Keys.Where(k => k != "file" && !StringValues.IsNullOrEmpty(form[k])))
             {
-                var encodedValue = HttpUtility.HtmlEncode(form[key]!);
-                var fieldContent = new StringContent(encodedValue);
+                var fieldContent = new StringContent(form[key]!);
                 multipartContent.Add(fieldContent, key);
             }
 

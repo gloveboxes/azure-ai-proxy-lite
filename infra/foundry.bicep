@@ -5,9 +5,6 @@ param tags object = {}
 @description('Principal ID of the proxy user-assigned managed identity for ACR pull')
 param proxyPrincipalId string
 
-@description('Principal ID of the proxy system-assigned managed identity used by DefaultAzureCredential')
-param proxySystemPrincipalId string
-
 // AI Foundry account
 resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
   name: '${name}-aifoundry'
@@ -50,18 +47,6 @@ resource proxyOpenAIRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   scope: aiServices
   properties: {
     principalId: proxyPrincipalId
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// Grant the proxy's system-assigned managed identity "Cognitive Services OpenAI User" on the AI Services account
-// DefaultAzureCredential in the proxy code uses the system-assigned identity
-resource proxySystemOpenAIRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(aiServices.id, proxySystemPrincipalId, '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
-  scope: aiServices
-  properties: {
-    principalId: proxySystemPrincipalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
     principalType: 'ServicePrincipal'
   }
