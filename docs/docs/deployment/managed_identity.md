@@ -2,11 +2,11 @@
 
 ## Overview
 
-This proxy supports **Azure Managed Identity** authentication to access Azure OpenAI Service and Azure AI Foundry Agent Service resources. This eliminates the need to store API keys — the proxy authenticates using its system-assigned managed identity and Azure RBAC.
+This proxy supports **Azure Managed Identity** authentication to access Azure OpenAI Service and Azure AI Foundry Agent Service resources. This eliminates the need to store API keys — the proxy authenticates using its user-assigned managed identity and Azure RBAC.
 
 ## Required RBAC Permissions
 
-The proxy's **system-assigned managed identity** needs different roles depending on which services it proxies to.
+The proxy's **user-assigned managed identity** needs different roles depending on which services it proxies to.
 
 ### Azure OpenAI Service
 
@@ -113,7 +113,7 @@ The proxy uses `DefaultAzureCredential` which tries authentication methods in or
 
 ### Adding Models via Admin UI
 
-1. Navigate to Models page → "Add Model"
+1. Navigate to **Resources** → **+ New Resource**
 2. Fill in:
    - **Friendly Name**: e.g., "Production GPT-4o"
    - **Deployment Name**: Your deployment name

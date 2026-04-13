@@ -9,7 +9,7 @@ The following assumes you have an AI Proxy deployment for your organization and 
 This is typically a one-off process. Once you have configured the resources, you can use the same resources for multiple events.
 
 1. Create the required Azure AI resources (OpenAI models, AI Search services, Foundry Agents, etc.) in your Azure subscription.
-1. Sign into the AI Proxy Admin portal using the admin username and password (see [Authenticating with the AI Proxy Admin](deployment/azure.md#authenticating-with-the-ai-proxy-admin)).
+1. Sign into the AI Proxy Admin portal (see [Authenticating with the AI Proxy Admin](deployment/azure.md#authenticating-with-the-ai-proxy-admin)).
 1. Select the `Resources` tab, then add a collection of resources that you will use for your events.
 
     ![Add resources](./media/proxy-resources.png)

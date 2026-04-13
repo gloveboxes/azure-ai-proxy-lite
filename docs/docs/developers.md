@@ -23,6 +23,7 @@ The Azure AI Proxy supports the following APIs:
 | **Azure Inference Chat**       | `/api/v1/chat/completions`                                                 | Azure Inference (Mistral-compatible) chat completions |
 | **Azure Inference Embeddings** | `/api/v1/embeddings`                                                       | Azure Inference text embeddings                       |
 | **Image Embeddings**           | `/api/v1/images/embeddings`                                                | Azure Inference image embeddings                      |
+| **Azure Inference Info**       | `/api/v1/info`                                                             | Azure AI Model Inference model metadata               |
 | **Azure AI Search**            | `/api/v1/indexes/{indexName}/docs/search`                                  | Azure AI Search queries                               |
 | **Foundry Agents**             | `/api/v1/agents`, `/api/v1/assistants`, `/api/v1/threads`, `/api/v1/files` | Azure AI Foundry Agent Service operations             |
 | **Foundry Conversations**      | `/api/v1/openai/v1/conversations`                                          | Azure AI Foundry conversation management              |

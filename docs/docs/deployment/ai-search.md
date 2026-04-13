@@ -52,7 +52,7 @@ For security, use a **read-only Query API Key** rather than an Admin key. A quer
 ## Step 2: Register the Search Service in the Proxy Admin UI
 
 1. Log in to the proxy admin UI.
-2. Go to **Model Management** → **Add Model**.
+2. Go to **Resources** → **+ New Resource**.
 3. Fill in the fields:
 
     | Field | Value | Example |

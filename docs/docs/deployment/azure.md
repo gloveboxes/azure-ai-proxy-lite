@@ -14,7 +14,7 @@ This repo is set up for deployment on Azure Container Apps using the configurati
 
 1. An Azure subscription
 2. The Azure CLI logged in to a tenant where you have permission to create Entra ID app registrations
-3. Deployed Azure AI models (OpenAI, Foundry, etc.)
+3. An Azure region that supports the AI models you plan to deploy (models are deployed after `azd up`)
 
 ### Required permissions
 
@@ -76,6 +76,7 @@ The recommended way to deploy this app is with Dev Containers. Install the [VS C
     2. **Azure subscription** — select from your Azure account.
     3. **Location** — e.g., "centralus" or "eastus".
     4. **swaLocation** — location for the Static Web App (choose from the allowed list). Recommend deploying in the same location as the proxy.
+    5. **foundryLocation** — location for the Azure AI Foundry project and model deployments.
 
     The deployment will automatically:
 
@@ -136,4 +137,4 @@ azd up
 
 ## Troubleshooting
 
-If you encounter any issues deploying the solution, please raise an issue on the [GitHub repo](https://gloveboxes.github.io/azure-ai-proxy-lite/issues)
+If you encounter any issues deploying the solution, please raise an issue on the [GitHub repo](https://github.com/gloveboxes/azure-ai-proxy-lite/issues)

@@ -161,7 +161,7 @@ MCP_API_KEY="my-secret-key" python server.py
 ## Step 3: Register the MCP Server in the Proxy Admin UI
 
 1. Log in to the proxy management UI.
-2. Go to **Model Management** → **Add Model**.
+2. Go to **Resources** → **+ New Resource**.
 3. Fill in the fields:
 
     | Field | Value | Example |

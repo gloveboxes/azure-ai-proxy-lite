@@ -1,4 +1,4 @@
-# Local Docker Deployment
+# Docker Deployment
 
 For LAN or offline deployments (e.g., workshops without Azure), you can run the full stack locally using Docker Compose with Azurite (an open-source Azure Table Storage emulator). The local deployment uses **username/password authentication** instead of Entra ID.
 

@@ -6,7 +6,7 @@ Once you have configured the resources, you can use the same resources for multi
 
 From the AI Proxy Admin portal, you can create and manage events. An event is a time bound access to the AI Proxy service.
 
-1. Sign into the AI Proxy Admin portal using the admin username and password (see [Authenticating with the AI Proxy Admin](deployment/azure.md#authenticating-with-the-ai-proxy-admin)).
+1. Sign into the AI Proxy Admin portal (see [Authenticating with the AI Proxy Admin](deployment/azure.md#authenticating-with-the-ai-proxy-admin)).
 1. Select the `Events` tab, then add a new event.
 
       ![](./media/proxy-events.png)

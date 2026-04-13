@@ -2,6 +2,12 @@ site_name: Azure AI Proxy
 
 nav:
   - Introduction: index.md
+  - Deployment:
+    - Deploy to Azure: deployment/azure.md
+    - MCP Servers: deployment/mcp-servers.md
+    - Azure AI Search: deployment/ai-search.md
+    - Managed Identity: deployment/managed_identity.md
+    - Docker Deployment: deployment/lan.md
   - Resources: resources.md
   - Events: events.md
   - Attendees: attendee.md
@@ -10,12 +16,6 @@ nav:
   - AI Toolkit: ai_toolkit.md
   - Developers: developers.md
   - Security Architecture: security_architecture.md
-  - Deployment:
-    - Deploy to Azure: deployment/azure.md
-    - Local Docker Deployment: deployment/lan.md
-    - MCP Servers: deployment/mcp-servers.md
-    - Azure AI Search: deployment/ai-search.md
-    - Managed Identity: deployment/managed_identity.md
   - Workshops: workshops.md
   - FAQ: faq.md
 
