@@ -10,11 +10,11 @@ The proxy's **user-assigned managed identity** needs different roles depending o
 
 ### Azure OpenAI Service
 
-For proxying standard OpenAI endpoints (chat completions, embeddings, DALL-E, whisper, assistants, files):
+For proxying standard OpenAI endpoints (chat completions, embeddings):
 
 | Role | Role ID | Scope | Purpose |
 |------|---------|-------|---------|
-| **Cognitive Services OpenAI User** | `5e0bd9bd-7b93-4f28-af87-19fc36ad61bd` | Azure OpenAI account | Read/write access to OpenAI deployments (chat, embeddings, DALL-E, whisper, completions) |
+| **Cognitive Services OpenAI User** | `5e0bd9bd-7b93-4f28-af87-19fc36ad61bd` | Azure OpenAI account | Read/write access to OpenAI deployments (chat, embeddings) |
 
 **Token scope**: `https://cognitiveservices.azure.com/.default`
 
@@ -61,7 +61,7 @@ https://<account>.cognitiveservices.azure.com/...
 
 | Scenario | Role | Scope |
 |----------|------|-------|
-| OpenAI (chat, embeddings, DALL-E, etc.) | Cognitive Services OpenAI User | OpenAI account |
+| OpenAI (chat, embeddings) | Cognitive Services OpenAI User | OpenAI account |
 | Foundry Agents (model access) | Cognitive Services OpenAI User | AI Services hub |
 | Foundry Agents (agent operations) | Azure AI User | AI Foundry project |
 
@@ -69,19 +69,27 @@ https://<account>.cognitiveservices.azure.com/...
 
 A script is provided to automate RBAC role assignment. You can download the helper script <a href="https://raw.githubusercontent.com/gloveboxes/azure-ai-proxy-lite/refs/heads/main/scripts/setup-managed-identity-rbac.sh" target="_blank">setup-managed-identity-rbac.sh</a>.
 
+
 ## Authentication Flow
 
-1. **Request arrives** at proxy endpoint
-2. **Catalog lookup** retrieves deployment configuration including `UseManagedIdentity` flag
-3. **Authentication header creation**:
-   - If `UseManagedIdentity = true`:
-     - **Foundry Agent** models: acquires token with scope `https://ai.azure.com/.default`
-     - **All other models**: acquires token with scope `https://cognitiveservices.azure.com/.default`
-     - Header: `Authorization: Bearer <token>`
-   - If `UseManagedIdentity = false`:
-     - Uses encrypted API key from catalog
-     - Header: `api-key: <key>` (or `Authorization: Bearer <key>` for Azure Inference)
-4. **Request forwarded** to upstream endpoint with appropriate auth
+```mermaid
+flowchart LR
+A[Request]
+B[Catalog Lookup]
+C{Use MI?}
+D[Foundry Agent?]
+E[Token: ai.azure.com]
+F[Token: cogs]
+G[Header: Bearer]
+H[Header: api-key]
+I[Forward]
+
+A --> B --> C
+C -- Yes --> D
+D -- Yes --> E --> G --> I
+D -- No --> F --> G --> I
+C -- No --> H --> I
+```
 
 ### DefaultAzureCredential Chain
 
