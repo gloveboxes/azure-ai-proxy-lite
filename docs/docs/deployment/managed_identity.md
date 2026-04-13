@@ -128,6 +128,7 @@ The proxy uses `DefaultAzureCredential` which tries authentication methods in or
 ### For Developers — Testing Locally
 
 The proxy uses `DefaultAzureCredential` which falls back to:
+
 - **Azure CLI credentials**: Run `az login` first
 - **Environment variables**: Set `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET`
 

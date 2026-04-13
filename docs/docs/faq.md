@@ -14,7 +14,7 @@
 
 1. **Can I use Managed Identity instead of API keys?**
 
-    Yes. The proxy supports Azure Managed Identity authentication for all resource types. Enable the **Use Managed Identity** toggle when adding a resource. See the [Managed Identity guide](managed_identity.md) for RBAC setup instructions.
+    Yes. The proxy supports Azure Managed Identity authentication for all resource types. Enable the **Use Managed Identity** toggle when adding a resource. See the [Managed Identity guide](deployment/managed_identity.md) for RBAC setup instructions.
 
 1. **What is the Daily Request Cap?**
 

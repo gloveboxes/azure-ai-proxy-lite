@@ -89,7 +89,7 @@ print(completion.choices[0].message.content)
 The Azure AI Proxy supports pass-through access to the Azure AI Foundry Agent Service. This includes operations for agents, assistants, threads, files, conversations, and responses.
 
 !!! note
-    Foundry Agent resources require **Managed Identity** authentication. See the [Managed Identity guide](managed_identity.md) for setup instructions.
+    Foundry Agent resources require **Managed Identity** authentication. See the [Managed Identity guide](deployment/managed_identity.md) for setup instructions.
 
 The proxy tracks object ownership so that each attendee can only access the agents, threads, files, and other objects they created.
 

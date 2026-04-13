@@ -4,12 +4,12 @@ To use the Azure AI Proxy, you need to configure the resources. This guide will 
 
 ## Managing resources
 
-The following assumes you have an AI Proxy deployment for your organization and have access to the AI Proxy Admin portal to configure the resources. If you do not have an AI Proxy deployment, please refer to the [deployment guide](deployment.md).
+The following assumes you have an AI Proxy deployment for your organization and have access to the AI Proxy Admin portal to configure the resources. If you do not have an AI Proxy deployment, please refer to the [deployment guide](deployment/azure.md).
 
 This is typically a one-off process. Once you have configured the resources, you can use the same resources for multiple events.
 
 1. Create the required Azure AI resources (OpenAI models, AI Search services, Foundry Agents, etc.) in your Azure subscription.
-1. Sign into the AI Proxy Admin portal using the admin username and password (see [Authenticating with the AI Proxy Admin](deployment.md#authenticating-with-the-ai-proxy-admin)).
+1. Sign into the AI Proxy Admin portal using the admin username and password (see [Authenticating with the AI Proxy Admin](deployment/azure.md#authenticating-with-the-ai-proxy-admin)).
 1. Select the `Resources` tab, then add a collection of resources that you will use for your events.
 
     ![Add resources](./media/proxy-resources.png)
@@ -36,7 +36,7 @@ The proxy supports the following resource types:
 
 The proxy supports model deployments secured with either **API Keys** or **Azure Managed Identity authentication**. This is the recommended approach for Azure Foundry model deployments and is **REQUIRED** if using the **Azure AI Foundry Agent Service** via the proxy.
 
-For step-by-step instructions on setting up Managed Identity, see the [Managed Identity guide](managed_identity.md).
+For step-by-step instructions on setting up Managed Identity, see the [Managed Identity guide](deployment/managed_identity.md).
 
 ### Duplicate resources
 
