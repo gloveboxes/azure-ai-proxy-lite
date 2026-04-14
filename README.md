@@ -71,6 +71,45 @@ graph LR
 
     - **Object Ownership Isolation**: Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.
 
+### Security Architecture
+
+```mermaid
+graph LR
+    subgraph Clients["Clients"]
+        admin_user["Admin User"]
+        attendee["Attendee"]
+        sdk["SDK / REST Client"]
+    end
+
+    subgraph Apps["Application Layer"]
+        reg["Registration App<br/>(Static Web App + Auth)"]
+        admin["Admin UI"]
+        proxy["Azure AI Proxy"]
+    end
+
+    subgraph Backends["Azure Backends"]
+        storage[("Table Storage")]
+        ai["Azure AI Foundry / OpenAI"]
+        ext["MCP / AI Search<br/>(optional)"]
+    end
+
+    attendee -->|"GitHub OAuth"| reg
+    reg -->|"x-ms-client-principal"| proxy
+    sdk -->|"api-key / bearer over TLS"| proxy
+    admin_user -->|"Entra ID or local admin auth"| admin
+
+    admin -->|"Managed Identity"| storage
+    admin -.->|"Internal cache invalidation"| proxy
+
+    proxy -->|"Managed Identity"| storage
+    proxy -->|"Managed Identity or encrypted upstream key"| ai
+    proxy -->|"Managed Identity or encrypted upstream key"| ext
+```
+
+The proxy is the main security boundary. Attendees authenticate through the registration flow or present an event API key to the proxy, but they never receive direct access to Azure AI resources or the organizer's real upstream credentials.
+
+In Azure, the proxy and admin app use user-assigned managed identities with RBAC for storage and AI access. The proxy also enforces event-scoped authorization, time windows, daily request caps, and token caps before forwarding approved traffic upstream.
+
 
 ### Reporting & Analytics
 

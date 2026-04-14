@@ -24,3 +24,4 @@ generate_*.log
 
 # Test results
 TestResults/
+.codex
