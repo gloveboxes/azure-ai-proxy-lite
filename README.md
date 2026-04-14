@@ -67,9 +67,9 @@ graph LR
 - Managed Identity support (eliminate API key storage entirely with RBAC)
 - This update streamlines how the Foundry Agent Service operates by focusing on security and identity management:
 
-    - **Managed Identity Integration**: Automatically maps Foundry Agent Service Managed Identity requirements to the Event API Key, ensuring seamless authentication.
+  - **Managed Identity Integration**: Automatically maps Foundry Agent Service Managed Identity requirements to the Event API Key, ensuring seamless authentication.
 
-    - **Object Ownership Isolation**: Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.
+  - **Object Ownership Isolation**: Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.
 
 ### Security Architecture
 
@@ -110,7 +110,6 @@ graph LR
 The proxy is the main security boundary. Attendees authenticate through the registration flow or present an event API key to the proxy, but they never receive direct access to Azure AI resources or the organizer's real upstream credentials.
 
 In Azure, the proxy and admin app use user-assigned managed identities with RBAC for storage and AI access. The proxy also enforces event-scoped authorization, time windows, daily request caps, and token caps before forwarding approved traffic upstream.
-
 
 ### Reporting & Analytics
 
