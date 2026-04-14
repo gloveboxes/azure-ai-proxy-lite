@@ -74,6 +74,7 @@ graph LR
 ### Security Architecture
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4a90d9', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#2c5f9e', 'lineColor': '#4a90d9', 'secondaryColor': '#a8c8e8', 'tertiaryColor': '#dce9f5'}}}%%
 graph LR
     subgraph Clients["Clients"]
         admin_user["Admin User"]
