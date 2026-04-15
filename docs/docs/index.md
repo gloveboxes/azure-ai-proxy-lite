@@ -4,7 +4,7 @@
 
 ## Introduction to the Azure AI Proxy
 
-A managed, multi-tenant proxy that sits between workshop attendees and Azure AI services, giving organisers full control over access, capacity, and usage tracking. Run multiple workshops simultaneously with full data isolation between events.
+A managed, multi-tenant proxy that sits between workshop attendees and Azure AI services, giving organisers full control over access, capacity, and usage tracking. Its purpose is to simplify running workshops, particularly community and online events, and make the attendee experience friction-free. Run multiple workshops simultaneously with full data isolation between events.
 
 ## Architecture
 
