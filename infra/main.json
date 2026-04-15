@@ -76,10 +76,15 @@
         },
         "description": "Location for the Azure AI Foundry project and model deployments"
       }
+    },
+    "encryptionKey": {
+      "type": "secureString",
+      "metadata": {
+        "description": "High-entropy encryption key used to protect stored secrets and internal cache invalidation."
+      }
     }
   },
   "variables": {
-    "encryptionKey": "[format('{0}{1}{2}', uniqueString(subscription().id, parameters('name'), 'enc-key'), uniqueString(parameters('name'), parameters('location'), 'enc-key'), uniqueString(subscription().id, parameters('location'), 'enc-key'))]",
     "resourceToken": "[toLower(uniqueString(subscription().id, parameters('name'), parameters('location')))]",
     "tags": {
       "azd-env-name": "[parameters('name')]"
@@ -458,7 +463,7 @@
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.name.value]"
           },
           "encryptionKey": {
-            "value": "[variables('encryptionKey')]"
+            "value": "[parameters('encryptionKey')]"
           },
           "registrationUrl": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'registration'), '2025-04-01').outputs.SERVICE_WEB_URI.value]"
@@ -1219,7 +1224,7 @@
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'storage-account'), '2025-04-01').outputs.name.value]"
           },
           "encryptionKey": {
-            "value": "[variables('encryptionKey')]"
+            "value": "[parameters('encryptionKey')]"
           },
           "registrationUrl": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}-rg', parameters('name'))), 'Microsoft.Resources/deployments', 'registration'), '2025-04-01').outputs.SERVICE_WEB_URI.value]"

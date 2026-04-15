@@ -8,6 +8,9 @@
     "location": {
       "value": "${AZURE_LOCATION}"
     },
+    "encryptionKey": {
+      "value": "${ENCRYPTION_KEY}"
+    },
     "swaLocation": {
       "value": "${SWA_LOCATION}"
     },

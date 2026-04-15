@@ -44,8 +44,9 @@ param swaLocation string
 })
 param foundryLocation string
 
-// Generate a deterministic encryption key unique to this deployment
-var encryptionKey = '${uniqueString(subscription().id, name, 'enc-key')}${uniqueString(name, location, 'enc-key')}${uniqueString(subscription().id, location, 'enc-key')}'
+@secure()
+@description('High-entropy encryption key used to protect stored secrets and internal cache invalidation.')
+param encryptionKey string
 
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }

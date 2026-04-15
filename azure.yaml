@@ -31,7 +31,9 @@ hooks:
     shell: sh
     continueOnError: false
     interactive: true
-    run: infra/scripts/setup-app-registration.sh
+    run: |
+      infra/scripts/ensure-encryption-key.sh
+      infra/scripts/setup-app-registration.sh
 
   postprovision:
     shell: sh
