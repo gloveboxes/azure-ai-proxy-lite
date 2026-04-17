@@ -592,7 +592,7 @@
                     "value": 1
                   },
                   "scaleCooldownPeriod": {
-                    "value": 172800
+                    "value": 432000
                   },
                   "scaleRules": {
                     "value": [
@@ -1369,7 +1369,7 @@
                     "value": 1
                   },
                   "scaleCooldownPeriod": {
-                    "value": 172800
+                    "value": 432000
                   },
                   "scaleRules": {
                     "value": [
