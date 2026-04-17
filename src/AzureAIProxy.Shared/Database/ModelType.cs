@@ -5,7 +5,7 @@ public enum ModelType
     Azure_AI_Search,
     Foundry_Agent,
     MCP_Server,
-    AI_Toolkit,
+    Foundry_Toolkit,
     Foundry_Model
 }
 
@@ -16,7 +16,7 @@ public static class ModelTypeExtensions
         ["azure-ai-search"] = ModelType.Azure_AI_Search,
         ["foundry-agent"] = ModelType.Foundry_Agent,
         ["mcp-server"] = ModelType.MCP_Server,
-        ["ai-toolkit"] = ModelType.AI_Toolkit,
+        ["foundry-toolkit"] = ModelType.Foundry_Toolkit,
         ["foundry-model"] = ModelType.Foundry_Model,
     };
 

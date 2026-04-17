@@ -58,12 +58,12 @@ public static class Event
         // Get all capabilities (model type → deployment names) for this event
         var capabilities = await catalogService.GetCapabilitiesAsync(eventId);
 
-        // Get AI Toolkit deployments for this event
-        var aiToolkitDeployments = await catalogService.GetAiToolkitDeploymentsAsync(eventId);
-        if (aiToolkitDeployments.Count > 0 && proxyUrl is not null)
+        // Get Foundry Toolkit deployments for this event
+        var foundryToolkitDeployments = await catalogService.GetFoundryToolkitDeploymentsAsync(eventId);
+        if (foundryToolkitDeployments.Count > 0 && proxyUrl is not null)
         {
-            eventRegistrationInfo.AiToolkitEndpoints = aiToolkitDeployments
-                .Select(name => new AiToolkitEndpoint
+            eventRegistrationInfo.FoundryToolkitEndpoints = foundryToolkitDeployments
+                .Select(name => new FoundryToolkitEndpoint
                 {
                     DeploymentName = name,
                     EndpointUrl = $"{proxyUrl}/openai/deployments/{name}/chat/completions"

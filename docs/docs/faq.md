@@ -6,7 +6,7 @@
 
 1. **What resource types does the proxy support?**
 
-    The proxy supports five resource types: `Foundry Model` (chat completions, embeddings), `Foundry Agent` (Azure AI Foundry Agent Service), `MCP Server` (Model Context Protocol), `AI Toolkit` (VS Code AI Toolkit extension), and `Azure AI Search` (search queries). See [Configuring resources](resources.md) for details.
+    The proxy supports five resource types: `Foundry Model` (chat completions, embeddings), `Foundry Agent` (Azure AI Foundry Agent Service), `MCP Server` (Model Context Protocol), `Foundry Toolkit` (Foundry Toolkit extension), and `Azure AI Search` (search queries). See [Configuring resources](resources.md) for details.
 
 1. **How do I authenticate with the AI Proxy Admin portal?**
 

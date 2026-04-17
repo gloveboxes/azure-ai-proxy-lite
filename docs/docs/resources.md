@@ -29,7 +29,7 @@ The proxy supports the following resource types:
 | **Foundry Model** | Azure OpenAI / Foundry model deployments for chat completions and embeddings |
 | **Foundry Agent** | Azure AI Foundry Agent Service for agent, assistant, thread, file, conversation, and response operations |
 | **MCP Server** | Model Context Protocol server endpoints |
-| **AI Toolkit** | Models surfaced to attendees via the VS Code AI Toolkit extension |
+| **Foundry Toolkit** | Models surfaced to attendees via the Foundry Toolkit extension |
 | **Azure AI Search** | Pass-through access to Azure AI Search indexes |
 
 #### Adding Azure Foundry models with Managed Identity
@@ -52,20 +52,20 @@ To delete a resource, click on the `Delete` icon next to the resource you want t
 
 ![Image shows how to delete a resource](./media/proxy_delete_resource.png)
 
-### Adding AI Toolkit models
+### Adding Foundry Toolkit models
 
-The proxy supports resources of type **AI Toolkit**, which are surfaced to attendees using the VS Code AI Toolkit extension. When you create or edit a resource, select `AI Toolkit` from the **Type** dropdown.
+The proxy supports resources of type **Foundry Toolkit**, which are surfaced to attendees using the Foundry Toolkit extension. When you create or edit a resource, select `Foundry Toolkit` from the **Type** dropdown.
 
-AI Toolkit resources are listed as available model endpoints in the attendee registration page so that users can configure the AI Toolkit extension to connect through the proxy.
+Foundry Toolkit resources are listed as available model endpoints in the attendee registration page so that users can configure the Foundry Toolkit extension to connect through the proxy.
 
-#### Enabling AI Toolkit GPT-5.x compatibility
+#### Enabling Foundry Toolkit GPT-5.x compatibility
 
-Some newer models (e.g. GPT-5.x) only accept the `max_completion_tokens` parameter and reject the older `max_tokens` parameter. The AI Toolkit extension may still send `max_tokens` in requests, which causes these models to return errors.
+Some newer models (e.g. GPT-5.x) only accept the `max_completion_tokens` parameter and reject the older `max_tokens` parameter. The Foundry Toolkit extension may still send `max_tokens` in requests, which causes these models to return errors.
 
-To work around this, enable the **AI Toolkit GPT-5.x compatibility** toggle when editing an AI Toolkit resource. When enabled, the proxy automatically rewrites `max_tokens` to `max_completion_tokens` in outgoing requests for that resource.
+To work around this, enable the **Foundry Toolkit GPT-5.x compatibility** toggle when editing a Foundry Toolkit resource. When enabled, the proxy automatically rewrites `max_tokens` to `max_completion_tokens` in outgoing requests for that resource.
 
 !!! note
-    The **AI Toolkit GPT-5.x compatibility** toggle only appears when the resource type is set to `AI Toolkit`.
+    The **Foundry Toolkit GPT-5.x compatibility** toggle only appears when the resource type is set to `Foundry Toolkit`.
 
 ### Adding MCP Server resources
 

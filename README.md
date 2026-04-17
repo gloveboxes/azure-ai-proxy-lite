@@ -12,7 +12,7 @@ The solution documentation is published [here](https://gloveboxes.github.io/azur
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4a90d9', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#2c5f9e', 'lineColor': '#4a90d9', 'secondaryColor': '#a8c8e8', 'tertiaryColor': '#dce9f5'}}}%%
 graph LR
     Attendees --> Reg[Registration Portal]
-    Attendees --> T1[VS Code AI Toolkit]
+    Attendees --> T1[Foundry Toolkit]
     Attendees --> T2[SDK Clients]
     Attendees --> T3[REST Clients]
     Attendees --> T4[MCP Clients]
@@ -46,7 +46,7 @@ graph LR
 
 ### Broad AI Service Support
 
-- VS Code AI Toolkit integration for hands-on model experimentation
+- Foundry Toolkit integration for hands-on model experimentation
 - Azure OpenAI chat completions & embeddings (including streaming)
 - Azure AI Foundry Service Agents (assistants, threads, files, conversations, responses)
 - Azure AI Search pass-through for RAG scenarios
@@ -83,7 +83,7 @@ graph LR
     subgraph Clients["Clients"]
         admin_user["Admin User"]
         attendee["Attendee"]
-        ai_toolkit["VS Code AI Toolkit"]
+        foundry_toolkit["Foundry Toolkit"]
         sdk["SDK Client"]
         rest["REST Client"]
         mcp["MCP Client"]
@@ -103,7 +103,7 @@ graph LR
 
     attendee -->|"GitHub OAuth"| reg
     reg -->|"x-ms-client-principal"| proxy
-    ai_toolkit -->|"api-key / bearer over TLS"| proxy
+    foundry_toolkit -->|"api-key / bearer over TLS"| proxy
     sdk -->|"api-key / bearer over TLS"| proxy
     rest -->|"api-key / bearer over TLS"| proxy
     mcp -->|"api-key / bearer over TLS"| proxy

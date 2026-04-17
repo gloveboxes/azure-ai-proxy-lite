@@ -31,8 +31,8 @@ public class EventRegistration
     [JsonPropertyName("proxy_url")]
     public string? ProxyUrl { get; set; }
 
-    [JsonPropertyName("ai_toolkit_endpoints")]
-    public List<AiToolkitEndpoint>? AiToolkitEndpoints { get; set; }
+    [JsonPropertyName("foundry_toolkit_endpoints")]
+    public List<FoundryToolkitEndpoint>? FoundryToolkitEndpoints { get; set; }
 
     [JsonPropertyName("mcp_server_endpoints")]
     public List<McpServerEndpoint>? McpServerEndpoints { get; set; }
@@ -41,7 +41,7 @@ public class EventRegistration
     public Dictionary<string, List<string>>? Capabilities { get; set; }
 }
 
-public class AiToolkitEndpoint
+public class FoundryToolkitEndpoint
 {
     [JsonPropertyName("deployment_name")]
     public string DeploymentName { get; set; } = null!;

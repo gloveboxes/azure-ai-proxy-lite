@@ -16,7 +16,7 @@ import { useEffect, useReducer } from "react";
 import ReactMarkdown from "react-markdown";
 import { Form, useLoaderData } from "react-router-dom";
 import { reducer } from "./Registration.reducers";
-import type { AiToolkitEndpoint, AttendeeRegistration, EventDetails, McpServerEndpoint } from "./Registration.state";
+import type { FoundryToolkitEndpoint, AttendeeRegistration, EventDetails, McpServerEndpoint } from "./Registration.state";
 
 const useStyles = makeStyles({
   container: {
@@ -253,7 +253,7 @@ export const Registration = () => {
             <li>Read the event description including the <strong>Terms of use</strong>.</li>
             <li>Scroll to the bottom of the page and click <strong>Register</strong>.</li>
             <li>Next, scroll down to the <strong>Registration Details</strong> section for your API Key and Endpoint.</li>
-            <li>Then explore the <strong>AI Toolkit</strong>, <strong>MCP Server</strong>, and <strong>SDK</strong> support.</li>
+            <li>Then explore the <strong>Foundry Toolkit</strong>, <strong>MCP Server</strong>, and <strong>SDK</strong> support.</li>
             <li>Forgotten your API Key? Just <strong>revisit</strong> this page.</li>
           </ol>
         </>
@@ -302,17 +302,17 @@ export const Registration = () => {
               />
             </div>
           </div>
-          {event?.aiToolkitEndpoints && event.aiToolkitEndpoints.length > 0 && (
+          {event?.foundryToolkitEndpoints && event.foundryToolkitEndpoints.length > 0 && (
             <>
-              <h3>AI Toolkit Access</h3>
+              <h3>Foundry Toolkit Access</h3>
               <p className={styles.toolkitDescription}>
                 Use these endpoints to add custom models in the{" "}
                 <Link href="https://github.com/microsoft/vscode-ai-toolkit" target="_blank" rel="noopener noreferrer" inline>
-                  AI Toolkit for VS Code
+                  Foundry Toolkit for VS Code
                 </Link>.
                 Set your Event API Key as the authentication key when adding the model.
               </p>
-              {event.aiToolkitEndpoints.map((ep: AiToolkitEndpoint) => (
+              {event.foundryToolkitEndpoints.map((ep: FoundryToolkitEndpoint) => (
                 <div key={ep.deploymentName} className={styles.toolkitCard}>
                   <span className={styles.toolkitLabel}>Model:</span>
                   <span className={styles.toolkitValue}>{ep.deploymentName}</span>
@@ -464,13 +464,13 @@ if __name__ == "__main__":
             />
           </div>
           {event?.capabilities && (() => {
-            const aiToolkitNames = new Set(
-              (event.aiToolkitEndpoints ?? []).map((ep: AiToolkitEndpoint) => ep.deploymentName)
+            const foundryToolkitNames = new Set(
+              (event.foundryToolkitEndpoints ?? []).map((ep: FoundryToolkitEndpoint) => ep.deploymentName)
             );
             const filtered = Object.entries(event.capabilities)
               .sort(([a], [b]) => a.localeCompare(b))
               .flatMap(([, names]) =>
-                [...names].filter((n) => !aiToolkitNames.has(n)).sort((a, b) => a.localeCompare(b))
+                [...names].filter((n) => !foundryToolkitNames.has(n)).sort((a, b) => a.localeCompare(b))
               );
             if (filtered.length === 0) return null;
             return (

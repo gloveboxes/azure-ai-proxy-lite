@@ -80,7 +80,7 @@ def seed(
     all_event_ids = []
 
     # Create catalogs (shared across events)
-    model_types = ["foundry-model", "foundry-agent", "azure-ai-search", "ai-toolkit"]
+    model_types = ["foundry-model", "foundry-agent", "azure-ai-search", "foundry-toolkit"]
     deployment_names = [f"gpt-4-{i}" for i in range(catalogs_per_event * 2)]
     catalog_ids = []
 

@@ -11,7 +11,7 @@ A managed, multi-tenant proxy that sits between workshop attendees and Azure AI 
 ```mermaid
 graph LR
     Attendees --> Reg[Registration Portal]
-    Attendees --> T1[VS Code AI Toolkit]
+    Attendees --> T1[Foundry Toolkit]
     Attendees --> T2[SDK Clients]
     Attendees --> T3[REST Clients]
     Attendees --> T4[MCP Clients]
@@ -45,7 +45,7 @@ graph LR
 
 ### Broad AI Service Support
 
-- VS Code AI Toolkit integration for hands-on model experimentation
+- Foundry Toolkit integration for hands-on model experimentation
 - Azure OpenAI chat completions & embeddings (including streaming)
 - Azure AI Foundry Service Agents (assistants, threads, files, conversations, responses)
 - Azure AI Search pass-through for RAG scenarios

@@ -1,6 +1,6 @@
-# VS Code Foundry Toolkit
+# Foundry Toolkit
 
-The [VS Code Foundry Toolkit](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) extension is the first-class experience for prototyping and experimenting with AI models and agents through the Azure AI Proxy. It provides a rich, interactive environment for attendees to explore chat completions, test prompts, connect to MCP Servers, and interact with AI agents — all from within VS Code.
+The [Foundry Toolkit](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) extension is the first-class experience for prototyping and experimenting with AI models and agents through the Azure AI Proxy. It provides a rich, interactive environment for attendees to explore chat completions, test prompts, connect to MCP Servers, and interact with AI agents — all from within VS Code.
 
 ## Why the Foundry Toolkit?
 

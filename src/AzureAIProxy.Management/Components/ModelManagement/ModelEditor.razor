@@ -68,9 +68,9 @@
                         </MudTooltip>
                     </div>
 
-                    @if (Model.ModelType == ModelType.AI_Toolkit)
+                    @if (Model.ModelType == ModelType.Foundry_Toolkit)
                     {
-                        <MudSwitch @bind-Value="Model.UseMaxCompletionTokens" Label="AI Toolkit GPT-5.x compatibility" Color="Color.Primary" />
+                        <MudSwitch @bind-Value="Model.UseMaxCompletionTokens" Label="Foundry Toolkit GPT-5.x compatibility" Color="Color.Primary" />
                         <MudText Typo="Typo.caption" Class="mud-text-secondary mt-n2">When enabled: rewrites max_tokens to max_completion_tokens for GPT-5.x models that require it.</MudText>
                     }
                 </div>

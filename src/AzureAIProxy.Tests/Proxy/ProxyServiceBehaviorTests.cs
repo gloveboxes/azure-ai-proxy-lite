@@ -50,7 +50,7 @@ public class ProxyServiceBehaviorTests
     }
 
     [Fact]
-    public async Task HttpPostAsync_AIToolkit_RewritesMaxTokensToMaxCompletionTokens()
+    public async Task HttpPostAsync_FoundryToolkit_RewritesMaxTokensToMaxCompletionTokens()
     {
         var handler = new RecordingHttpMessageHandler((_, _) =>
             Task.FromResult(TestData.JsonResponse(HttpStatusCode.OK, "{\"ok\":true}")));
@@ -62,7 +62,7 @@ public class ProxyServiceBehaviorTests
             metricService,
             NullLogger<ProxyService>.Instance);
 
-        var deployment = TestData.CreateDeployment(ModelType.AI_Toolkit.ToStorageString(), useManagedIdentity: false);
+        var deployment = TestData.CreateDeployment(ModelType.Foundry_Toolkit.ToStorageString(), useManagedIdentity: false);
         deployment.UseMaxCompletionTokens = true;
 
         using var body = JsonDocument.Parse("{\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":123}");

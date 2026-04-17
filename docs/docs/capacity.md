@@ -38,9 +38,9 @@ For this example, a model deployment would need at least:
 
 When you create an event, you will set the `Max Token Cap` parameter. The Max Token Cap limits the tokens per request to a realistic number required for the prompt to complete successfully. This limit stops people requesting more tokens than required for the prompt to complete, as needed or not, the requested number of tokens is what is used to calculate the TPM for a model deployment. Note, billing is based on the actual tokens consumed.
 
-What would happen if there was no Max Token cap? If 20 attendees decided to set the Max response to 4000 via the AI Toolkit or SDKs, that would be 80000 TPM, multiply by 4 prompts per minute = 240000 TPM, you'll quickly run out of capacity impacting everyone in the workshop.
+What would happen if there was no Max Token cap? If 20 attendees decided to set the Max response to 4000 via the Foundry Toolkit or SDKs, that would be 80000 TPM, multiply by 4 prompts per minute = 240000 TPM, you'll quickly run out of capacity impacting everyone in the workshop.
 
-So, the Max Token Cap limits the Max response size for requests made via the VS Code AI Toolkit and developer SDKs.
+So, the Max Token Cap limits the Max response size for requests made via the Foundry Toolkit and developer SDKs.
 
 ## Scaling capacity
 

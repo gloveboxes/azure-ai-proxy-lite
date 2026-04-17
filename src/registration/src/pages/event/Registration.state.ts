@@ -1,6 +1,6 @@
 import { ClientPrincipal } from "@aaronpowell/react-static-web-apps-auth";
 
-export type AiToolkitEndpoint = {
+export type FoundryToolkitEndpoint = {
   deploymentName: string;
   endpointUrl: string;
 };
@@ -21,7 +21,7 @@ export type EventDetails = {
   organizerName: string;
   organizerEmail: string;
   proxyUrl?: string;
-  aiToolkitEndpoints?: AiToolkitEndpoint[];
+  foundryToolkitEndpoints?: FoundryToolkitEndpoint[];
   mcpServerEndpoints?: McpServerEndpoint[];
   capabilities?: Record<string, string[]>;
 };

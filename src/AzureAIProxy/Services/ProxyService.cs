@@ -348,13 +348,13 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
 
     /// <summary>
     /// Returns the JSON request body, rewriting max_tokens to max_completion_tokens
-    /// when the deployment is an AI Toolkit model with UseMaxCompletionTokens enabled.
-    /// This is a workaround for AI Toolkit sending max_tokens
+    /// when the deployment is a Foundry Toolkit model with UseMaxCompletionTokens enabled.
+    /// This is a workaround for Foundry Toolkit sending max_tokens
     /// to models (e.g. GPT-5.x) that only accept max_completion_tokens.
     /// </summary>
     private string GetRequestBody(JsonDocument requestJsonDoc, Deployment deployment)
     {
-        if (deployment.ModelType != ModelType.AI_Toolkit.ToStorageString()
+        if (deployment.ModelType != ModelType.Foundry_Toolkit.ToStorageString()
             || !deployment.UseMaxCompletionTokens
             || requestJsonDoc.RootElement.ValueKind != JsonValueKind.Object
             || !requestJsonDoc.RootElement.TryGetProperty("max_tokens", out _)

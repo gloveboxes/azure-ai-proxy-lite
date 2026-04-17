@@ -49,7 +49,7 @@ Or use the VS Code task: **Terminal → Run Task → test**
 | `Security/AuthenticationHandlersTests.cs` | 10 | `ApiKeyAuthenticationHandler` and `BearerTokenAuthenticationHandler` — missing, empty, invalid, and valid credentials; edge cases like `Bearer` prefix without space |
 | `Security/MiddlewareSecurityTests.cs` | 6 | `LoadProperties` (JSON parsing/bad JSON → 400), `MaxTokensHandler` (token cap enforcement → 400), `RateLimiterHandler` (daily request cap → 429) |
 | `Security/CacheInvalidationEndpointTests.cs` | 5 | Re-implementation of the `/internal/cache/invalidate` endpoint logic — shared-secret auth, missing key, wrong key, case sensitivity, missing config → 503 |
-| `Proxy/ProxyServiceBehaviorTests.cs` | 3 | Auth header generation (`api-key` vs `Authorization: Bearer`), `max_tokens` → `max_completion_tokens` rewrite for AI Toolkit model type |
+| `Proxy/ProxyServiceBehaviorTests.cs` | 3 | Auth header generation (`api-key` vs `Authorization: Bearer`), `max_tokens` → `max_completion_tokens` rewrite for Foundry Toolkit model type |
 | `Proxy/ProxyServicesRegistrationTests.cs` | 2 | `UseMockProxy` flag correctly swaps `IProxyService` between `ProxyService` and `MockProxyService` |
 
 ### Integration tests — require Azurite (17 tests)

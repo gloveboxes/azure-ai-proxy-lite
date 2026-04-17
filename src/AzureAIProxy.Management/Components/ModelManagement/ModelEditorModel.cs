@@ -15,7 +15,7 @@ public class ModelEditorModel
     [Required]
     [StringLength(256)]
     [Url]
-    [ApiVersionRequiredForAIToolkit]
+    [ApiVersionRequiredForFoundryToolkit]
     public string? EndpointUrl { get; set; }
 
     [RequiredUnlessManagedIdentity]

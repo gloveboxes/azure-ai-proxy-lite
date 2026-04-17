@@ -196,15 +196,15 @@ public class CatalogService(
         return capabilities;
     }
 
-    public async Task<List<string>> GetAiToolkitDeploymentsAsync(string eventId)
+    public async Task<List<string>> GetFoundryToolkitDeploymentsAsync(string eventId)
     {
-        var cacheKey = $"ai-toolkit-deployments+{eventId}";
+        var cacheKey = $"foundry-toolkit-deployments+{eventId}";
         if (memoryCache.TryGetValue(cacheKey, out List<string>? cached))
             return cached!;
 
         var deployments = await GetEventCatalogAsync(eventId);
         var result = deployments
-            .Where(d => d.ModelType == ModelType.AI_Toolkit.ToStorageString())
+            .Where(d => d.ModelType == ModelType.Foundry_Toolkit.ToStorageString())
             .Select(d => d.DeploymentName)
             .Distinct()
             .ToList();

@@ -9,7 +9,7 @@ The proxy supports the following model deployment classes:
 | `foundry-model` | gpt-4o, gpt-4.1, gpt-4.1-mini, or newer | Azure OpenAI Chat Completions and Embeddings APIs. |
 | `foundry-agent` | Not applicable | Azure AI Foundry Agent Service for agent, assistant, thread, file, conversation, and response operations. |
 | `mcp-server` | Not applicable | Model Context Protocol server endpoints. |
-| `ai-toolkit` | Not applicable | Models surfaced to attendees via the VS Code AI Toolkit extension. |
+| `foundry-toolkit` | Not applicable | Models surfaced to attendees via the Foundry Toolkit extension. |
 | `azure-ai-search` | Not applicable | Pass-through access to an instance of Azure AI Search. |
 
 !!! tip
