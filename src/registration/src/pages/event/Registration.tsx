@@ -16,7 +16,7 @@ import { useEffect, useReducer } from "react";
 import ReactMarkdown from "react-markdown";
 import { Form, useLoaderData } from "react-router-dom";
 import { reducer } from "./Registration.reducers";
-import type { AiToolkitEndpoint, AttendeeRegistration, EventDetails } from "./Registration.state";
+import type { AiToolkitEndpoint, AttendeeRegistration, EventDetails, McpServerEndpoint } from "./Registration.state";
 
 const useStyles = makeStyles({
   container: {
@@ -253,7 +253,7 @@ export const Registration = () => {
             <li>Read the event description including the <strong>Terms of use</strong>.</li>
             <li>Scroll to the bottom of the page and click <strong>Register</strong>.</li>
             <li>Next, scroll down to the <strong>Registration Details</strong> section for your API Key and Endpoint.</li>
-            <li>Then explore the <strong>AI Toolkit</strong> and <strong>SDK</strong> support.</li>
+            <li>Then explore the <strong>AI Toolkit</strong>, <strong>MCP Server</strong>, and <strong>SDK</strong> support.</li>
             <li>Forgotten your API Key? Just <strong>revisit</strong> this page.</li>
           </ol>
         </>
@@ -330,6 +330,98 @@ export const Registration = () => {
                   />
                 </div>
               ))}
+            </>
+          )}
+          {event?.mcpServerEndpoints && event.mcpServerEndpoints.length > 0 && (
+            <>
+              <h3>MCP Server Access</h3>
+              <p className={styles.toolkitDescription}>
+                Use these MCP server URLs directly in your MCP clients. Use your Event API Key as the authentication key.
+              </p>
+              <div className={styles.toolkitCard}>
+                <span className={styles.toolkitLabel}>Event API Key:</span>
+                <span className={styles.toolkitValue}>
+                  {state.showApiKey ? attendee.apiKey : "••••••••••••••••••••••••••••••••"}
+                </span>
+                <div className={styles.fieldRow}>
+                  <Button
+                    icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
+                    onClick={() =>
+                      dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
+                    }
+                    size="small"
+                  />
+                  <Button
+                    icon={<CopyRegular />}
+                    onClick={() => copyToClipboard(attendee.apiKey)}
+                    size="small"
+                  />
+                </div>
+              </div>
+              {event.mcpServerEndpoints.map((ep: McpServerEndpoint) => (
+                <div key={ep.deploymentName} className={styles.toolkitCard}>
+                  <span className={styles.toolkitLabel}>Server:</span>
+                  <span className={styles.toolkitValue}>{ep.deploymentName}</span>
+                  <Button
+                    icon={<CopyRegular />}
+                    onClick={() => copyToClipboard(ep.deploymentName)}
+                    size="small"
+                  />
+                  <span className={styles.toolkitLabel}>URL:</span>
+                  <span className={styles.toolkitEndpointValue} title={ep.endpointUrl}>{ep.endpointUrl}</span>
+                  <Button
+                    icon={<CopyRegular />}
+                    onClick={() => copyToClipboard(ep.endpointUrl)}
+                    size="small"
+                  />
+                </div>
+              ))}
+              <p className={styles.toolkitDescription}>
+                Python example using the MCP client library (attach your Event API Key in headers):
+              </p>
+              <div className={styles.codeCardWrapper}>
+                <div className={styles.codeCardCopyButton}>
+                  <Button
+                    icon={<CopyRegular />}
+                    onClick={() =>
+                      copyToClipboard(
+                        "# pip install mcp\n\nimport asyncio\nfrom mcp import ClientSession\nfrom mcp.client.streamable_http import streamablehttp_client\n\nMCP_URL = \"<PASTE_MCP_SERVER_URL>\"\nAPI_KEY = \"<YOUR_EVENT_API_KEY>\"\n\nasync def main():\n    async with streamablehttp_client(\n        MCP_URL,\n        headers={\n            \"api-key\": API_KEY,\n            \"Accept\": \"application/json, text/event-stream\",\n        },\n    ) as (read, write, _):\n        async with ClientSession(read, write) as session:\n            await session.initialize()\n            tools = await session.list_tools()\n            print([tool.name for tool in tools.tools])\n\nif __name__ == \"__main__\":\n    asyncio.run(main())"
+                      )
+                    }
+                    size="small"
+                  />
+                </div>
+                <div className={styles.codeCard}>
+                  <pre style={{ margin: 0 }}>
+                    <code style={{ lineHeight: "1", fontSize: "medium" }}>
+                      {`# pip install mcp
+
+import asyncio
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+MCP_URL = "<PASTE_MCP_SERVER_URL>"
+API_KEY = "<YOUR_EVENT_API_KEY>"
+
+async def main():
+    async with streamablehttp_client(
+        MCP_URL,
+        headers={
+            "api-key": API_KEY,
+            "Accept": "application/json, text/event-stream",
+        },
+    ) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            print([tool.name for tool in tools.tools])
+
+if __name__ == "__main__":
+    asyncio.run(main())`}
+                    </code>
+                  </pre>
+                </div>
+              </div>
             </>
           )}
           </div>

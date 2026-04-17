@@ -13,9 +13,11 @@ The solution documentation is published [here](https://gloveboxes.github.io/azur
 graph LR
     Attendees --> Reg[Registration Portal]
     Attendees --> T1[VS Code AI Toolkit]
-    Attendees --> T2[Microsoft Agent Framework]
-    Attendees --> T3[Foundry Agent Service]
-    Attendees --> T4[OpenAI SDKs, LangGraph, REST, Others...]
+    Attendees --> T2[SDK Clients]
+    Attendees --> T3[REST Clients]
+    Attendees --> T4[MCP Clients]
+    Attendees --> T5[Microsoft Agent Framework]
+    Attendees --> T6[Foundry Agent Service]
 
     Organiser[Event Organiser] --> Admin[Admin Portal]
 
@@ -24,6 +26,8 @@ graph LR
     T2 --> Azure_AI_Proxy
     T3 --> Azure_AI_Proxy
     T4 --> Azure_AI_Proxy
+    T5 --> Azure_AI_Proxy
+    T6 --> Azure_AI_Proxy
     Admin --> Azure_AI_Proxy
 
     subgraph Azure_AI_Proxy[Azure AI Proxy]
@@ -79,7 +83,10 @@ graph LR
     subgraph Clients["Clients"]
         admin_user["Admin User"]
         attendee["Attendee"]
-        sdk["SDK / REST Client"]
+        ai_toolkit["VS Code AI Toolkit"]
+        sdk["SDK Client"]
+        rest["REST Client"]
+        mcp["MCP Client"]
     end
 
     subgraph Apps["Application Layer"]
@@ -96,7 +103,10 @@ graph LR
 
     attendee -->|"GitHub OAuth"| reg
     reg -->|"x-ms-client-principal"| proxy
+    ai_toolkit -->|"api-key / bearer over TLS"| proxy
     sdk -->|"api-key / bearer over TLS"| proxy
+    rest -->|"api-key / bearer over TLS"| proxy
+    mcp -->|"api-key / bearer over TLS"| proxy
     admin_user -->|"Entra ID or local admin auth"| admin
 
     admin -->|"Managed Identity"| storage

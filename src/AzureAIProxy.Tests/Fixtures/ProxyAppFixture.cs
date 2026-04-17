@@ -110,7 +110,15 @@ public class ProxyAppFixture : IAsyncLifetime
         }, TableUpdateMode.Replace);
     }
 
-    public async Task SeedCatalogAsync(string catalogId, string deploymentName, string modelType, bool active = true, bool useManagedIdentity = false)
+    public async Task SeedCatalogAsync(
+        string catalogId,
+        string deploymentName,
+        string modelType,
+        bool active = true,
+        bool useManagedIdentity = false,
+        string endpointUrl = "https://fake-endpoint.example.com",
+        string endpointKey = "fake-api-key"
+    )
     {
         var catalogTable = TableStorage.GetTableClient(TableNames.Catalogs);
         await catalogTable.UpsertEntityAsync(new CatalogEntity
@@ -123,8 +131,8 @@ public class ProxyAppFixture : IAsyncLifetime
             ModelType = modelType,
             Location = "eastus",
             FriendlyName = deploymentName,
-            EncryptedEndpointUrl = Encryption.Encrypt("https://fake-endpoint.example.com"),
-            EncryptedEndpointKey = Encryption.Encrypt("fake-api-key"),
+            EncryptedEndpointUrl = Encryption.Encrypt(endpointUrl),
+            EncryptedEndpointKey = Encryption.Encrypt(endpointKey),
             UseManagedIdentity = useManagedIdentity,
             UseMaxCompletionTokens = false
         }, TableUpdateMode.Replace);

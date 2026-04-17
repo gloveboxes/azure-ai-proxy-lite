@@ -55,6 +55,9 @@ public static class Event
         var proxyUrl = GetProxyBaseUrl(configuration, context);
         eventRegistrationInfo.ProxyUrl = proxyUrl;
 
+        // Get all capabilities (model type → deployment names) for this event
+        var capabilities = await catalogService.GetCapabilitiesAsync(eventId);
+
         // Get AI Toolkit deployments for this event
         var aiToolkitDeployments = await catalogService.GetAiToolkitDeploymentsAsync(eventId);
         if (aiToolkitDeployments.Count > 0 && proxyUrl is not null)
@@ -68,8 +71,24 @@ public static class Event
                 .ToList();
         }
 
-        // Get all capabilities (model type → deployment names) for this event
-        var capabilities = await catalogService.GetCapabilitiesAsync(eventId);
+        // Publish proxied MCP server endpoints for this event
+        if (
+            proxyUrl is not null
+            && capabilities.TryGetValue(ModelType.MCP_Server.ToStorageString(), out var mcpDeployments)
+            && mcpDeployments.Count > 0
+        )
+        {
+            eventRegistrationInfo.McpServerEndpoints = mcpDeployments
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .Select(name => new McpServerEndpoint
+                {
+                    DeploymentName = name,
+                    EndpointUrl = $"{proxyUrl}/mcp/{Uri.EscapeDataString(name)}"
+                })
+                .ToList();
+        }
+
         if (capabilities.Count > 0)
         {
             eventRegistrationInfo.Capabilities = capabilities;

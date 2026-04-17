@@ -12,8 +12,24 @@ namespace AzureAIProxy.Routes;
 /// </summary>
 public static class McpServer
 {
-    private static readonly string[] ForwardedRequestHeaders =
-        ["Accept", "Mcp-Session-Id", "Last-Event-ID"];
+    private static readonly HashSet<string> ExcludedRequestHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Never forward attendee auth to upstream.
+        "api-key",
+
+        // Hop-by-hop or request-line specific headers.
+        "Connection",
+        "Keep-Alive",
+        "Proxy-Authenticate",
+        "Proxy-Authorization",
+        "TE",
+        "Trailer",
+        "Transfer-Encoding",
+        "Upgrade",
+        "Host",
+        "Content-Length",
+        "Expect"
+    };
 
     private static readonly string[] ForwardedResponseHeaders =
         ["Mcp-Session-Id"];
@@ -103,23 +119,6 @@ public static class McpServer
             upstreamUrl.Uri
         );
 
-        // Forward MCP-relevant request headers
-        foreach (var headerName in ForwardedRequestHeaders)
-        {
-            if (context.Request.Headers.TryGetValue(headerName, out var values))
-            {
-                requestMessage.Headers.TryAddWithoutValidation(headerName, values.ToArray());
-                // logger.LogInformation("MCP proxy: forwarding header {Key}: {Value}", headerName, values.ToString());
-            }
-        }
-
-        // Forward endpoint key to upstream MCP server if configured
-        if (!string.IsNullOrEmpty(deployment.EndpointKey))
-        {
-            requestMessage.Headers.TryAddWithoutValidation("api-key", deployment.EndpointKey);
-            // logger.LogInformation("MCP proxy: forwarding api-key header to upstream");
-        }
-
         // Forward request body for POST (use JSON parsed by LoadProperties middleware)
         if (context.Request.Method == HttpMethod.Post.Method)
         {
@@ -139,6 +138,32 @@ public static class McpServer
             {
                 // logger.LogWarning("MCP proxy: POST request but jsonDoc is null (no body parsed by middleware)");
             }
+        }
+
+        // Forward most client headers (except excluded hop-by-hop/sensitive headers).
+        foreach (var header in context.Request.Headers)
+        {
+            if (ExcludedRequestHeaders.Contains(header.Key))
+            {
+                continue;
+            }
+
+            var values = header.Value.ToArray();
+            if (values.Length == 0)
+                continue;
+
+            if (requestMessage.Headers.TryAddWithoutValidation(header.Key, values))
+                continue;
+
+            requestMessage.Content?.Headers.TryAddWithoutValidation(header.Key, values);
+        }
+
+        // Forward endpoint key to upstream MCP server if configured.
+        // This intentionally replaces any attendee api-key header.
+        if (!string.IsNullOrEmpty(deployment.EndpointKey))
+        {
+            requestMessage.Headers.TryAddWithoutValidation("api-key", deployment.EndpointKey);
+            // logger.LogInformation("MCP proxy: forwarding api-key header to upstream");
         }
 
         // logger.LogInformation("MCP proxy: sending {Method} to upstream...", context.Request.Method);

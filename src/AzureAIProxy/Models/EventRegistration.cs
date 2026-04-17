@@ -34,11 +34,23 @@ public class EventRegistration
     [JsonPropertyName("ai_toolkit_endpoints")]
     public List<AiToolkitEndpoint>? AiToolkitEndpoints { get; set; }
 
+    [JsonPropertyName("mcp_server_endpoints")]
+    public List<McpServerEndpoint>? McpServerEndpoints { get; set; }
+
     [JsonPropertyName("capabilities")]
     public Dictionary<string, List<string>>? Capabilities { get; set; }
 }
 
 public class AiToolkitEndpoint
+{
+    [JsonPropertyName("deployment_name")]
+    public string DeploymentName { get; set; } = null!;
+
+    [JsonPropertyName("endpoint_url")]
+    public string EndpointUrl { get; set; } = null!;
+}
+
+public class McpServerEndpoint
 {
     [JsonPropertyName("deployment_name")]
     public string DeploymentName { get; set; } = null!;

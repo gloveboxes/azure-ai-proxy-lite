@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using AzureAIProxy.Shared.Database;
 using AzureAIProxy.Tests.Fixtures;
 
@@ -96,5 +98,96 @@ public class McpServerRouteTests : IClassFixture<ProxyAppFixture>
         // The critical assertion: it does NOT return 500 (which would mean the
         // URL was malformed and caused an unhandled exception).
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task McpRoute_ForwardsCustomHeaders_AndUsesDeploymentApiKey()
+    {
+        Skip.IfNot(_fixture.Available, "Azurite not available");
+
+        var upstreamPort = GetFreeTcpPort();
+        var upstreamPrefix = $"http://127.0.0.1:{upstreamPort}/";
+
+        using var listener = new HttpListener();
+        listener.Prefixes.Add(upstreamPrefix);
+        listener.Start();
+
+        var receivedHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var acceptHeader = string.Empty;
+
+        var listenerTask = Task.Run(async () =>
+        {
+            var upstreamContext = await listener.GetContextAsync();
+            foreach (var key in upstreamContext.Request.Headers.AllKeys)
+            {
+                if (!string.IsNullOrEmpty(key))
+                {
+                    receivedHeaders[key] = upstreamContext.Request.Headers[key]!;
+                }
+            }
+
+            acceptHeader = upstreamContext.Request.Headers["Accept"] ?? string.Empty;
+
+            var body = Encoding.UTF8.GetBytes("{\"ok\":true}");
+            upstreamContext.Response.StatusCode = 200;
+            upstreamContext.Response.ContentType = "application/json";
+            await upstreamContext.Response.OutputStream.WriteAsync(body, 0, body.Length);
+            upstreamContext.Response.Close();
+        });
+
+        var eventId = $"evt-mcp-{Guid.NewGuid():N}";
+        var catalogId = Guid.NewGuid().ToString();
+        var deploymentName = "header-proxy-test";
+        const string attendeeApiKeyMarker = "attendee-api-key-marker";
+        const string upstreamApiKey = "upstream-deployment-api-key";
+
+        await _fixture.SeedCatalogAsync(
+            catalogId,
+            deploymentName,
+            ModelType.MCP_Server.ToStorageString(),
+            endpointUrl: upstreamPrefix.TrimEnd('/'),
+            endpointKey: upstreamApiKey
+        );
+        await _fixture.SeedEventAsync(eventId, "owner-header-test", catalogIds: catalogId);
+        var attendeeApiKey = await _fixture.SeedAttendeeAsync("user-header-test", eventId);
+        await _fixture.InvalidateCacheAsync();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/mcp/{deploymentName}");
+        request.Headers.Add("api-key", attendeeApiKey);
+        request.Headers.Add("x-custom-token", "custom-forward-me");
+        request.Headers.Add("Mcp-Session-Id", "session-abc");
+        request.Headers.Add("Accept", "application/json, text/event-stream");
+        request.Content = new StringContent(
+            $"{{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"id\":\"{attendeeApiKeyMarker}\"}}",
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        var response = await _fixture.Client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var completed = await Task.WhenAny(listenerTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(listenerTask, completed);
+
+        Assert.True(receivedHeaders.TryGetValue("x-custom-token", out var customHeader));
+        Assert.Equal("custom-forward-me", customHeader);
+
+        Assert.True(receivedHeaders.TryGetValue("Mcp-Session-Id", out var sessionHeader));
+        Assert.Equal("session-abc", sessionHeader);
+
+        Assert.Equal("application/json, text/event-stream", acceptHeader);
+
+        Assert.True(receivedHeaders.TryGetValue("api-key", out var upstreamHeaderValue));
+        Assert.Equal(upstreamApiKey, upstreamHeaderValue);
+        Assert.NotEqual(attendeeApiKey, upstreamHeaderValue);
+    }
+
+    private static int GetFreeTcpPort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
     }
 }

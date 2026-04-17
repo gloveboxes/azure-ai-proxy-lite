@@ -134,4 +134,28 @@ public class EventRouteTests : IClassFixture<ProxyAppFixture>
         // Fixture configures ProxyUrl = "http://localhost/api/v1"
         Assert.Equal("http://localhost/api/v1", proxyUrl);
     }
+
+    [SkippableFact]
+    public async Task EventRegistration_ReturnsMcpServerEndpoints_WhenConfigured()
+    {
+        Skip.IfNot(_fixture.Available, "Azurite not available");
+
+        var eventId = $"evt-{Guid.NewGuid():N}";
+        var mcpCatalogId = Guid.NewGuid().ToString();
+        await _fixture.SeedEventAsync(eventId, "owner-mcp", catalogIds: mcpCatalogId);
+        await _fixture.SeedCatalogAsync(mcpCatalogId, "docs-server", ModelType.MCP_Server.ToStorageString());
+
+        var response = await _fixture.Client.GetAsync($"/api/v1/event/{eventId}");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(body);
+        var mcpEndpoints = doc.RootElement.GetProperty("mcp_server_endpoints");
+        Assert.Equal(JsonValueKind.Array, mcpEndpoints.ValueKind);
+
+        var endpoint = mcpEndpoints.EnumerateArray().Single();
+        Assert.Equal("docs-server", endpoint.GetProperty("deployment_name").GetString());
+        Assert.Equal("http://localhost/api/v1/mcp/docs-server", endpoint.GetProperty("endpoint_url").GetString());
+    }
 }

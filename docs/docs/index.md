@@ -12,9 +12,11 @@ A managed, multi-tenant proxy that sits between workshop attendees and Azure AI 
 graph LR
     Attendees --> Reg[Registration Portal]
     Attendees --> T1[VS Code AI Toolkit]
-    Attendees --> T2[Microsoft Agent Framework]
-    Attendees --> T3[Foundry Agent Service]
-    Attendees --> T4[OpenAI SDKs, LangGraph, REST, Others...]
+    Attendees --> T2[SDK Clients]
+    Attendees --> T3[REST Clients]
+    Attendees --> T4[MCP Clients]
+    Attendees --> T5[Microsoft Agent Framework]
+    Attendees --> T6[Foundry Agent Service]
 
     Organiser[Event Organiser] --> Admin[Admin Portal]
 
@@ -23,6 +25,8 @@ graph LR
     T2 --> Azure_AI_Proxy
     T3 --> Azure_AI_Proxy
     T4 --> Azure_AI_Proxy
+    T5 --> Azure_AI_Proxy
+    T6 --> Azure_AI_Proxy
     Admin --> Azure_AI_Proxy
 
     subgraph Azure_AI_Proxy[Azure AI Proxy]

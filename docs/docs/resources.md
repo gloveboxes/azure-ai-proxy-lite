@@ -66,3 +66,34 @@ To work around this, enable the **AI Toolkit GPT-5.x compatibility** toggle when
 
 !!! note
     The **AI Toolkit GPT-5.x compatibility** toggle only appears when the resource type is set to `AI Toolkit`.
+
+### Adding MCP Server resources
+
+The proxy supports resources of type **MCP Server**, which let attendees access downstream MCP servers through the proxy URL pattern `/api/v1/mcp/{deploymentName}/...`.
+
+To add an MCP Server resource, click `+ New Resource`, then select `MCP Server` from the **Type** dropdown and use the following values:
+
+| Field | Value | Example |
+|------|-------|---------|
+| **Friendly Name** | A human-readable label | `Demo MCP Server` |
+| **Deployment Name** | Arbitrary client-facing path segment; use a name that reflects the MCP server's purpose | `weather-tools` |
+| **Type** | Select `MCP Server` | |
+| **Endpoint URL** | Full upstream backend MCP endpoint (usually includes `/mcp`) | `https://my-mcp-server.contoso.net/mcp` |
+| **Key** | Backend API key for the MCP server (optional) | `MCP_API_KEY` value |
+| **Region** | Any label | `eastus` |
+| **Active** | Enabled | |
+
+!!! tip
+    The **Deployment Name** does not need to match the backend host, app, or container name. It is an alias used in the proxy route (`/api/v1/mcp/{deploymentName}/...`). Choose a stable, descriptive value that maps to the MCP server's name or function, such as `weather-tools`, `docs-assistant`, or `sql-tools`.
+
+After creating the resource:
+
+1. Add it to one or more events so attendees can access it.
+1. Share the event registration page link with attendees.
+
+The registration page publishes each configured MCP server URL for the event so attendees can copy and use it directly.
+
+!!! note
+    The attendee API key is used to authenticate to the proxy. If a backend MCP **Key** is configured on the resource, the proxy uses that key for downstream requests.
+
+For full deployment and client examples, see [MCP Server Deployment](deployment/mcp-servers.md).

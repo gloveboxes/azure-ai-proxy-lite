@@ -5,6 +5,11 @@ export type AiToolkitEndpoint = {
   endpointUrl: string;
 };
 
+export type McpServerEndpoint = {
+  deploymentName: string;
+  endpointUrl: string;
+};
+
 export type EventDetails = {
   id: string;
   eventCode: string;
@@ -17,6 +22,7 @@ export type EventDetails = {
   organizerEmail: string;
   proxyUrl?: string;
   aiToolkitEndpoints?: AiToolkitEndpoint[];
+  mcpServerEndpoints?: McpServerEndpoint[];
   capabilities?: Record<string, string[]>;
 };
 

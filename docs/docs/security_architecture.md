@@ -9,13 +9,17 @@ graph LR
     subgraph Users[" "]
         admin_user["👤 Admin"]
         attendee["👤 Attendee"]
+        ai_toolkit["🧰 AI Toolkit Client"]
         sdk["🖥️ SDK Client"]
         rest["🌐 REST Client"]
+        mcp_client["🔌 MCP Client"]
     end
 
     admin_user -->|"Entra ID"| admin
+    ai_toolkit -->|"api-key (TLS)"| proxy
     sdk -->|"api-key (TLS)"| proxy
     rest -->|"api-key (TLS)"| proxy
+    mcp_client -->|"api-key (TLS)"| proxy
     attendee -->|"GitHub OAuth"| reg
 
     subgraph Azure["Azure — Entra ID Tenant"]
